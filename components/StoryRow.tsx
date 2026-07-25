@@ -33,7 +33,7 @@ export function StoryRow({ story, index }: { story: Story; index: number }) {
           {story.cveIds[0] && <span>{story.cveIds[0]}</span>}
         </div>
 
-        <h2 className="font-headline text-[1.35rem] leading-snug text-ink-primary group-hover:opacity-70 transition-opacity">
+        <h2 className="font-headline text-[1.35rem] leading-snug text-ink-primary">
           {story.titleAz}
         </h2>
 

@@ -6,8 +6,17 @@ import { applyTheme, type Theme } from "@/lib/theme";
 const THEME_EVENT = "ctiaze:theme-changed";
 
 function getSnapshot(): Theme {
-  const current = document.documentElement.getAttribute("data-theme");
-  if (current === "light" || current === "dark") return current;
+  // localStorage is checked FIRST and is authoritative: dark renders via the
+  // CSS default with no attribute at all (see globals.css), so "no attribute"
+  // does NOT mean "no explicit choice" — it's also the normal look of an
+  // explicit, saved "dark" choice. Falling straight to the attribute (as this
+  // used to) misread that case as "no choice made" and fell through to the
+  // OS-preference guess, desyncing the button's state from what was actually
+  // on screen after a reload.
+  const stored = localStorage.getItem("theme");
+  if (stored === "light" || stored === "dark") return stored;
+  const attr = document.documentElement.getAttribute("data-theme");
+  if (attr === "light" || attr === "dark") return attr;
   return window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark";
 }
 

@@ -57,7 +57,7 @@ function LeadStory({ story }: { story: Story }) {
   return (
     <Link
       href={`/xeber/${story.slug}`}
-      className="group block pt-8 pb-8 border-b-[3px] border-ink-primary"
+      className="group block -mx-4 px-4 pt-8 pb-8 border-b-[3px] border-ink-primary hover:bg-surface-raised/40 transition-colors"
     >
       <div className="flex items-baseline gap-3 font-mono text-[11px] text-ink-muted mb-3">
         <span className="text-ink-muted/50">01</span>
@@ -70,7 +70,7 @@ function LeadStory({ story }: { story: Story }) {
         {story.cveIds[0] && <span>{story.cveIds[0]}</span>}
       </div>
 
-      <h1 className="font-headline text-[1.9rem] sm:text-4xl leading-[1.1] text-ink-primary group-hover:opacity-70 transition-opacity">
+      <h1 className="font-headline text-[1.9rem] sm:text-4xl leading-[1.1] text-ink-primary">
         {story.titleAz}
       </h1>
 
