@@ -1,46 +1,31 @@
 @import "tailwindcss";
 
 /* ---------------------------------------------------------------------------
-   Design tokens — validated palette (dataviz skill: status colors + ink/surface
-   tokens), NOT eyeballed. Dark is the primary/default mode (SOC/CTI audience),
-   light is a fully-specified alternate, not an automatic flip. A single accent
-   (critical) is reserved for KEV/actively-exploited signal — everything else
-   stays in restrained ink tones, deliberately un-colorful. That restraint IS
-   the aesthetic: a wire service, not a SaaS dashboard.
+   ctiaze — a single, committed dark theme. No light mode, no toggle: the
+   audience is SOC/CTI, the surface is a monitoring console, and one
+   deliberately-tuned palette reads more finished than a switch that has to
+   look right two ways. Status color is the ONLY functional color (KEV /
+   severity); everything else lives in restrained ink tones. Values below are
+   the validated dark palette (dataviz skill), kept verbatim so contrast is
+   never re-guessed.
    ------------------------------------------------------------------------- */
-/* Dark is the literal CSS default (not conditional on any media query) — the
-   previous version tried to express "dark unless explicitly light" via a
-   `:not([data-theme="light"])` rule under `prefers-color-scheme: dark`, which
-   left light mode dependent on that negation ever resolving correctly. A
-   single unconditional override is unambiguous: no attribute → dark, always. */
 :root {
-  --surface: #0d0d0d;
-  --surface-raised: #1a1a19;
-  --ink-primary: #ffffff;
-  --ink-secondary: #c3c2b7;
-  --ink-muted: #898781;
-  --hairline: #2c2c2a;
-  --border: rgba(255, 255, 255, 0.1);
+  --surface: #0c0c0d;
+  --surface-raised: #17171a;
+  --ink-primary: #f4f4ef;
+  --ink-secondary: #b9b8ad;
+  --ink-muted: #6f6e68;
+  --hairline: #232326;
+  --border: rgba(255, 255, 255, 0.08);
 
-  --accent-critical: #d03b3b; /* dark surface, 3.62:1 */
-  --accent-serious: #ec835a; /* dark surface, 6.60:1 */
-  --accent-warning: #fab219; /* dark surface, 9.49:1 */
-  --accent-good: #0ca30c; /* dark surface, 5.19:1 */
-}
+  --accent-critical: #e0514f; /* KEV / actively exploited */
+  --accent-serious: #ec835a; /* high severity */
+  --accent-warning: #fab219; /* medium */
+  --accent-good: #35b135; /* live / operational */
 
-:root[data-theme="light"] {
-  --surface: #f9f9f7;
-  --surface-raised: #fcfcfb;
-  --ink-primary: #0b0b0b;
-  --ink-secondary: #52514e;
-  --ink-muted: #898781;
-  --hairline: #e1e0d9;
-  --border: rgba(11, 11, 11, 0.1);
-
-  --accent-critical: #d03b3b; /* light surface, 4.68:1 */
-  --accent-serious: #ec835a;
-  --accent-warning: #fab219;
-  --accent-good: #0ca30c;
+  --font-headline: var(--font-headline);
+  --font-body: var(--font-body);
+  --font-mono: var(--font-mono);
 }
 
 @theme inline {
@@ -70,13 +55,25 @@
   color: #ffffff;
 }
 
-/* A faint tileable grain over the flat surface color — the kind of tactile,
-   print-adjacent texture a wire service would have and a "typical AI-generated
-   site" wouldn't bother with. Baked into the background paint itself (not an
-   overlay element) so it never interferes with stacking or clicks. */
+html {
+  color-scheme: dark;
+}
+
+/* Faint tileable grain + a hairline scan-grid, both baked into the page paint
+   (not overlay elements, so they never touch stacking or clicks). The grid is
+   the quiet "console" substrate; the radar canvas (NetworkField) rides above
+   it. */
 body {
-  background-image: url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHdpZHRoPScyMDAnIGhlaWdodD0nMjAwJz48ZmlsdGVyIGlkPSduJz48ZmVUdXJidWxlbmNlIHR5cGU9J2ZyYWN0YWxOb2lzZScgYmFzZUZyZXF1ZW5jeT0nMC45JyBudW1PY3RhdmVzPScyJyBzdGl0Y2hUaWxlcz0nc3RpdGNoJy8+PGZlQ29sb3JNYXRyaXggdHlwZT0nbWF0cml4JyB2YWx1ZXM9JzAgMCAwIDAgMCAwIDAgMCAwIDAgMCAwIDAgMCAwIDAgMCAwIDAuMDUgMCcvPjwvZmlsdGVyPjxyZWN0IHdpZHRoPScxMDAlJyBoZWlnaHQ9JzEwMCUnIGZpbHRlcj0ndXJsKCUyM24pJy8+PC9zdmc+");
-  background-repeat: repeat;
+  background-color: var(--surface);
+  background-image:
+    linear-gradient(var(--border) 1px, transparent 1px),
+    linear-gradient(90deg, var(--border) 1px, transparent 1px),
+    url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHdpZHRoPScyMDAnIGhlaWdodD0nMjAwJz48ZmlsdGVyIGlkPSduJz48ZmVUdXJidWxlbmNlIHR5cGU9J2ZyYWN0YWxOb2lzZScgYmFzZUZyZXF1ZW5jeT0nMC45JyBudW1PY3RhdmVzPScyJyBzdGl0Y2hUaWxlcz0nc3RpdGNoJy8+PGZlQ29sb3JNYXRyaXggdHlwZT0nbWF0cml4JyB2YWx1ZXM9JzAgMCAwIDAgMCAwIDAgMCAwIDAgMCAwIDAgMCAwIDAgMCAwIDAuMDQgMCcvPjwvZmlsdGVyPjxyZWN0IHdpZHRoPScxMDAlJyBoZWlnaHQ9JzEwMCUnIGZpbHRlcj0ndXJsKCUyM24pJy8+PC9zdmc+");
+  background-size:
+    64px 64px,
+    64px 64px,
+    200px 200px;
+  background-position: center top;
 }
 
 /* Ticker marquee — one duplicated track scrolling exactly -50% for a seamless
@@ -91,39 +88,26 @@ body {
 }
 
 .ticker-viewport {
-  animation: ticker-scroll 45s linear infinite;
+  animation: ticker-scroll 48s linear infinite;
 }
 
 .ticker-viewport:hover {
   animation-play-state: paused;
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .ticker-viewport {
-    animation: none;
-  }
-}
-
 /* Intro splash rule — draws itself left-to-right once on mount. */
 .intro-rule {
   display: block;
-  width: 64px;
+  width: 72px;
   height: 2px;
   background: var(--ink-primary);
   transform: scaleX(0);
   transform-origin: center;
-  animation: intro-draw 600ms ease-out 150ms forwards;
+  animation: intro-draw 620ms ease-out 150ms forwards;
 }
 
 @keyframes intro-draw {
   to {
-    transform: scaleX(1);
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .intro-rule {
-    animation: none;
     transform: scaleX(1);
   }
 }
@@ -139,4 +123,39 @@ body {
   padding-right: 0.09em;
   padding-top: 0.04em;
   color: var(--ink-primary);
+}
+
+/* A soft blip that travels along the dispatch bar's baseline — subliminal
+   "signal is live" pulse, not a load-bearing animation. */
+@keyframes dispatch-scan {
+  0% {
+    transform: translateX(-100%);
+    opacity: 0;
+  }
+  8%,
+  92% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+}
+
+.dispatch-scan {
+  animation: dispatch-scan 9s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ticker-viewport,
+  .dispatch-scan {
+    animation: none;
+  }
+  .intro-rule {
+    animation: none;
+    transform: scaleX(1);
+  }
+  .dispatch-scan {
+    display: none;
+  }
 }

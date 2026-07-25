@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { ThemeToggle } from "./ThemeToggle";
 import { LiveStatus } from "./LiveStatus";
 import { SearchTrigger } from "./SearchTrigger";
 import { CtiazeMark } from "./CtiazeMark";
@@ -13,25 +12,25 @@ export function Header() {
           href="https://t.me/ctiaze"
           target="_blank"
           rel="noopener noreferrer"
-          className="hidden sm:inline font-mono text-[10px] uppercase tracking-[0.15em] text-ink-muted hover:text-ink-primary transition-colors"
+          className="hidden sm:inline font-mono text-[10px] uppercase tracking-[0.18em] text-ink-muted hover:text-ink-primary transition-colors"
         >
-          @ctiaze — telegram
+          @ctiaze — telegram ↗
         </a>
       </div>
 
-      <div className="mx-auto max-w-5xl px-4 flex items-end justify-between py-5">
-        <Link href="/" className="group flex items-center gap-3">
-          <CtiazeMark className="size-7 sm:size-8 text-ink-primary shrink-0" />
+      <div className="mx-auto max-w-5xl px-4 flex items-end justify-between gap-4 py-6">
+        <Link href="/" className="group flex items-center gap-3.5">
+          <CtiazeMark className="size-8 sm:size-9 text-ink-primary shrink-0 transition-transform group-hover:scale-105" />
           <span>
-            <span className="block font-headline italic text-3xl sm:text-4xl tracking-tight text-ink-primary">
+            <span className="block font-headline italic text-3xl sm:text-[2.6rem] leading-none tracking-tight text-ink-primary">
               ctiaze
             </span>
-            <span className="block font-mono text-[10px] uppercase tracking-[0.28em] text-ink-muted mt-1.5">
+            <span className="mt-2 block font-mono text-[9.5px] sm:text-[10px] uppercase tracking-[0.3em] text-ink-muted">
               kiber-təhlükə kəşfiyyatı jurnalı
             </span>
           </span>
         </Link>
-        <nav className="flex items-center gap-5">
+        <nav className="flex items-center gap-5 pb-1">
           <SearchTrigger />
           <Link
             href="/haqqinda"
@@ -39,12 +38,11 @@ export function Header() {
           >
             haqqında
           </Link>
-          <ThemeToggle />
         </nav>
       </div>
 
       <div className="border-t-[3px] border-ink-primary" />
-      <div className="border-t border-hairline mt-[2px]" />
+      <div className="border-t border-hairline mt-[3px]" />
     </header>
   );
 }

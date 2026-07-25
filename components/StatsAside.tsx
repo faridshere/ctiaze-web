@@ -1,8 +1,10 @@
 import type { Story } from "@/lib/types";
 
-// Not a chart — a handful of counts don't earn one (dataviz skill: sometimes
-// the right form is a stat tile, not a plot). Plain numbers, no color coding
-// beyond what StoryRow/SeverityMarker already carry.
+// The intel-summary rail. Counts up top, then a category distribution drawn as
+// single-hue magnitude bars (dataviz method: one measure — count — per
+// category, so identity is carried by the label and only length encodes
+// magnitude; no rainbow, no color-as-category). Honest, compact, and it makes
+// the sidebar feel like a briefing panel rather than a list of links.
 export function StatsAside({
   stories,
   total,
@@ -16,42 +18,40 @@ export function StatsAside({
   for (const s of stories) {
     byCategory.set(s.category, (byCategory.get(s.category) ?? 0) + 1);
   }
-  const topCategories = [...byCategory.entries()]
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, 6);
+  const cats = [...byCategory.entries()].sort((a, b) => b[1] - a[1]).slice(0, 6);
+  const max = cats.length ? cats[0][1] : 1;
 
   return (
-    <aside className="lg:pt-1 space-y-8">
+    <aside className="lg:pt-1 space-y-9">
       <div>
-        <h2 className="font-mono text-[10px] uppercase tracking-[0.2em] text-ink-muted pb-3 border-b border-hairline">
-          arxiv
-        </h2>
+        <PanelHead>arxiv</PanelHead>
         <dl className="mt-3 space-y-2">
-          <div className="flex items-baseline justify-between">
-            <dt className="text-sm text-ink-secondary">dərc olunub</dt>
-            <dd className="font-mono text-sm tabular-nums text-ink-primary">{total}</dd>
-          </div>
-          <div className="flex items-baseline justify-between">
-            <dt className="text-sm text-ink-secondary">aktiv istismar (KEV)</dt>
-            <dd className="font-mono text-sm tabular-nums text-accent-critical">{kevCount}</dd>
-          </div>
+          <Row label="dərc olunub" value={total} />
+          <Row label="aktiv istismar (KEV)" value={kevCount} critical={kevCount > 0} />
+          <Row label="bu səhifədə" value={stories.length} />
         </dl>
       </div>
 
-      {topCategories.length > 0 && (
+      {cats.length > 0 && (
         <div>
-          <h2 className="font-mono text-[10px] uppercase tracking-[0.2em] text-ink-muted pb-3 border-b border-hairline">
-            mövzular
-          </h2>
-          <ul className="mt-3 space-y-2">
-            {topCategories.map(([cat, count]) => (
-              <li key={cat} className="flex items-baseline justify-between gap-3">
-                <span className="text-sm text-ink-secondary uppercase tracking-wide truncate">
-                  {cat}
-                </span>
-                <span className="font-mono text-xs tabular-nums text-ink-muted shrink-0">
-                  {count}
-                </span>
+          <PanelHead>mövzu paylanması</PanelHead>
+          <ul className="mt-3.5 space-y-2.5">
+            {cats.map(([cat, count]) => (
+              <li key={cat}>
+                <div className="flex items-baseline justify-between gap-3">
+                  <span className="font-mono text-[10px] uppercase tracking-wider text-ink-secondary truncate">
+                    {cat}
+                  </span>
+                  <span className="font-mono text-[10px] tabular-nums text-ink-muted shrink-0">
+                    {count}
+                  </span>
+                </div>
+                <div className="mt-1 h-[3px] w-full bg-hairline overflow-hidden">
+                  <div
+                    className="h-full bg-ink-secondary/70"
+                    style={{ width: `${Math.max(6, (count / max) * 100)}%` }}
+                  />
+                </div>
               </li>
             ))}
           </ul>
@@ -59,19 +59,37 @@ export function StatsAside({
       )}
 
       <div>
-        <h2 className="font-mono text-[10px] uppercase tracking-[0.2em] text-ink-muted pb-3 border-b border-hairline">
-          izlə
-        </h2>
+        <PanelHead>izlə</PanelHead>
         <a
           href="https://t.me/ctiaze"
           target="_blank"
           rel="noopener noreferrer"
-          className="mt-3 flex items-center justify-between text-sm text-ink-secondary hover:text-ink-primary transition-colors"
+          className="mt-3 flex items-center justify-between font-mono text-xs text-ink-secondary hover:text-ink-primary transition-colors"
         >
-          <span>@ctiaze Telegram</span>
-          <span aria-hidden>→</span>
+          <span>@ctiaze · telegram</span>
+          <span aria-hidden>↗</span>
         </a>
       </div>
     </aside>
+  );
+}
+
+function PanelHead({ children }: { children: React.ReactNode }) {
+  return (
+    <h2 className="flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.2em] text-ink-muted pb-2.5 border-b border-hairline">
+      <span className="text-accent-critical/70">▚</span>
+      {children}
+    </h2>
+  );
+}
+
+function Row({ label, value, critical = false }: { label: string; value: number; critical?: boolean }) {
+  return (
+    <div className="flex items-baseline justify-between gap-3">
+      <dt className="text-sm text-ink-secondary">{label}</dt>
+      <dd className={`font-mono text-sm tabular-nums ${critical ? "text-accent-critical" : "text-ink-primary"}`}>
+        {String(value).padStart(2, "0")}
+      </dd>
+    </div>
   );
 }

@@ -23,9 +23,9 @@ function computeNow(): string {
 let cached = "";
 
 // A ticking wall clock is external-to-React state by nature — useSyncExternalStore
-// is the React-sanctioned way to subscribe to it (vs. setState-in-effect), and its
-// getServerSnapshot keeps the server-rendered/ISR-cached HTML clock-free so a stale
-// baked-in time is never shown before the client takes over.
+// is the React-sanctioned way to subscribe to it (vs. setState-in-effect). The
+// getServerSnapshot keeps the server-rendered/ISR-cached HTML clock-free so a
+// stale baked-in time is never shown before the client takes over.
 function subscribe(onStoreChange: () => void) {
   cached = computeNow();
   const id = setInterval(() => {
@@ -50,16 +50,8 @@ export function LiveStatus() {
   const now = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
 
   return (
-    <div className="flex items-center gap-2.5 font-mono text-[10px] uppercase tracking-[0.15em] text-ink-muted">
-      <span className="inline-flex items-center gap-1.5 text-accent-good">
-        <span className="relative flex size-1.5">
-          <span className="absolute inline-flex size-full animate-ping rounded-full bg-accent-good opacity-60" />
-          <span className="relative inline-flex size-1.5 rounded-full bg-accent-good" />
-        </span>
-        canlı
-      </span>
-      <span className="text-hairline">·</span>
-      <span className="tabular-nums">{now}</span>
-    </div>
+    <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-ink-muted tabular-nums">
+      {now}
+    </span>
   );
 }

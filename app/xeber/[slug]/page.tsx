@@ -45,42 +45,47 @@ export default async function StoryPage({
   return (
     <div className="min-h-screen flex flex-col">
       <Header />
-      <main className="flex-1 mx-auto w-full max-w-2xl px-4 py-10">
+      <main className="flex-1 mx-auto w-full max-w-2xl px-4 py-12">
         <Link
           href="/"
-          className="font-mono text-xs text-ink-muted hover:text-ink-primary transition-colors"
+          className="font-mono text-[11px] uppercase tracking-wider text-ink-muted hover:text-ink-primary transition-colors"
         >
-          ← bütün xəbərlər
+          ← bütün dispaçlar
         </Link>
 
-        <div className="mt-8 flex items-baseline gap-3 font-mono text-[11px] text-ink-muted">
+        <div className="mt-9 flex flex-wrap items-center gap-x-3 gap-y-2 font-mono text-[11px] text-ink-muted">
           <time dateTime={story.publishedAt}>
             {date} · {time}
           </time>
           <SeverityMarker kev={story.kev} severity={story.severity} />
           <span className="uppercase tracking-wider">{story.category}</span>
           {story.region && <span className="text-ink-secondary">AZ</span>}
+          {story.cveIds[0] && <span>{story.cveIds[0]}</span>}
         </div>
 
-        <h1 className="mt-3 font-headline text-3xl sm:text-4xl leading-tight text-ink-primary">
+        <h1 className="mt-4 font-headline text-[2rem] sm:text-[2.6rem] leading-[1.1] text-ink-primary">
           {story.titleAz}
         </h1>
 
-        <p className="mt-6 text-lg leading-relaxed text-ink-secondary whitespace-pre-line">
+        <div className="mt-6 h-px w-full bg-hairline" />
+
+        <p className="mt-7 text-lg leading-[1.75] text-ink-secondary whitespace-pre-line drop-cap">
           {story.bodyAz}
         </p>
 
-        <div className="mt-10 pt-6 border-t border-hairline flex flex-wrap items-center gap-x-6 gap-y-2 font-mono text-xs text-ink-muted">
-          {story.cveIds.length > 0 && (
-            <span>{story.cveIds.join(", ")}</span>
+        <div className="mt-12 pt-6 border-t border-hairline flex flex-wrap items-center justify-between gap-x-6 gap-y-2 font-mono text-xs text-ink-muted">
+          {story.cveIds.length > 0 ? (
+            <span className="text-ink-secondary">{story.cveIds.join(" · ")}</span>
+          ) : (
+            <span />
           )}
           <a
             href={story.sourceUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-ink-secondary hover:text-ink-primary transition-colors"
+            className="uppercase tracking-wider text-ink-secondary hover:text-ink-primary transition-colors"
           >
-            mənbə →
+            ilkin mənbə ↗
           </a>
         </div>
       </main>
