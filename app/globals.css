@@ -115,3 +115,27 @@ body {
     animation: none;
   }
 }
+
+/* Intro splash rule — draws itself left-to-right once on mount. */
+.intro-rule {
+  display: block;
+  width: 64px;
+  height: 2px;
+  background: var(--ink-primary);
+  transform: scaleX(0);
+  transform-origin: center;
+  animation: intro-draw 600ms ease-out 150ms forwards;
+}
+
+@keyframes intro-draw {
+  to {
+    transform: scaleX(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .intro-rule {
+    animation: none;
+    transform: scaleX(1);
+  }
+}

@@ -3,6 +3,7 @@ import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { StoryRow } from "@/components/StoryRow";
 import { Ticker } from "@/components/Ticker";
+import { LiveUpdateBanner } from "@/components/LiveUpdateBanner";
 import { StatsAside } from "@/components/StatsAside";
 import { SeverityMarker } from "@/components/SeverityMarker";
 import { formatStoryDate } from "@/lib/format";
@@ -22,6 +23,7 @@ export default async function HomePage() {
     <div className="min-h-screen flex flex-col">
       <Header />
       <Ticker headlines={stories.slice(0, 10).map((s) => s.titleAz)} />
+      <LiveUpdateBanner initialCount={stats.total} />
 
       <main className="flex-1 mx-auto w-full max-w-5xl px-4">
         {stories.length === 0 ? (

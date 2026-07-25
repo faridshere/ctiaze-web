@@ -1,11 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useSyncExternalStore } from "react";
 import { AZ_MONTHS } from "@/lib/format";
 
 const TIME_ZONE = "Asia/Baku";
 
-function bakuNow() {
+function computeNow(): string {
   const parts = new Intl.DateTimeFormat("en-GB", {
     timeZone: TIME_ZONE,
     hour: "2-digit",
@@ -17,22 +17,37 @@ function bakuNow() {
   }).formatToParts(new Date());
   const get = (t: string) => parts.find((p) => p.type === t)?.value ?? "";
   const month = AZ_MONTHS[parseInt(get("month"), 10) - 1] ?? "";
-  return {
-    clock: `${get("hour")}:${get("minute")}:${get("second")}`,
-    date: `${get("day")} ${month}`,
-  };
+  return `bakı ${get("day")} ${month} · ${get("hour")}:${get("minute")}:${get("second")}`;
 }
 
-// Ticks client-side only — rendering nothing until mount avoids a
-// server/client clock mismatch instead of fighting it with suppressHydrationWarning.
-export function LiveStatus() {
-  const [now, setNow] = useState<{ clock: string; date: string } | null>(null);
+let cached = "";
 
-  useEffect(() => {
-    setNow(bakuNow());
-    const id = setInterval(() => setNow(bakuNow()), 1000);
-    return () => clearInterval(id);
-  }, []);
+// A ticking wall clock is external-to-React state by nature — useSyncExternalStore
+// is the React-sanctioned way to subscribe to it (vs. setState-in-effect), and its
+// getServerSnapshot keeps the server-rendered/ISR-cached HTML clock-free so a stale
+// baked-in time is never shown before the client takes over.
+function subscribe(onStoreChange: () => void) {
+  cached = computeNow();
+  const id = setInterval(() => {
+    const next = computeNow();
+    if (next !== cached) {
+      cached = next;
+      onStoreChange();
+    }
+  }, 1000);
+  return () => clearInterval(id);
+}
+
+function getSnapshot() {
+  return cached;
+}
+
+function getServerSnapshot() {
+  return "bakı";
+}
+
+export function LiveStatus() {
+  const now = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
 
   return (
     <div className="flex items-center gap-2.5 font-mono text-[10px] uppercase tracking-[0.15em] text-ink-muted">
@@ -44,9 +59,7 @@ export function LiveStatus() {
         canlı
       </span>
       <span className="text-hairline">·</span>
-      <span className="tabular-nums">
-        {now ? `bakı ${now.date} · ${now.clock}` : "bakı"}
-      </span>
+      <span className="tabular-nums">{now}</span>
     </div>
   );
 }

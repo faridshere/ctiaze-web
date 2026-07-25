@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ThemeToggle } from "./ThemeToggle";
 import { LiveStatus } from "./LiveStatus";
+import { SearchTrigger } from "./SearchTrigger";
 
 export function Header() {
   return (
@@ -27,6 +28,7 @@ export function Header() {
           </span>
         </Link>
         <nav className="flex items-center gap-5">
+          <SearchTrigger />
           <Link
             href="/haqqinda"
             className="font-mono text-xs text-ink-muted hover:text-ink-primary transition-colors"

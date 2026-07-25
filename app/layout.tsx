@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import { Newsreader, IBM_Plex_Sans, IBM_Plex_Mono } from "next/font/google";
+import { IntroSplash } from "@/components/IntroSplash";
+import { CommandPalette } from "@/components/CommandPalette";
 import "./globals.css";
 
 const headline = Newsreader({
@@ -59,6 +61,8 @@ export default function RootLayout({
         />
       </head>
       <body className="min-h-screen bg-surface text-ink-primary font-body antialiased">
+        <IntroSplash />
+        <CommandPalette />
         {children}
       </body>
     </html>

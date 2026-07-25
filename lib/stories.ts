@@ -48,3 +48,45 @@ export async function getStats() {
   const kevCount = await col.countDocuments({ ...PUBLISHED_FILTER, kev: true });
   return { total, kevCount };
 }
+
+// Cheap poll target for the client-side live-update banner — just the count,
+// compared against the count the page was server-rendered with.
+export async function getLatestSignal(): Promise<{ count: number }> {
+  const col = await items();
+  const count = await col.countDocuments(PUBLISHED_FILTER);
+  return { count };
+}
+
+export type SearchEntry = {
+  slug: string;
+  titleAz: string;
+  category: string;
+  cveIds: string[];
+};
+
+// Lightweight index for the command palette — title/category/CVE only, never
+// the full body, so the client-side fetch stays small even at a few hundred items.
+export async function getSearchIndex(limit = 200): Promise<SearchEntry[]> {
+  const col = await items();
+  const docs = await col
+    .find(PUBLISHED_FILTER)
+    .sort({ published_at: -1 })
+    .limit(limit)
+    .project<Pick<StoryDoc, "_id" | "az_title" | "title" | "ai_category" | "cve_ids">>({
+      _id: 1,
+      az_title: 1,
+      title: 1,
+      ai_category: 1,
+      cve_ids: 1,
+    })
+    .toArray();
+  return docs.map((doc) => {
+    const story = toStory(doc as StoryDoc);
+    return {
+      slug: story.slug,
+      titleAz: story.titleAz,
+      category: story.category,
+      cveIds: story.cveIds,
+    };
+  });
+}

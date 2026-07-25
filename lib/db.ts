@@ -14,7 +14,6 @@ if (!uri) {
 // Cache the client across invocations in the same warm serverless instance
 // (the standard Next.js + MongoDB pattern) instead of reconnecting per request.
 declare global {
-  // eslint-disable-next-line no-var
   var _mongoClientPromise: Promise<MongoClient> | undefined;
 }
 
