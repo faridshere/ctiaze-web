@@ -28,7 +28,7 @@ export const metadata: Metadata = {
     template: "%s — ctiaze",
   },
   description:
-    "Avtomatlaşdırılmış kiber-təhlükə kəşfiyyatı jurnalı. Claude AI ilə seçilir, yoxlanılır və Azərbaycan dilinə tərcümə olunur.",
+    "Avtomatlaşdırılmış kiber-təhlükə kəşfiyyatı jurnalı. Süni intellekt vasitəsilə seçilir, yoxlanılır və Azərbaycan dilinə tərcümə olunur — 24/7, insan müdaxiləsi olmadan.",
   openGraph: {
     type: "website",
     siteName: "ctiaze",

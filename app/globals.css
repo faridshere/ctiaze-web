@@ -81,3 +81,37 @@
   background: var(--accent-critical);
   color: #ffffff;
 }
+
+/* A faint tileable grain over the flat surface color — the kind of tactile,
+   print-adjacent texture a wire service would have and a "typical AI-generated
+   site" wouldn't bother with. Baked into the background paint itself (not an
+   overlay element) so it never interferes with stacking or clicks. */
+body {
+  background-image: url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHdpZHRoPScyMDAnIGhlaWdodD0nMjAwJz48ZmlsdGVyIGlkPSduJz48ZmVUdXJidWxlbmNlIHR5cGU9J2ZyYWN0YWxOb2lzZScgYmFzZUZyZXF1ZW5jeT0nMC45JyBudW1PY3RhdmVzPScyJyBzdGl0Y2hUaWxlcz0nc3RpdGNoJy8+PGZlQ29sb3JNYXRyaXggdHlwZT0nbWF0cml4JyB2YWx1ZXM9JzAgMCAwIDAgMCAwIDAgMCAwIDAgMCAwIDAgMCAwIDAgMCAwIDAuMDUgMCcvPjwvZmlsdGVyPjxyZWN0IHdpZHRoPScxMDAlJyBoZWlnaHQ9JzEwMCUnIGZpbHRlcj0ndXJsKCUyM24pJy8+PC9zdmc+");
+  background-repeat: repeat;
+}
+
+/* Ticker marquee — one duplicated track scrolling exactly -50% for a seamless
+   loop. Pauses on hover so a headline can actually be read/clicked-toward. */
+@keyframes ticker-scroll {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+.ticker-viewport {
+  animation: ticker-scroll 45s linear infinite;
+}
+
+.ticker-viewport:hover {
+  animation-play-state: paused;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ticker-viewport {
+    animation: none;
+  }
+}

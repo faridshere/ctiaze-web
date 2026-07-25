@@ -35,7 +35,7 @@ export default async function AboutPage() {
             toplanır. Eyni hadisə haqqında fərqli mənbələr avtomatik birləşdirilir.
           </Step>
           <Step n="02" title="Seçim">
-            Claude (Anthropic-in AI modeli) hər xəbəri Azərbaycan auditoriyası
+            Qabaqcıl süni intellekt modeli hər xəbəri Azərbaycan auditoriyası
             üçün əhəmiyyətinə görə qiymətləndirir — regional əlaqə, ciddilik,
             aktiv istismar vəziyyəti nəzərə alınır. Adi, təkrarlanan və
             əhəmiyyətsiz xəbərlər buraxılır.
@@ -65,7 +65,7 @@ export default async function AboutPage() {
         </div>
 
         <p className="mt-8 text-ink-secondary leading-relaxed">
-          Hackxana tərəfindən yaradılıb. Claude (Anthropic) ilə işləyir.
+          Hackxana tərəfindən yaradılıb və idarə olunur.
         </p>
       </main>
       <Footer />

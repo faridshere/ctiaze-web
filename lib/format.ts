@@ -1,4 +1,4 @@
-const AZ_MONTHS = [
+export const AZ_MONTHS = [
   "yan", "fev", "mar", "apr", "may", "iyun",
   "iyul", "avq", "sen", "okt", "noy", "dek",
 ];
