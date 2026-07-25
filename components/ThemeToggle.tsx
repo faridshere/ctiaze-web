@@ -1,17 +1,19 @@
 "use client";
 
 import { useSyncExternalStore } from "react";
+import { applyTheme, type Theme } from "@/lib/theme";
 
 const THEME_EVENT = "ctiaze:theme-changed";
 
-function getSnapshot(): "dark" | "light" {
+function getSnapshot(): Theme {
   const current = document.documentElement.getAttribute("data-theme");
   if (current === "light" || current === "dark") return current;
   return window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark";
 }
 
-// The theme lives on <html data-theme> and in localStorage, both external to
-// React — useSyncExternalStore reads it correctly on mount (no setState-in-effect)
+// The theme lives on <html data-theme> (+ inline custom properties applied by
+// applyTheme) and in localStorage, both external to React —
+// useSyncExternalStore reads it correctly on mount (no setState-in-effect)
 // and re-syncs on our own toggle (via a same-page custom event) or an OS-level
 // scheme change while no explicit choice has been saved.
 function subscribe(onStoreChange: () => void) {
@@ -24,7 +26,7 @@ function subscribe(onStoreChange: () => void) {
   };
 }
 
-function getServerSnapshot(): "dark" | "light" {
+function getServerSnapshot(): Theme {
   return "dark";
 }
 
@@ -32,9 +34,7 @@ export function ThemeToggle() {
   const theme = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
 
   function toggle() {
-    const next = theme === "dark" ? "light" : "dark";
-    document.documentElement.setAttribute("data-theme", next);
-    localStorage.setItem("theme", next);
+    applyTheme(theme === "dark" ? "light" : "dark");
     window.dispatchEvent(new Event(THEME_EVENT));
   }
 

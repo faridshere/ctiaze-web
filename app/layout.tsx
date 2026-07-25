@@ -3,6 +3,7 @@ import { Newsreader, IBM_Plex_Sans, IBM_Plex_Mono } from "next/font/google";
 import { IntroSplash } from "@/components/IntroSplash";
 import { CommandPalette } from "@/components/CommandPalette";
 import { CustomCursor } from "@/components/CustomCursor";
+import { NetworkField } from "@/components/NetworkField";
 import "./globals.css";
 
 const headline = Newsreader({
@@ -55,15 +56,19 @@ export default function RootLayout({
     >
       <head>
         {/* Set theme before paint to avoid a flash of the wrong theme. Dark is
-            the CSS default (see globals.css) — this only ever needs to add
-            data-theme="light", never "dark". */}
+            the CSS default (see globals.css); this only ever needs to apply
+            light. Sets the same custom properties as lib/theme.ts's
+            applyTheme() directly via inline style (highest-priority in the
+            cascade, no dependency on any selector matching correctly) rather
+            than only toggling the attribute. */}
         <script
           dangerouslySetInnerHTML={{
-            __html: `try{var t=localStorage.getItem('theme');if(!t&&window.matchMedia('(prefers-color-scheme: light)').matches){t='light';}if(t==='light')document.documentElement.setAttribute('data-theme','light');}catch(e){}`,
+            __html: `try{var t=localStorage.getItem('theme');if(!t&&window.matchMedia('(prefers-color-scheme: light)').matches){t='light';}if(t==='light'){var r=document.documentElement;var v={"--surface":"#f9f9f7","--surface-raised":"#fcfcfb","--ink-primary":"#0b0b0b","--ink-secondary":"#52514e","--ink-muted":"#898781","--hairline":"#e1e0d9","--border":"rgba(11, 11, 11, 0.1)"};for(var k in v){r.style.setProperty(k,v[k]);}r.setAttribute('data-theme','light');}}catch(e){}`,
           }}
         />
       </head>
       <body className="min-h-screen bg-surface text-ink-primary font-body antialiased">
+        <NetworkField />
         <IntroSplash />
         <CommandPalette />
         <CustomCursor />
