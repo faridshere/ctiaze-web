@@ -8,22 +8,12 @@
    stays in restrained ink tones, deliberately un-colorful. That restraint IS
    the aesthetic: a wire service, not a SaaS dashboard.
    ------------------------------------------------------------------------- */
+/* Dark is the literal CSS default (not conditional on any media query) — the
+   previous version tried to express "dark unless explicitly light" via a
+   `:not([data-theme="light"])` rule under `prefers-color-scheme: dark`, which
+   left light mode dependent on that negation ever resolving correctly. A
+   single unconditional override is unambiguous: no attribute → dark, always. */
 :root {
-  --surface: #f9f9f7; /* page plane, light */
-  --surface-raised: #fcfcfb; /* row/card surface, light */
-  --ink-primary: #0b0b0b;
-  --ink-secondary: #52514e;
-  --ink-muted: #898781;
-  --hairline: #e1e0d9;
-  --border: rgba(11, 11, 11, 0.1);
-
-  --accent-critical: #d03b3b; /* KEV / actively exploited — light surface, 4.68:1 */
-  --accent-serious: #ec835a; /* high severity */
-  --accent-warning: #fab219; /* medium */
-  --accent-good: #0ca30c; /* reserved (e.g. "resolved") */
-}
-
-:root[data-theme="dark"] {
   --surface: #0d0d0d;
   --surface-raised: #1a1a19;
   --ink-primary: #ffffff;
@@ -38,21 +28,19 @@
   --accent-good: #0ca30c; /* dark surface, 5.19:1 */
 }
 
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-    --surface: #0d0d0d;
-    --surface-raised: #1a1a19;
-    --ink-primary: #ffffff;
-    --ink-secondary: #c3c2b7;
-    --ink-muted: #898781;
-    --hairline: #2c2c2a;
-    --border: rgba(255, 255, 255, 0.1);
+:root[data-theme="light"] {
+  --surface: #f9f9f7;
+  --surface-raised: #fcfcfb;
+  --ink-primary: #0b0b0b;
+  --ink-secondary: #52514e;
+  --ink-muted: #898781;
+  --hairline: #e1e0d9;
+  --border: rgba(11, 11, 11, 0.1);
 
-    --accent-critical: #d03b3b;
-    --accent-serious: #ec835a;
-    --accent-warning: #fab219;
-    --accent-good: #0ca30c;
-  }
+  --accent-critical: #d03b3b; /* light surface, 4.68:1 */
+  --accent-serious: #ec835a;
+  --accent-warning: #fab219;
+  --accent-good: #0ca30c;
 }
 
 @theme inline {
@@ -138,4 +126,17 @@ body {
     animation: none;
     transform: scaleX(1);
   }
+}
+
+/* Drop cap on the lead story's opening paragraph only — a print-editorial
+   touch reserved for the one place it earns its keep. */
+.drop-cap::first-letter {
+  float: left;
+  font-family: var(--font-headline);
+  font-style: italic;
+  font-size: 3.4em;
+  line-height: 0.78;
+  padding-right: 0.09em;
+  padding-top: 0.04em;
+  color: var(--ink-primary);
 }

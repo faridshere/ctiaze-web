@@ -75,7 +75,11 @@ function LeadStory({ story }: { story: Story }) {
       </h1>
 
       {story.bodyAz && (
-        <p className="mt-4 text-base sm:text-lg leading-relaxed text-ink-secondary max-w-2xl">
+        <p
+          className={`mt-4 text-base sm:text-lg leading-relaxed text-ink-secondary max-w-2xl ${
+            story.bodyAz.length > 90 ? "drop-cap" : ""
+          }`}
+        >
           {story.bodyAz}
         </p>
       )}

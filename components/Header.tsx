@@ -2,6 +2,7 @@ import Link from "next/link";
 import { ThemeToggle } from "./ThemeToggle";
 import { LiveStatus } from "./LiveStatus";
 import { SearchTrigger } from "./SearchTrigger";
+import { CtiazeMark } from "./CtiazeMark";
 
 export function Header() {
   return (
@@ -19,12 +20,15 @@ export function Header() {
       </div>
 
       <div className="mx-auto max-w-5xl px-4 flex items-end justify-between py-5">
-        <Link href="/" className="group">
-          <span className="block font-headline italic text-3xl sm:text-4xl tracking-tight text-ink-primary">
-            ctiaze
-          </span>
-          <span className="block font-mono text-[10px] uppercase tracking-[0.28em] text-ink-muted mt-1.5">
-            kiber-təhlükə kəşfiyyatı jurnalı
+        <Link href="/" className="group flex items-center gap-3">
+          <CtiazeMark className="size-7 sm:size-8 text-ink-primary shrink-0" />
+          <span>
+            <span className="block font-headline italic text-3xl sm:text-4xl tracking-tight text-ink-primary">
+              ctiaze
+            </span>
+            <span className="block font-mono text-[10px] uppercase tracking-[0.28em] text-ink-muted mt-1.5">
+              kiber-təhlükə kəşfiyyatı jurnalı
+            </span>
           </span>
         </Link>
         <nav className="flex items-center gap-5">
