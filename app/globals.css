@@ -1,26 +1,83 @@
 @import "tailwindcss";
 
+/* ---------------------------------------------------------------------------
+   Design tokens — validated palette (dataviz skill: status colors + ink/surface
+   tokens), NOT eyeballed. Dark is the primary/default mode (SOC/CTI audience),
+   light is a fully-specified alternate, not an automatic flip. A single accent
+   (critical) is reserved for KEV/actively-exploited signal — everything else
+   stays in restrained ink tones, deliberately un-colorful. That restraint IS
+   the aesthetic: a wire service, not a SaaS dashboard.
+   ------------------------------------------------------------------------- */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --surface: #f9f9f7; /* page plane, light */
+  --surface-raised: #fcfcfb; /* row/card surface, light */
+  --ink-primary: #0b0b0b;
+  --ink-secondary: #52514e;
+  --ink-muted: #898781;
+  --hairline: #e1e0d9;
+  --border: rgba(11, 11, 11, 0.1);
+
+  --accent-critical: #d03b3b; /* KEV / actively exploited — light surface, 4.68:1 */
+  --accent-serious: #ec835a; /* high severity */
+  --accent-warning: #fab219; /* medium */
+  --accent-good: #0ca30c; /* reserved (e.g. "resolved") */
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+:root[data-theme="dark"] {
+  --surface: #0d0d0d;
+  --surface-raised: #1a1a19;
+  --ink-primary: #ffffff;
+  --ink-secondary: #c3c2b7;
+  --ink-muted: #898781;
+  --hairline: #2c2c2a;
+  --border: rgba(255, 255, 255, 0.1);
+
+  --accent-critical: #d03b3b; /* dark surface, 3.62:1 */
+  --accent-serious: #ec835a; /* dark surface, 6.60:1 */
+  --accent-warning: #fab219; /* dark surface, 9.49:1 */
+  --accent-good: #0ca30c; /* dark surface, 5.19:1 */
 }
 
 @media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+  :root:not([data-theme="light"]) {
+    --surface: #0d0d0d;
+    --surface-raised: #1a1a19;
+    --ink-primary: #ffffff;
+    --ink-secondary: #c3c2b7;
+    --ink-muted: #898781;
+    --hairline: #2c2c2a;
+    --border: rgba(255, 255, 255, 0.1);
+
+    --accent-critical: #d03b3b;
+    --accent-serious: #ec835a;
+    --accent-warning: #fab219;
+    --accent-good: #0ca30c;
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+@theme inline {
+  --color-surface: var(--surface);
+  --color-surface-raised: var(--surface-raised);
+  --color-ink-primary: var(--ink-primary);
+  --color-ink-secondary: var(--ink-secondary);
+  --color-ink-muted: var(--ink-muted);
+  --color-hairline: var(--hairline);
+  --color-border: var(--border);
+  --color-accent-critical: var(--accent-critical);
+  --color-accent-serious: var(--accent-serious);
+  --color-accent-warning: var(--accent-warning);
+  --color-accent-good: var(--accent-good);
+
+  --font-headline: var(--font-headline);
+  --font-body: var(--font-body);
+  --font-mono: var(--font-mono);
+}
+
+* {
+  border-color: var(--border);
+}
+
+::selection {
+  background: var(--accent-critical);
+  color: #ffffff;
 }
