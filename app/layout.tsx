@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Newsreader, IBM_Plex_Sans, IBM_Plex_Mono } from "next/font/google";
+import { Analytics } from "@vercel/analytics/next";
 import { IntroSplash } from "@/components/IntroSplash";
 import { CommandPalette } from "@/components/CommandPalette";
 import { CustomCursor } from "@/components/CustomCursor";
@@ -61,6 +62,7 @@ export default function RootLayout({
         <CommandPalette />
         <CustomCursor />
         {children}
+        <Analytics />
       </body>
     </html>
   );
