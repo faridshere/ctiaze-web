@@ -1,7 +1,7 @@
-import Link from "next/link";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { StoryRow } from "@/components/StoryRow";
+import { StoryLink } from "@/components/StoryLink";
 import { Ticker } from "@/components/Ticker";
 import { DispatchBar } from "@/components/DispatchBar";
 import { LiveUpdateBanner } from "@/components/LiveUpdateBanner";
@@ -59,8 +59,9 @@ function LeadStory({ story }: { story: Story }) {
   const { time, date } = formatStoryDate(story.publishedAt);
 
   return (
-    <Link
-      href={`/xeber/${story.slug}`}
+    <StoryLink
+      slug={story.slug}
+      title={story.titleAz}
       className="group block -mx-4 px-4 pt-9 pb-9 border-b-[3px] border-ink-primary hover:bg-surface-raised/50 transition-colors"
     >
       <div className="flex items-center gap-3 font-mono text-[11px] text-ink-muted mb-3">
@@ -92,6 +93,6 @@ function LeadStory({ story }: { story: Story }) {
       <span className="mt-4 inline-flex items-center gap-1.5 font-mono text-[11px] uppercase tracking-wider text-ink-muted group-hover:text-ink-primary transition-colors">
         tam oxu <span aria-hidden>→</span>
       </span>
-    </Link>
+    </StoryLink>
   );
 }

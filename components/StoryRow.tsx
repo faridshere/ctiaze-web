@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { StoryLink } from "./StoryLink";
 import { SeverityMarker } from "./SeverityMarker";
 import { formatStoryDate } from "@/lib/format";
 import type { Story } from "@/lib/types";
@@ -9,8 +9,9 @@ export function StoryRow({ story, index }: { story: Story; index: number }) {
   const flagged = story.kev || story.severity === "critical";
 
   return (
-    <Link
-      href={`/xeber/${story.slug}`}
+    <StoryLink
+      slug={story.slug}
+      title={story.titleAz}
       className={`group flex gap-3 py-5 border-b border-hairline border-l-[3px] first:pt-0 hover:bg-surface-raised/60 -mx-4 pl-[13px] pr-4 transition-colors ${
         flagged ? "border-l-accent-critical" : "border-l-transparent"
       }`}
@@ -43,6 +44,6 @@ export function StoryRow({ story, index }: { story: Story; index: number }) {
           </p>
         )}
       </div>
-    </Link>
+    </StoryLink>
   );
 }
