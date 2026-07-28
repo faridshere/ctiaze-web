@@ -1,31 +1,65 @@
 @import "tailwindcss";
 
 /* ---------------------------------------------------------------------------
-   ctiaze — a single, committed dark theme. No light mode, no toggle: the
-   audience is SOC/CTI, the surface is a monitoring console, and one
-   deliberately-tuned palette reads more finished than a switch that has to
-   look right two ways. Status color is the ONLY functional color (KEV /
-   severity); everything else lives in restrained ink tones. Values below are
-   the validated dark palette (dataviz skill), kept verbatim so contrast is
-   never re-guessed.
+   ctiaze — "Xəzər Standard": a dual-register intelligence product.
+
+   Editorial surfaces (home, story, about) render in a warm "daylight briefing"
+   (Bone White) — calm, credible, forwardable by a CISO. Operational tools
+   (/exposure, /kripto) render in a purpose-built "instrument mode" (Ops Black,
+   green-cast) — dense, mono, for practitioners. One ownable brand hue, Caspian
+   teal, binds both. Severity color is functional-only and never the brand.
+
+   Architecture: the SAME token names carry both registers. :root is the light
+   default; a `.ops` wrapper (put on the tool pages) overrides the tokens to the
+   dark instrument palette, so every component adapts with zero markup churn.
    ------------------------------------------------------------------------- */
 :root {
-  --surface: #0c0c0d;
-  --surface-raised: #17171a;
-  --ink-primary: #f4f4ef;
-  --ink-secondary: #b9b8ad;
-  --ink-muted: #6f6e68;
-  --hairline: #232326;
-  --border: rgba(255, 255, 255, 0.08);
+  /* editorial / daylight (default) */
+  --surface: #fafaf7; /* Bone White — warm, print-like */
+  --surface-raised: #ffffff; /* Card White */
+  --ink-primary: #14181c; /* Ink (~16:1 on Bone) */
+  --ink-secondary: #5b6470; /* Slate (AA) */
+  --ink-muted: #8b93a1; /* meta / timestamps — large & caption sizes only */
+  --hairline: #e5e3db;
+  --border: rgba(20, 24, 28, 0.09);
 
-  --accent-critical: #e0514f; /* KEV / actively exploited */
-  --accent-serious: #ec835a; /* high severity */
-  --accent-warning: #fab219; /* medium */
-  --accent-good: #35b135; /* live / operational */
+  --brand: #0e7c6b; /* Xəzər Teal — links, CTAs, chart bars, focus */
+  --brand-wash: #eaf3f0; /* tinted panels: digest card, selected rows */
+
+  --accent-critical: #c43d35; /* KEV / actively-exploited (AA on Bone) */
+  --accent-serious: #a8480f; /* high severity (dark orange, AA) */
+  --accent-warning: #946300; /* medium (dark amber, AA) */
+  --accent-good: #1e7a3d; /* live / verified / grounded */
+
+  --shadow-card: 0 1px 2px rgba(20, 24, 28, 0.04), 0 3px 10px rgba(20, 24, 28, 0.05);
 
   --font-headline: var(--font-headline);
   --font-body: var(--font-body);
   --font-mono: var(--font-mono);
+}
+
+/* operational / instrument mode — applied via a `.ops` wrapper on tool pages */
+.ops {
+  --surface: #0d1210; /* Ops Black — green-cast, distinct from old neutral black */
+  --surface-raised: #141b18; /* Ops Panel */
+  --ink-primary: #f1f5f3;
+  --ink-secondary: #a9b4ae;
+  --ink-muted: #6b7671;
+  --hairline: #1e2622;
+  --border: rgba(255, 255, 255, 0.07);
+
+  --brand: #2fbfa4; /* Signal Teal (8:1 on Ops Black) */
+  --brand-wash: rgba(47, 191, 164, 0.08);
+
+  --accent-critical: #e0514f; /* severity ramp retained for dark */
+  --accent-serious: #ec835a;
+  --accent-warning: #fab219;
+  --accent-good: #35b135;
+
+  --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.4);
+  color-scheme: dark;
+  background: var(--surface);
+  color: var(--ink-primary);
 }
 
 @theme inline {
@@ -36,6 +70,8 @@
   --color-ink-muted: var(--ink-muted);
   --color-hairline: var(--hairline);
   --color-border: var(--border);
+  --color-brand: var(--brand);
+  --color-brand-wash: var(--brand-wash);
   --color-accent-critical: var(--accent-critical);
   --color-accent-serious: var(--accent-serious);
   --color-accent-warning: var(--accent-warning);
@@ -51,111 +87,31 @@
 }
 
 ::selection {
-  background: var(--accent-critical);
+  background: var(--brand);
   color: #ffffff;
 }
 
 html {
-  color-scheme: dark;
+  color-scheme: light;
 }
 
-/* Faint tileable grain + a hairline scan-grid, both baked into the page paint
-   (not overlay elements, so they never touch stacking or clicks). The grid is
-   the quiet "console" substrate; the radar canvas (NetworkField) rides above
-   it. */
 body {
   background-color: var(--surface);
-  background-image:
-    linear-gradient(var(--border) 1px, transparent 1px),
-    linear-gradient(90deg, var(--border) 1px, transparent 1px),
-    url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHdpZHRoPScyMDAnIGhlaWdodD0nMjAwJz48ZmlsdGVyIGlkPSduJz48ZmVUdXJidWxlbmNlIHR5cGU9J2ZyYWN0YWxOb2lzZScgYmFzZUZyZXF1ZW5jeT0nMC45JyBudW1PY3RhdmVzPScyJyBzdGl0Y2hUaWxlcz0nc3RpdGNoJy8+PGZlQ29sb3JNYXRyaXggdHlwZT0nbWF0cml4JyB2YWx1ZXM9JzAgMCAwIDAgMCAwIDAgMCAwIDAgMCAwIDAgMCAwIDAgMCAwIDAuMDQgMCcvPjwvZmlsdGVyPjxyZWN0IHdpZHRoPScxMDAlJyBoZWlnaHQ9JzEwMCUnIGZpbHRlcj0ndXJsKCUyM24pJy8+PC9zdmc+");
-  background-size:
-    64px 64px,
-    64px 64px,
-    200px 200px;
-  background-position: center top;
-}
-
-/* Ticker marquee — one duplicated track scrolling exactly -50% for a seamless
-   loop. Pauses on hover so a headline can actually be read/clicked-toward. */
-@keyframes ticker-scroll {
-  from {
-    transform: translateX(0);
-  }
-  to {
-    transform: translateX(-50%);
-  }
-}
-
-.ticker-viewport {
-  animation: ticker-scroll 48s linear infinite;
-}
-
-.ticker-viewport:hover {
-  animation-play-state: paused;
-}
-
-/* Intro splash rule — draws itself left-to-right once on mount. */
-.intro-rule {
-  display: block;
-  width: 72px;
-  height: 2px;
-  background: var(--ink-primary);
-  transform: scaleX(0);
-  transform-origin: center;
-  animation: intro-draw 620ms ease-out 150ms forwards;
-}
-
-@keyframes intro-draw {
-  to {
-    transform: scaleX(1);
-  }
-}
-
-/* Drop cap on the lead story's opening paragraph only — a print-editorial
-   touch reserved for the one place it earns its keep. */
-.drop-cap::first-letter {
-  float: left;
-  font-family: var(--font-headline);
-  font-style: italic;
-  font-size: 3.4em;
-  line-height: 0.78;
-  padding-right: 0.09em;
-  padding-top: 0.04em;
   color: var(--ink-primary);
 }
 
-/* A soft blip that travels along the dispatch bar's baseline — subliminal
-   "signal is live" pulse, not a load-bearing animation. */
-@keyframes dispatch-scan {
-  0% {
-    transform: translateX(-100%);
-    opacity: 0;
-  }
-  8%,
-  92% {
-    opacity: 1;
-  }
-  100% {
-    transform: translateX(100%);
-    opacity: 0;
-  }
-}
-
-.dispatch-scan {
-  animation: dispatch-scan 9s linear infinite;
+/* Reusable focus ring in the brand hue. */
+.focus-brand:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .ticker-viewport,
-  .dispatch-scan {
-    animation: none;
-  }
-  .intro-rule {
-    animation: none;
-    transform: scaleX(1);
-  }
-  .dispatch-scan {
-    display: none;
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
   }
 }

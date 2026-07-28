@@ -10,7 +10,7 @@ export function CtiazeMark({ className = "size-5" }: { className?: string }) {
         <path d="M28 21v7h-7" />
         <path d="M11 28H4v-7" />
       </g>
-      <circle cx="16" cy="16" r="2.4" className="fill-accent-critical" />
+      <circle cx="16" cy="16" r="2.4" className="fill-brand" />
     </svg>
   );
 }

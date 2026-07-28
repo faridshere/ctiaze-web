@@ -80,7 +80,7 @@ export function CryptoLookup() {
           value={chain}
           onChange={(e) => setChain(e.target.value)}
           aria-label="Blokçeyn"
-          className="shrink-0 rounded-sm border border-hairline bg-surface px-3 py-2.5 font-mono text-sm text-ink-primary focus:border-accent-critical focus:outline-none"
+          className="shrink-0 rounded-sm border border-hairline bg-surface px-3 py-2.5 font-mono text-sm text-ink-primary focus:border-brand focus:outline-none"
         >
           {CHAINS.map(([v, label]) => (
             <option key={v} value={v}>
@@ -95,12 +95,12 @@ export function CryptoLookup() {
           spellCheck={false}
           placeholder="Kripto ünvanı yapışdırın"
           aria-label="Kripto ünvanı"
-          className="flex-1 rounded-sm border border-hairline bg-surface px-3.5 py-2.5 font-mono text-sm text-ink-primary placeholder:text-ink-muted focus:border-accent-critical focus:outline-none"
+          className="flex-1 rounded-sm border border-hairline bg-surface px-3.5 py-2.5 font-mono text-sm text-ink-primary placeholder:text-ink-muted focus:border-brand focus:outline-none"
         />
         <button
           type="submit"
           disabled={loading || !address.trim()}
-          className="rounded-sm bg-accent-critical px-4 py-2.5 font-mono text-xs uppercase tracking-widest text-white transition-opacity hover:opacity-90 disabled:opacity-40"
+          className="rounded-sm bg-brand px-4 py-2.5 font-mono text-xs font-semibold uppercase tracking-widest text-[#07110e] transition-opacity hover:opacity-90 disabled:opacity-40"
         >
           Yoxla
         </button>

@@ -69,7 +69,7 @@ export default async function StoryPage({
 
         <div className="mt-6 h-px w-full bg-hairline" />
 
-        <p className="mt-7 text-lg leading-[1.75] text-ink-secondary whitespace-pre-line drop-cap">
+        <p className="mt-7 text-lg leading-[1.75] text-ink-secondary whitespace-pre-line">
           {story.bodyAz}
         </p>
 

@@ -3,58 +3,47 @@ import { LiveStatus } from "./LiveStatus";
 import { SearchTrigger } from "./SearchTrigger";
 import { CtiazeMark } from "./CtiazeMark";
 
+const NAV = [
+  ["/", "Xəbərlər"],
+  ["/exposure", "Exposure"],
+  ["/kripto", "Kripto"],
+  ["/haqqinda", "Haqqında"],
+];
+
 export function Header() {
   return (
-    <header>
-      <div className="mx-auto max-w-5xl px-4 flex items-center justify-between h-9 border-b border-hairline">
-        <LiveStatus />
-        <a
-          href="https://t.me/ctiaze"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="hidden sm:inline font-mono text-[10px] uppercase tracking-[0.18em] text-ink-muted hover:text-ink-primary transition-colors"
-        >
-          @ctiaze — telegram ↗
-        </a>
-      </div>
-
-      <div className="mx-auto max-w-5xl px-4 flex items-end justify-between gap-4 py-6">
-        <Link href="/" className="group flex items-center gap-3.5">
-          <CtiazeMark className="size-8 sm:size-9 text-ink-primary shrink-0 transition-transform group-hover:scale-105" />
-          <span>
-            <span className="block font-headline italic text-3xl sm:text-[2.6rem] leading-none tracking-tight text-ink-primary">
-              ctiaze
-            </span>
-            <span className="mt-2 block font-mono text-[9.5px] sm:text-[10px] uppercase tracking-[0.3em] text-ink-muted">
-              kiber-təhlükə kəşfiyyatı jurnalı
-            </span>
+    <header className="border-b border-hairline">
+      <div className="mx-auto flex h-16 max-w-6xl items-center gap-6 px-4">
+        <Link href="/" className="group flex items-center gap-2.5 shrink-0">
+          <CtiazeMark className="size-6 text-ink-primary transition-transform group-hover:scale-105" />
+          <span className="font-headline text-xl font-bold tracking-tight text-ink-primary">
+            ctiaze
           </span>
         </Link>
-        <nav className="flex items-center gap-5 pb-1">
-          <SearchTrigger />
-          <Link
-            href="/exposure"
-            className="hidden sm:inline font-mono text-xs text-ink-muted hover:text-ink-primary transition-colors"
-          >
-            ekspozisiya
-          </Link>
-          <Link
-            href="/kripto"
-            className="hidden sm:inline font-mono text-xs text-ink-muted hover:text-ink-primary transition-colors"
-          >
-            kripto
-          </Link>
-          <Link
-            href="/haqqinda"
-            className="font-mono text-xs text-ink-muted hover:text-ink-primary transition-colors"
-          >
-            haqqında
-          </Link>
-        </nav>
-      </div>
 
-      <div className="border-t-[3px] border-ink-primary" />
-      <div className="border-t border-hairline mt-[3px]" />
+        <nav className="hidden items-center gap-6 sm:flex">
+          {NAV.map(([href, label]) => (
+            <Link
+              key={href}
+              href={href}
+              className="text-sm text-ink-secondary transition-colors hover:text-ink-primary"
+            >
+              {label}
+            </Link>
+          ))}
+        </nav>
+
+        <div className="ml-auto flex items-center gap-3.5">
+          <span className="hidden items-center gap-2 rounded-full border border-hairline px-2.5 py-1 md:inline-flex">
+            <span className="relative flex size-1.5">
+              <span className="absolute inline-flex size-full animate-ping rounded-full bg-accent-good opacity-60" />
+              <span className="relative inline-flex size-1.5 rounded-full bg-accent-good" />
+            </span>
+            <LiveStatus />
+          </span>
+          <SearchTrigger />
+        </div>
+      </div>
     </header>
   );
 }

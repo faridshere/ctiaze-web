@@ -1,29 +1,27 @@
 import type { Metadata } from "next";
-import { Newsreader, IBM_Plex_Sans, IBM_Plex_Mono } from "next/font/google";
+import { Archivo, Inter, JetBrains_Mono } from "next/font/google";
 import { Analytics } from "@vercel/analytics/next";
-import { IntroSplash } from "@/components/IntroSplash";
 import { CommandPalette } from "@/components/CommandPalette";
-import { CustomCursor } from "@/components/CustomCursor";
-import { NetworkField } from "@/components/NetworkField";
-import { HudFrame } from "@/components/HudFrame";
 import "./globals.css";
 
-const headline = Newsreader({
+// Xəzər Standard type system: Archivo (product grotesk) for display, Inter for
+// UI/body, JetBrains Mono for all data/evidence. All three load latin + latin-
+// ext so Azerbaijani ə (U+0259) renders correctly.
+const headline = Archivo({
   variable: "--font-headline",
-  subsets: ["latin"],
-  style: ["normal", "italic"],
-  weight: ["400", "500", "600"],
+  subsets: ["latin", "latin-ext"],
+  weight: ["500", "600", "700"],
 });
 
-const body = IBM_Plex_Sans({
+const body = Inter({
   variable: "--font-body",
-  subsets: ["latin"],
+  subsets: ["latin", "latin-ext"],
   weight: ["400", "500", "600"],
 });
 
-const mono = IBM_Plex_Mono({
+const mono = JetBrains_Mono({
   variable: "--font-mono",
-  subsets: ["latin"],
+  subsets: ["latin", "latin-ext"],
   weight: ["400", "500"],
 });
 
@@ -56,11 +54,7 @@ export default function RootLayout({
       className={`${headline.variable} ${body.variable} ${mono.variable}`}
     >
       <body className="min-h-screen bg-surface text-ink-primary font-body antialiased">
-        <NetworkField />
-        <HudFrame />
-        <IntroSplash />
         <CommandPalette />
-        <CustomCursor />
         {children}
         <Analytics />
       </body>

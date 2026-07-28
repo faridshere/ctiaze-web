@@ -16,10 +16,10 @@ const EXAMPLES: [string, string, string][] = [
 
 export default function KriptoPage() {
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="ops min-h-screen flex flex-col">
       <Header />
       <main className="flex-1 mx-auto w-full max-w-3xl px-4 py-14 sm:py-20">
-        <p className="font-mono text-xs uppercase tracking-[0.2em] text-accent-critical">
+        <p className="font-mono text-xs uppercase tracking-[0.2em] text-brand">
           On-chain kəşfiyyat · Blockchair
         </p>
         <h1 className="mt-3 font-headline text-3xl sm:text-4xl text-ink-primary text-balance">

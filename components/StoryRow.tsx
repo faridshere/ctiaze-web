@@ -3,25 +3,27 @@ import { SeverityMarker } from "./SeverityMarker";
 import { formatStoryDate } from "@/lib/format";
 import type { Story } from "@/lib/types";
 
-export function StoryRow({ story, index }: { story: Story; index: number }) {
+export function StoryRow({ story }: { story: Story }) {
   const { time, date } = formatStoryDate(story.publishedAt);
-  const excerpt = story.bodyAz.length > 140 ? story.bodyAz.slice(0, 140).trim() + "…" : story.bodyAz;
+  const excerpt =
+    story.bodyAz.length > 150 ? story.bodyAz.slice(0, 150).trim() + "…" : story.bodyAz;
   const flagged = story.kev || story.severity === "critical";
 
   return (
     <StoryLink
       slug={story.slug}
       title={story.titleAz}
-      className={`group flex gap-3 py-5 border-b border-hairline border-l-[3px] first:pt-0 hover:bg-surface-raised/60 -mx-4 pl-[13px] pr-4 transition-colors ${
+      className={`group -mx-3 flex gap-4 rounded-md border-l-2 py-5 pl-3 pr-3 transition-colors hover:bg-surface-raised hover:shadow-[var(--shadow-card)] ${
         flagged ? "border-l-accent-critical" : "border-l-transparent"
       }`}
     >
-      <span className="hidden sm:block shrink-0 w-6 pt-0.5 font-mono text-[11px] text-ink-muted/50 tabular-nums">
-        {String(index).padStart(2, "0")}
-      </span>
       <div className="min-w-0 flex-1">
-        <div className="flex items-baseline gap-3 font-mono text-[11px] text-ink-muted mb-2">
-          <time dateTime={story.publishedAt} title={`${date} · ${time} (Baku)`}>
+        <div className="mb-2 flex flex-wrap items-center gap-x-3 gap-y-1 font-mono text-[11px] text-ink-muted">
+          <time
+            dateTime={story.publishedAt}
+            title={`${date} · ${time} (Baku)`}
+            className="tabular-nums"
+          >
             {time}
           </time>
           <SeverityMarker kev={story.kev} severity={story.severity} />
@@ -34,9 +36,9 @@ export function StoryRow({ story, index }: { story: Story; index: number }) {
           {story.cveIds[0] && <span>{story.cveIds[0]}</span>}
         </div>
 
-        <h2 className="font-headline text-[1.35rem] leading-snug text-ink-primary">
+        <h3 className="font-headline text-[1.25rem] font-semibold leading-snug tracking-tight text-ink-primary group-hover:text-brand">
           {story.titleAz}
-        </h2>
+        </h3>
 
         {excerpt && (
           <p className="mt-1.5 text-[0.95rem] leading-relaxed text-ink-secondary line-clamp-2">

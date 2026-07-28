@@ -64,7 +64,7 @@ export default async function ExposurePage() {
 
   if (!snap) {
     return (
-      <div className="min-h-screen flex flex-col">
+      <div className="ops min-h-screen flex flex-col">
         <Header />
         <main className="flex-1 mx-auto w-full max-w-2xl px-4 py-20">
           <h1 className="font-headline text-3xl text-ink-primary">
@@ -89,10 +89,10 @@ export default async function ExposurePage() {
   const watchlist = snap.watchlist ?? [];
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="ops min-h-screen flex flex-col">
       <Header />
       <main className="flex-1 mx-auto w-full max-w-3xl px-4 py-14 sm:py-20">
-        <p className="font-mono text-xs uppercase tracking-[0.2em] text-accent-critical">
+        <p className="font-mono text-xs uppercase tracking-[0.2em] text-brand">
           Canlı yoxlama · Shodan
         </p>
         <h1 className="mt-3 font-headline text-3xl sm:text-4xl text-ink-primary text-balance">
@@ -109,7 +109,7 @@ export default async function ExposurePage() {
         </div>
 
         {/* national snapshot */}
-        <p className="mt-16 font-mono text-xs uppercase tracking-[0.2em] text-accent-critical">
+        <p className="mt-16 font-mono text-xs uppercase tracking-[0.2em] text-brand">
           Azərbaycan · milli mənzərə
         </p>
 
