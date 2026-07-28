@@ -33,6 +33,12 @@ export function Header() {
         <nav className="flex items-center gap-5 pb-1">
           <SearchTrigger />
           <Link
+            href="/exposure"
+            className="hidden sm:inline font-mono text-xs text-ink-muted hover:text-ink-primary transition-colors"
+          >
+            ekspozisiya
+          </Link>
+          <Link
             href="/haqqinda"
             className="font-mono text-xs text-ink-muted hover:text-ink-primary transition-colors"
           >
