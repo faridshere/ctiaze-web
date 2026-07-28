@@ -19,9 +19,19 @@ any time to steer what gets attention — add, remove, or reprioritize items.
 - [ ] Any TypeScript/lint warnings introduced since the last check.
 - [ ] Mobile responsiveness spot-check after any layout change.
 
+## Pending Farid's go-ahead (researched, DO NOT build unattended — see
+## memory: ctiaze-platform-roadmap.md for the full research + reasoning)
+- [ ] IOC/CVE lookup tool (paste CVE/IP/domain/hash, get AbuseIPDB + GreyNoise
+      + NVD + own-archive back). Zero LLM cost, zero infra cost. Build on a
+      branch and get sign-off before merging once Farid says go.
+- [ ] Public JSON/RSS feed export (`getStories()` reuse) — lower-risk, could
+      ask about building this one proactively since it's genuinely trivial
+      and additive, but still flag it rather than just shipping it.
+
 ## Guardrails (see CLAUDE.md for the full autonomous-work policy)
 - Safe to fix directly: genuine bugs with verification, dependency patch
   bumps, dead code cleanup, small copy fixes.
 - Flag, don't touch without morning approval: design/layout changes beyond a
   trivial fix, new paid services/integrations, anything touching the
-  read-only Mongo credential or env vars.
+  read-only Mongo credential or env vars, AND the pending roadmap items above
+  even though they're zero-cost — new product surfaces need Farid's nod.
