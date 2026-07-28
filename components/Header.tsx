@@ -44,6 +44,20 @@ export function Header() {
           <SearchTrigger />
         </div>
       </div>
+
+      {/* Mobile nav — the desktop nav is hidden on small screens, so surface the
+          tabs (Exposure / Kripto must be reachable) as a scrollable row. */}
+      <nav className="flex items-center gap-6 overflow-x-auto border-t border-hairline px-4 py-2.5 sm:hidden">
+        {NAV.map(([href, label]) => (
+          <Link
+            key={href}
+            href={href}
+            className="whitespace-nowrap text-sm text-ink-secondary transition-colors hover:text-ink-primary"
+          >
+            {label}
+          </Link>
+        ))}
+      </nav>
     </header>
   );
 }
