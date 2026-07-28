@@ -39,6 +39,12 @@ export function Header() {
             ekspozisiya
           </Link>
           <Link
+            href="/kripto"
+            className="hidden sm:inline font-mono text-xs text-ink-muted hover:text-ink-primary transition-colors"
+          >
+            kripto
+          </Link>
+          <Link
             href="/haqqinda"
             className="font-mono text-xs text-ink-muted hover:text-ink-primary transition-colors"
           >
