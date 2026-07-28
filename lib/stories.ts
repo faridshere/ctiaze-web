@@ -57,6 +57,43 @@ export async function getLatestSignal(): Promise<{ count: number }> {
   return { count };
 }
 
+const SITE = "https://ctiaze.tech";
+
+// Public, machine-readable shape for feed.json / RSS / MCP consumers. Only
+// fields that are safe and useful to expose — no internal scoring internals
+// beyond what's already visible on the site. snake_case because this is an
+// external data contract (matches the pipeline's own field naming).
+export type FeedItem = {
+  id: string;
+  title_az: string;
+  title_en: string;
+  url: string; // stable permalink on ctiaze.tech
+  source_url: string;
+  category: string;
+  severity: string | null;
+  kev: boolean;
+  cve_ids: string[];
+  region_relevant: boolean;
+  published_at: string; // ISO 8601
+};
+
+export async function getFeed(limit = 100): Promise<FeedItem[]> {
+  const stories = await getStories(limit);
+  return stories.map((s) => ({
+    id: s.id,
+    title_az: s.titleAz,
+    title_en: s.titleEn,
+    url: `${SITE}/xeber/${s.slug}`,
+    source_url: s.sourceUrl,
+    category: s.category,
+    severity: s.severity,
+    kev: s.kev,
+    cve_ids: s.cveIds,
+    region_relevant: s.region,
+    published_at: s.publishedAt,
+  }));
+}
+
 export type SearchEntry = {
   slug: string;
   titleAz: string;
