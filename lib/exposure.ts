@@ -19,6 +19,7 @@ export type RegionalRow = {
   smb: number;
   telnet: number;
 };
+export type WatchlistItem = { name: string; note: string; count: number };
 
 export type ExposureSnapshot = {
   _id: string;
@@ -31,6 +32,7 @@ export type ExposureSnapshot = {
   top_products: ProductCount[];
   cities?: CityCount[]; // optional: older snapshots predate these
   regional?: RegionalRow[];
+  watchlist?: WatchlistItem[];
   source: string;
 };
 

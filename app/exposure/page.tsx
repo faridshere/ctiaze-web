@@ -86,6 +86,7 @@ export default async function ExposurePage() {
   const maxRdp = Math.max(1, ...regional.map((r) => r.rdp));
   const cities = snap.cities ?? [];
   const maxCity = Math.max(1, ...cities.map((c) => c.count));
+  const watchlist = snap.watchlist ?? [];
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -157,6 +158,44 @@ export default async function ExposurePage() {
             </div>
           ))}
         </section>
+
+        {/* SOC watchlist */}
+        {watchlist.length > 0 && (
+          <section className="mt-16">
+            <h2 className="font-mono text-xs uppercase tracking-[0.18em] text-accent-serious">
+              SOC izləmə siyahısı · kütləvi istismar hədəfləri
+            </h2>
+            <p className="mt-3 max-w-xl text-sm text-ink-secondary">
+              APT və ransomware kampaniyalarında ən çox istismar olunan perimetr
+              texnologiyaları (VPN, mail, virtualizasiya) — Azərbaycanda internetə
+              açıq nüsxələr. Bunlar CISA KEV siyahısında təkrar-təkrar görünən
+              hədəflərdir.
+            </p>
+            <div className="mt-5 border-y border-hairline">
+              {watchlist.map((w) => (
+                <div
+                  key={w.name}
+                  className="flex items-start justify-between gap-4 border-t border-hairline py-3.5 first:border-t-0"
+                >
+                  <div className="min-w-0">
+                    <div className="text-sm text-ink-primary">{w.name}</div>
+                    <div className="mt-0.5 text-[13px] leading-snug text-ink-muted">
+                      {w.note}
+                    </div>
+                  </div>
+                  <div className="shrink-0 whitespace-nowrap pt-0.5 text-right">
+                    <span className="font-mono text-lg text-accent-serious tabular-nums">
+                      {w.count.toLocaleString("en-US")}
+                    </span>
+                    <span className="ml-1 font-mono text-[10px] uppercase tracking-widest text-ink-muted">
+                      host
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
 
         {/* regional comparison */}
         {regional.length > 0 && (
