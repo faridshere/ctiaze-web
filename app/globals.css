@@ -37,7 +37,7 @@
   --surface-raised: #ffffff; /* Card White */
   --ink-primary: #14181c; /* Ink (~16:1 on Bone) */
   --ink-secondary: #5b6470; /* Slate (AA) */
-  --ink-muted: #8b93a1; /* meta / timestamps — large & caption sizes only */
+  --ink-muted: #6b7280; /* meta / timestamps — darkened to pass WCAG AA on Bone */
   --hairline: #e5e3db;
   --border: rgba(20, 24, 28, 0.09);
   --brand: #0e7c6b; /* Xəzər Teal — links, CTAs, chart bars, focus */
@@ -138,10 +138,19 @@ body {
   color: var(--ink-primary);
 }
 
-/* Reusable focus ring in the brand hue. */
-.focus-brand:focus-visible {
+/* Dark tool pages (.ops) sit above the page body; without this the light body
+   flashes on scroll overscroll / behind the scrollbar. Match the underlay. */
+body:has(.ops) {
+  background-color: var(--d-surface);
+}
+
+/* Visible keyboard focus everywhere — the `*{border-color}` reset was defeating
+   the inputs' focus:border, so use an outline (unaffected by border-color) so
+   focus is never invisible. :where() keeps specificity at 0. */
+:where(a, button, input, select, textarea, [tabindex]):focus-visible {
   outline: 2px solid var(--brand);
   outline-offset: 2px;
+  border-radius: 2px;
 }
 
 @media (prefers-reduced-motion: reduce) {

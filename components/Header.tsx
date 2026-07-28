@@ -2,6 +2,7 @@ import Link from "next/link";
 import { LiveStatus } from "./LiveStatus";
 import { SearchTrigger } from "./SearchTrigger";
 import { CtiazeMark } from "./CtiazeMark";
+import { NavLink } from "./NavLink";
 
 const NAV = [
   ["/", "Xəbərlər"],
@@ -23,13 +24,9 @@ export function Header() {
 
         <nav className="hidden items-center gap-6 sm:flex">
           {NAV.map(([href, label]) => (
-            <Link
-              key={href}
-              href={href}
-              className="text-sm text-ink-secondary transition-colors hover:text-ink-primary"
-            >
+            <NavLink key={href} href={href}>
               {label}
-            </Link>
+            </NavLink>
           ))}
         </nav>
 
@@ -49,13 +46,9 @@ export function Header() {
           tabs (Exposure / Kripto must be reachable) as a scrollable row. */}
       <nav className="flex items-center gap-6 overflow-x-auto border-t border-hairline px-4 py-2.5 sm:hidden">
         {NAV.map(([href, label]) => (
-          <Link
-            key={href}
-            href={href}
-            className="whitespace-nowrap text-sm text-ink-secondary transition-colors hover:text-ink-primary"
-          >
+          <NavLink key={href} href={href}>
             {label}
-          </Link>
+          </NavLink>
         ))}
       </nav>
     </header>

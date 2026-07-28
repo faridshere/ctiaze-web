@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { rateLimit, clientIp } from "@/lib/ratelimit";
 
 // Crypto address intelligence via Blockchair (GitHub Student Pack key, 100k
 // requests). Normalises the per-chain response shape (UTXO chains use
@@ -32,6 +33,9 @@ function toCoin(raw: unknown, decimals: number): number {
 }
 
 export async function GET(req: Request) {
+  if (!rateLimit(`chain:${clientIp(req)}`, 20, 60_000)) {
+    return NextResponse.json({ error: "Çox sorğu göndərdiniz — bir dəqiqə gözləyin" }, { status: 429 });
+  }
   const url = new URL(req.url);
   const chain = (url.searchParams.get("chain") || "bitcoin").toLowerCase();
   const address = (url.searchParams.get("address") || "").trim();

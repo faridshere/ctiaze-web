@@ -216,20 +216,20 @@ export default async function ExposurePage() {
                     <div className="flex items-center gap-3">
                       <div
                         className={`w-24 shrink-0 text-sm ${
-                          isAz ? "text-accent-critical font-medium" : "text-ink-secondary"
+                          isAz ? "text-brand font-medium" : "text-ink-secondary"
                         }`}
                       >
                         {r.name}
                       </div>
                       <div className="flex-1 h-2 rounded-sm bg-surface-raised overflow-hidden">
                         <div
-                          className={`h-full ${isAz ? "bg-accent-critical" : "bg-ink-muted/50"}`}
+                          className={`h-full ${isAz ? "bg-brand" : "bg-ink-muted/50"}`}
                           style={{ width: `${Math.max(2, (r.rdp / maxRdp) * 100)}%` }}
                         />
                       </div>
                       <div
                         className={`w-16 shrink-0 text-right font-mono text-sm tabular-nums ${
-                          isAz ? "text-accent-critical" : "text-ink-primary"
+                          isAz ? "text-brand" : "text-ink-primary"
                         }`}
                       >
                         {r.rdp.toLocaleString("en-US")}

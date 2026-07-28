@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
-import { StoryRow } from "@/components/StoryRow";
+import { FeedFilter } from "@/components/FeedFilter";
 import { StoryLink } from "@/components/StoryLink";
 import { LiveUpdateBanner } from "@/components/LiveUpdateBanner";
 import { SeverityMarker } from "@/components/SeverityMarker";
@@ -35,10 +35,13 @@ export default async function HomePage() {
   const digest = rest.slice(0, 5);
   const feed = rest.slice(5);
 
+  /* eslint-disable react-hooks/purity -- server component: a per-request time
+     snapshot, captured when this ISR page (re)renders. */
   const now = Date.now();
   const last24 = stories.filter(
     (s) => now - new Date(s.publishedAt).getTime() < 86_400_000
   ).length;
+  /* eslint-enable react-hooks/purity */
   const azHosts = snapshot?.total_hosts ?? 0;
 
   return (
@@ -52,7 +55,7 @@ export default async function HomePage() {
           <dl className="flex items-center gap-x-7 whitespace-nowrap py-2.5 font-mono text-[11px] uppercase tracking-[0.12em] text-ink-muted">
             <Sig k="24 saat" v={`${last24} xəbər`} />
             <Sig k="kev" v={String(stats.kevCount)} hot={stats.kevCount > 0} />
-            {azHosts > 0 && <Sig k="AZ açıq host" v={compact(azHosts)} />}
+            {azHosts > 0 && <Sig k="AZ açıq host" v={compact(azHosts)} href="/exposure" />}
             <Sig k="mənbə" v="50+" />
             <Sig k="arxiv" v={String(stats.total)} />
           </dl>
@@ -75,55 +78,78 @@ export default async function HomePage() {
             {/* Feed */}
             {feed.length > 0 && (
               <section className="mt-12 border-t border-hairline pt-2">
-                <h2 className="mt-4 font-mono text-[11px] uppercase tracking-[0.18em] text-ink-muted">
+                <h2 className="mt-4 mb-4 font-mono text-[11px] uppercase tracking-[0.18em] text-ink-muted">
                   Son xəbərlər
                 </h2>
-                <div className="mt-2">
-                  {feed.map((story) => (
-                    <StoryRow key={story.id} story={story} />
-                  ))}
-                </div>
+                <FeedFilter stories={feed} />
               </section>
             )}
           </>
         )}
       </main>
 
-      {/* Instrument teaser — a window from daylight into the darkroom */}
-      {azHosts > 0 && (
-        <div className="ops mt-16">
-          <Link
-            href="/exposure"
-            className="group block border-y border-hairline bg-surface"
-          >
-            <div className="mx-auto flex max-w-6xl flex-col gap-3 px-4 py-7 sm:flex-row sm:items-center sm:justify-between">
-              <div>
-                <div className="font-mono text-[11px] uppercase tracking-[0.16em] text-brand">
-                  Alət · Exposure
-                </div>
-                <div className="mt-1.5 font-headline text-2xl font-semibold text-ink-primary">
-                  Azərbaycanda{" "}
-                  <span className="tabular-nums">{azHosts.toLocaleString("en-US")}</span>{" "}
-                  açıq host
-                </div>
-                <p className="mt-1 text-sm text-ink-secondary">
-                  İnternetə açıq attack surface, SOC izləmə siyahısı və canlı IP yoxlaması.
-                </p>
-              </div>
-              <span className="shrink-0 font-mono text-sm text-brand transition-transform group-hover:translate-x-1">
-                Alətə keç →
-              </span>
+      {/* Instrument teasers — windows from daylight into the darkroom. Both
+          tools surfaced so Kripto is discoverable beyond the nav word. */}
+      <div className="ops mt-16 border-y border-hairline bg-surface">
+        <div className="mx-auto grid max-w-6xl gap-6 px-4 py-8 sm:grid-cols-2">
+          <Link href="/exposure" className="group block">
+            <div className="font-mono text-[11px] uppercase tracking-[0.16em] text-brand">
+              Alət · Exposure
             </div>
+            <div className="mt-1.5 font-headline text-xl font-semibold text-ink-primary">
+              {azHosts > 0 ? (
+                <>
+                  Azərbaycanda{" "}
+                  <span className="tabular-nums">{azHosts.toLocaleString("en-US")}</span> açıq host
+                </>
+              ) : (
+                "Hücum səthi mənzərəsi"
+              )}
+            </div>
+            <p className="mt-1 text-sm text-ink-secondary">
+              Attack surface, SOC izləmə siyahısı və canlı IP yoxlaması.{" "}
+              <span className="text-brand group-hover:underline">keç →</span>
+            </p>
+          </Link>
+          <Link href="/kripto" className="group block sm:border-l sm:border-hairline sm:pl-6">
+            <div className="font-mono text-[11px] uppercase tracking-[0.16em] text-brand">
+              Alət · Kripto
+            </div>
+            <div className="mt-1.5 font-headline text-xl font-semibold text-ink-primary">
+              Kripto ünvan kəşfiyyatı
+            </div>
+            <p className="mt-1 text-sm text-ink-secondary">
+              BTC/ETH ünvanının on-chain izi — ransomware və scam araşdırması.{" "}
+              <span className="text-brand group-hover:underline">keç →</span>
+            </p>
           </Link>
         </div>
-      )}
+      </div>
 
       <Footer />
     </div>
   );
 }
 
-function Sig({ k, v, hot = false }: { k: string; v: string; hot?: boolean }) {
+function Sig({
+  k,
+  v,
+  hot = false,
+  href,
+}: {
+  k: string;
+  v: string;
+  hot?: boolean;
+  href?: string;
+}) {
+  if (href) {
+    return (
+      <Link href={href} className="group flex items-center gap-2 shrink-0">
+        <dt className="group-hover:text-brand">{k}</dt>
+        <dd className="tabular-nums text-brand">{v} →</dd>
+      </Link>
+    );
+  }
   return (
     <div className="flex items-center gap-2 shrink-0">
       <dt>{k}</dt>
@@ -161,7 +187,7 @@ function LeadStory({ story }: { story: Story }) {
         </p>
       )}
 
-      <div className="mt-4 flex items-center gap-3 font-mono text-[11px] text-ink-muted">
+      <div className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-1 font-mono text-[11px] text-ink-muted">
         <span className="text-accent-good">əsaslandırılıb ✓</span>
         <span className="text-ink-muted/50">·</span>
         <span>mənbə: {sourceHost(story.sourceUrl)}</span>

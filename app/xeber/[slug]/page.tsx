@@ -67,6 +67,26 @@ export default async function StoryPage({
           {story.titleAz}
         </h1>
 
+        {story.cveIds.length > 0 && (
+          <div className="mt-6 flex flex-wrap items-center gap-2">
+            <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-ink-muted">
+              CVE
+            </span>
+            {story.cveIds.map((cve) => (
+              <a
+                key={cve}
+                href={`https://nvd.nist.gov/vuln/detail/${cve}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="rounded-sm border border-accent-critical/40 bg-accent-critical/5 px-2 py-0.5 font-mono text-[12px] text-accent-critical hover:bg-accent-critical/10"
+                title="NVD-də bax (CVSS, EPSS, təfərrüat)"
+              >
+                {cve} ↗
+              </a>
+            ))}
+          </div>
+        )}
+
         <div className="mt-6 h-px w-full bg-hairline" />
 
         <p className="mt-7 text-lg leading-[1.75] text-ink-secondary whitespace-pre-line">

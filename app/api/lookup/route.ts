@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { rateLimit, clientIp } from "@/lib/ratelimit";
 
 // Live exposure lookup, powered by Shodan's FREE InternetDB API
 // (https://internetdb.shodan.io/{ip}) — keyless, no query credits, cacheable.
@@ -38,6 +39,9 @@ function looksIPv6(ip: string): boolean {
 const EMPTY = { ports: [], vulns: [], hostnames: [], tags: [], cpes: [] };
 
 export async function GET(req: Request) {
+  if (!rateLimit(`lookup:${clientIp(req)}`, 40, 60_000)) {
+    return NextResponse.json({ error: "Çox sorğu göndərdiniz — bir dəqiqə gözləyin" }, { status: 429 });
+  }
   const url = new URL(req.url);
   let ip = (url.searchParams.get("ip") || "").trim();
   const own = !ip;
