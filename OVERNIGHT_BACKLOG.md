@@ -19,14 +19,21 @@ any time to steer what gets attention — add, remove, or reprioritize items.
 - [ ] Any TypeScript/lint warnings introduced since the last check.
 - [ ] Mobile responsiveness spot-check after any layout change.
 
+## Shipped (Farid gave explicit go-ahead 2026-07-28)
+- [x] Public JSON/RSS feed export — DONE. `feed.json`, `rss.xml`, `llms.txt`
+      routes (reuse `getStories()`, snake_case `FeedItem` contract, CDN-cached).
+      Verified live. This was the roadmap's "structured substrate" wedge.
+- [x] ctiaze.dev developer portal (separate repo `ctiaze-dev`) — DONE. Read-only
+      MCP server at /api/mcp (4 tools over the same Mongo archive) + landing
+      page. NOTE: needs `MONGO_URI_READONLY` added to the ctiaze-dev Vercel
+      project before the MCP tool calls return data (handshake already works).
+
 ## Pending Farid's go-ahead (researched, DO NOT build unattended — see
 ## memory: ctiaze-platform-roadmap.md for the full research + reasoning)
 - [ ] IOC/CVE lookup tool (paste CVE/IP/domain/hash, get AbuseIPDB + GreyNoise
-      + NVD + own-archive back). Zero LLM cost, zero infra cost. Build on a
-      branch and get sign-off before merging once Farid says go.
-- [ ] Public JSON/RSS feed export (`getStories()` reuse) — lower-risk, could
-      ask about building this one proactively since it's genuinely trivial
-      and additive, but still flag it rather than just shipping it.
+      + NVD + Shodan + own-archive back). Zero LLM cost. Farid picked the MCP
+      server first (done); this is the likely next ctiaze.dev build once he says
+      go. Shodan must be cached + daily-capped (academic acct ~100 credits/mo).
 
 ## Guardrails (see CLAUDE.md for the full autonomous-work policy)
 - Safe to fix directly: genuine bugs with verification, dependency patch
