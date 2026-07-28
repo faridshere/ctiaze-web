@@ -15,6 +15,16 @@ const CHAINS: Record<string, { name: string; symbol: string; decimals: number; f
   "bitcoin-cash": { name: "Bitcoin Cash", symbol: "BCH", decimals: 8, family: "utxo" },
 };
 
+// Earliest ("min") or latest ("max") genuine date among candidates, ignoring
+// nulls and pre-2009 placeholder sentinels. ISO-ish strings sort lexically.
+function pickDate(candidates: unknown[], mode: "min" | "max"): string | null {
+  const valid = candidates
+    .filter((s): s is string => typeof s === "string" && s >= "2009-01-01")
+    .sort();
+  if (!valid.length) return null;
+  return mode === "min" ? valid[0] : valid[valid.length - 1];
+}
+
 function toCoin(raw: unknown, decimals: number): number {
   const n = Number(raw ?? 0);
   if (!isFinite(n)) return 0;
@@ -89,8 +99,12 @@ export async function GET(req: Request) {
         ? Number(row.transaction_count ?? 0) ||
           Number(row.receiving_call_count ?? 0) + Number(row.spending_call_count ?? 0)
         : Number(row.transaction_count ?? row.output_count ?? 0),
-      first_seen: (row.first_seen_receiving ?? row.first_seen_spending ?? null) as string | null,
-      last_seen: (row.last_seen_spending ?? row.last_seen_receiving ?? null) as string | null,
+      // Blockchair returns a "2000-01-01"-style placeholder for events that never
+      // happened (e.g. an unspent address has a sentinel last_seen_spending). Pick
+      // the earliest/latest REAL date across receiving+spending; no crypto address
+      // predates 2009, so anything below that is a placeholder to ignore.
+      first_seen: pickDate([row.first_seen_receiving, row.first_seen_spending], "min"),
+      last_seen: pickDate([row.last_seen_receiving, row.last_seen_spending], "max"),
     };
     return NextResponse.json(out, { headers: cacheHeaders() });
   } catch {
