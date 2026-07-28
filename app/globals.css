@@ -14,7 +14,25 @@
    dark instrument palette, so every component adapts with zero markup churn.
    ------------------------------------------------------------------------- */
 :root {
-  /* editorial / daylight (default) */
+  /* --- Dark palette: SINGLE SOURCE OF TRUTH (the "Ops"/instrument values).
+     Applied by `.ops` always (tool pages), and by `:root` when the OS prefers
+     dark (night-shift editorial). Defined once here so light/dark never drift. */
+  --d-surface: #0d1210; /* Ops Black — green-cast */
+  --d-surface-raised: #141b18; /* Ops Panel */
+  --d-ink-primary: #f1f5f3;
+  --d-ink-secondary: #a9b4ae;
+  --d-ink-muted: #6b7671;
+  --d-hairline: #1e2622;
+  --d-border: rgba(255, 255, 255, 0.07);
+  --d-brand: #2fbfa4; /* Signal Teal (8:1 on Ops Black) */
+  --d-brand-wash: rgba(47, 191, 164, 0.08);
+  --d-accent-critical: #e0514f;
+  --d-accent-serious: #ec835a;
+  --d-accent-warning: #fab219;
+  --d-accent-good: #35b135;
+  --d-shadow-card: 0 1px 2px rgba(0, 0, 0, 0.4);
+
+  /* --- editorial / daylight (applied by default) --- */
   --surface: #fafaf7; /* Bone White — warm, print-like */
   --surface-raised: #ffffff; /* Card White */
   --ink-primary: #14181c; /* Ink (~16:1 on Bone) */
@@ -22,15 +40,12 @@
   --ink-muted: #8b93a1; /* meta / timestamps — large & caption sizes only */
   --hairline: #e5e3db;
   --border: rgba(20, 24, 28, 0.09);
-
   --brand: #0e7c6b; /* Xəzər Teal — links, CTAs, chart bars, focus */
   --brand-wash: #eaf3f0; /* tinted panels: digest card, selected rows */
-
   --accent-critical: #c43d35; /* KEV / actively-exploited (AA on Bone) */
   --accent-serious: #a8480f; /* high severity (dark orange, AA) */
   --accent-warning: #946300; /* medium (dark amber, AA) */
   --accent-good: #1e7a3d; /* live / verified / grounded */
-
   --shadow-card: 0 1px 2px rgba(20, 24, 28, 0.04), 0 3px 10px rgba(20, 24, 28, 0.05);
 
   --font-headline: var(--font-headline);
@@ -38,28 +53,51 @@
   --font-mono: var(--font-mono);
 }
 
-/* operational / instrument mode — applied via a `.ops` wrapper on tool pages */
+/* Map the applied tokens to the dark palette. Used two ways: on `.ops`
+   (tool pages, always dark), and on `:root` under prefers-color-scheme: dark
+   (editorial night mode). The value hexes live once in the --d-* vars above,
+   so only these var() references are duplicated — no color can drift. */
 .ops {
-  --surface: #0d1210; /* Ops Black — green-cast, distinct from old neutral black */
-  --surface-raised: #141b18; /* Ops Panel */
-  --ink-primary: #f1f5f3;
-  --ink-secondary: #a9b4ae;
-  --ink-muted: #6b7671;
-  --hairline: #1e2622;
-  --border: rgba(255, 255, 255, 0.07);
-
-  --brand: #2fbfa4; /* Signal Teal (8:1 on Ops Black) */
-  --brand-wash: rgba(47, 191, 164, 0.08);
-
-  --accent-critical: #e0514f; /* severity ramp retained for dark */
-  --accent-serious: #ec835a;
-  --accent-warning: #fab219;
-  --accent-good: #35b135;
-
-  --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --surface: var(--d-surface);
+  --surface-raised: var(--d-surface-raised);
+  --ink-primary: var(--d-ink-primary);
+  --ink-secondary: var(--d-ink-secondary);
+  --ink-muted: var(--d-ink-muted);
+  --hairline: var(--d-hairline);
+  --border: var(--d-border);
+  --brand: var(--d-brand);
+  --brand-wash: var(--d-brand-wash);
+  --accent-critical: var(--d-accent-critical);
+  --accent-serious: var(--d-accent-serious);
+  --accent-warning: var(--d-accent-warning);
+  --accent-good: var(--d-accent-good);
+  --shadow-card: var(--d-shadow-card);
   color-scheme: dark;
   background: var(--surface);
   color: var(--ink-primary);
+}
+
+/* Dark editorial variant — night-shift analysts. Follows the OS (no toggle, no
+   flash): editorial pages flip to the same dark palette the tools use. Tool
+   pages carry `.ops` so they stay dark in either OS mode regardless. */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --surface: var(--d-surface);
+    --surface-raised: var(--d-surface-raised);
+    --ink-primary: var(--d-ink-primary);
+    --ink-secondary: var(--d-ink-secondary);
+    --ink-muted: var(--d-ink-muted);
+    --hairline: var(--d-hairline);
+    --border: var(--d-border);
+    --brand: var(--d-brand);
+    --brand-wash: var(--d-brand-wash);
+    --accent-critical: var(--d-accent-critical);
+    --accent-serious: var(--d-accent-serious);
+    --accent-warning: var(--d-accent-warning);
+    --accent-good: var(--d-accent-good);
+    --shadow-card: var(--d-shadow-card);
+    color-scheme: dark;
+  }
 }
 
 @theme inline {
