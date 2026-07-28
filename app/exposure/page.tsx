@@ -6,6 +6,7 @@ import {
   getTotalsTrend,
   type RiskyService,
 } from "@/lib/exposure";
+import { ExposureLookup } from "@/components/ExposureLookup";
 
 export const revalidate = 3600; // snapshot changes weekly; hourly ISR is ample
 
@@ -87,20 +88,28 @@ export default async function ExposurePage() {
       <Header />
       <main className="flex-1 mx-auto w-full max-w-3xl px-4 py-14 sm:py-20">
         <p className="font-mono text-xs uppercase tracking-[0.2em] text-accent-critical">
-          Azərbaycan · hücum səthi
+          Canlı yoxlama · Shodan
         </p>
         <h1 className="mt-3 font-headline text-3xl sm:text-4xl text-ink-primary text-balance">
           İnternetə açıq ekspozisiya
         </h1>
         <p className="mt-4 max-w-xl leading-relaxed text-ink-secondary">
-          Shodan-ın <span className="font-mono text-ink-primary">country:AZ</span>{" "}
-          mənzərəsi — Azərbaycandan internetə açıq host-ların həftəlik kəsiyi.
-          Bu, hansı servislərin açıq qaldığını göstərir (attack surface), CVE
-          siyahısı deyil.
+          İstənilən public IP-nin internetə nə göstərdiyini yoxlayın — açıq
+          portlar və məlum CVE-lər. Aşağıda isə bütün Azərbaycanın həftəlik
+          hücum səthi mənzərəsi.
+        </p>
+
+        <div className="mt-8">
+          <ExposureLookup />
+        </div>
+
+        {/* national snapshot */}
+        <p className="mt-16 font-mono text-xs uppercase tracking-[0.2em] text-accent-critical">
+          Azərbaycan · milli mənzərə
         </p>
 
         {/* headline number */}
-        <div className="mt-10 border-y border-hairline py-8">
+        <div className="mt-6 border-y border-hairline py-8">
           <div className="font-mono text-5xl sm:text-6xl text-ink-primary tabular-nums">
             {snap.total_hosts.toLocaleString("en-US")}
           </div>
