@@ -82,6 +82,10 @@ export default async function ExposurePage() {
   const grouped = groupByCategory(snap.risky_services);
   const maxRisky = Math.max(1, ...snap.risky_services.map((s) => s.count));
   const trendMax = Math.max(1, ...trend.map((t) => t.total));
+  const regional = [...(snap.regional ?? [])].sort((a, b) => b.rdp - a.rdp);
+  const maxRdp = Math.max(1, ...regional.map((r) => r.rdp));
+  const cities = snap.cities ?? [];
+  const maxCity = Math.max(1, ...cities.map((c) => c.count));
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -153,6 +157,82 @@ export default async function ExposurePage() {
             </div>
           ))}
         </section>
+
+        {/* regional comparison */}
+        {regional.length > 0 && (
+          <section className="mt-16">
+            <h2 className="font-mono text-xs uppercase tracking-[0.18em] text-accent-critical">
+              Regional müqayisə · açıq RDP
+            </h2>
+            <p className="mt-3 max-w-xl text-sm text-ink-secondary">
+              Uzaqdan masaüstü (RDP, port 3389) — ransomware üçün ən çox istifadə
+              olunan giriş nöqtəsi. Azərbaycan qonşuları ilə müqayisədə internetə
+              açıq RDP host sayı.
+            </p>
+            <div className="mt-5 space-y-3.5">
+              {regional.map((r) => {
+                const isAz = r.code === "AZ";
+                return (
+                  <div key={r.code}>
+                    <div className="flex items-center gap-3">
+                      <div
+                        className={`w-24 shrink-0 text-sm ${
+                          isAz ? "text-accent-critical font-medium" : "text-ink-secondary"
+                        }`}
+                      >
+                        {r.name}
+                      </div>
+                      <div className="flex-1 h-2 rounded-sm bg-surface-raised overflow-hidden">
+                        <div
+                          className={`h-full ${isAz ? "bg-accent-critical" : "bg-ink-muted/50"}`}
+                          style={{ width: `${Math.max(2, (r.rdp / maxRdp) * 100)}%` }}
+                        />
+                      </div>
+                      <div
+                        className={`w-16 shrink-0 text-right font-mono text-sm tabular-nums ${
+                          isAz ? "text-accent-critical" : "text-ink-primary"
+                        }`}
+                      >
+                        {r.rdp.toLocaleString("en-US")}
+                      </div>
+                    </div>
+                    <div className="ml-24 pl-3 mt-1 font-mono text-[10px] text-ink-muted">
+                      SMB {r.smb.toLocaleString("en-US")} · Telnet{" "}
+                      {r.telnet.toLocaleString("en-US")}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </section>
+        )}
+
+        {/* by city */}
+        {cities.length > 0 && (
+          <section className="mt-14">
+            <h2 className="font-mono text-xs uppercase tracking-[0.18em] text-ink-secondary">
+              Şəhərlər üzrə açıq host
+            </h2>
+            <div className="mt-4 space-y-2">
+              {cities.slice(0, 8).map((c) => (
+                <div key={c.city} className="flex items-center gap-3">
+                  <div className="w-28 shrink-0 text-sm text-ink-secondary truncate">
+                    {c.city}
+                  </div>
+                  <div className="flex-1 h-1.5 rounded-sm bg-surface-raised overflow-hidden">
+                    <div
+                      className="h-full bg-accent-good/60"
+                      style={{ width: `${Math.max(1, (c.count / maxCity) * 100)}%` }}
+                    />
+                  </div>
+                  <div className="w-16 shrink-0 text-right font-mono text-xs text-ink-primary tabular-nums">
+                    {c.count.toLocaleString("en-US")}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
 
         {/* orgs + products */}
         <section className="mt-14 grid gap-10 sm:grid-cols-2">

@@ -11,6 +11,14 @@ export type RiskyService = {
 export type PortCount = { port: number; count: number };
 export type OrgCount = { org: string; count: number };
 export type ProductCount = { product: string; count: number };
+export type CityCount = { city: string; count: number };
+export type RegionalRow = {
+  code: string;
+  name: string;
+  rdp: number;
+  smb: number;
+  telnet: number;
+};
 
 export type ExposureSnapshot = {
   _id: string;
@@ -21,6 +29,8 @@ export type ExposureSnapshot = {
   top_ports: PortCount[];
   top_orgs: OrgCount[];
   top_products: ProductCount[];
+  cities?: CityCount[]; // optional: older snapshots predate these
+  regional?: RegionalRow[];
   source: string;
 };
 
