@@ -4,8 +4,12 @@ import type { Metadata } from "next";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { SeverityMarker } from "@/components/SeverityMarker";
+import { ThreatActorCard } from "@/components/ThreatActorCard";
+import { IocPanel } from "@/components/IocPanel";
 import { formatStoryDate } from "@/lib/format";
 import { getStoryBySlug } from "@/lib/stories";
+import { extractIocs } from "@/lib/ioc";
+import { detectActors, enrichmentPivots } from "@/lib/actors";
 
 export const revalidate = 180;
 
@@ -41,6 +45,14 @@ export default async function StoryPage({
   if (!story) notFound();
 
   const { time, date } = formatStoryDate(story.publishedAt);
+
+  // Threat intelligence derived from the story: indicators lifted from the text,
+  // the actor(s) named in it, and pivot terms to pull live indicators for.
+  const iocText = [story.titleAz, story.titleEn, story.bodyAz];
+  const extracted = extractIocs(...iocText);
+  const actors = detectActors(...iocText);
+  const pivots = enrichmentPivots(...iocText);
+  const hasIntel = extracted.length > 0 || actors.length > 0 || pivots.length > 0;
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -108,6 +120,20 @@ export default async function StoryPage({
             ilkin mənbə ↗
           </a>
         </div>
+
+        {/* Threat-intelligence inset — a darkroom window under the narrative:
+            actor dossier + machine-readable indicators (extracted + live). */}
+        {hasIntel && (
+          <section className="darkroom mt-10 rounded-xl border border-hairline bg-surface p-5 sm:p-6">
+            {actors.length > 0 && (
+              <>
+                <ThreatActorCard actors={actors} />
+                <div className="my-6 h-px w-full bg-hairline" />
+              </>
+            )}
+            <IocPanel extracted={extracted} pivots={pivots} />
+          </section>
+        )}
       </main>
       <Footer />
     </div>

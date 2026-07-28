@@ -53,11 +53,16 @@
   --font-mono: var(--font-mono);
 }
 
-/* Map the applied tokens to the dark palette. Used two ways: on `.ops`
-   (tool pages, always dark), and on `:root` under prefers-color-scheme: dark
-   (editorial night mode). The value hexes live once in the --d-* vars above,
-   so only these var() references are duplicated — no color can drift. */
-.ops {
+/* Map the applied tokens to the dark palette. Used three ways: on `.ops`
+   (full tool pages, always dark — also flips the body via body:has(.ops)); on
+   `.darkroom` (a dark *inset* inside an otherwise-light page, e.g. the story
+   intel block — remaps tokens for its subtree only, deliberately NOT matched by
+   body:has(.ops) so the surrounding narrative keeps its own register); and on
+   `:root` under prefers-color-scheme: dark (editorial night mode). The value
+   hexes live once in the --d-* vars above, so only these var() references are
+   duplicated — no color can drift. */
+.ops,
+.darkroom {
   --surface: var(--d-surface);
   --surface-raised: var(--d-surface-raised);
   --ink-primary: var(--d-ink-primary);
