@@ -31,7 +31,7 @@ type EnrichIoc = {
 type EnrichMeta = { term: string; generic: boolean; sources: string[] };
 const TTL_MS = 30 * 60 * 1000;
 const cache = new Map<string, { at: number; data: EnrichIoc[]; meta: EnrichMeta }>();
-const TIMEOUT_MS = 6000;
+const SOURCE_TIMEOUT_MS = 7000;   // per-upstream, per-attempt (not shared)
 const MAX_RESULTS = 40;
 const VALID_TERM = /^[A-Za-z0-9 ._()-]{1,40}$/;
 
@@ -46,9 +46,22 @@ function mapTweetFeedType(t: string): IocType | null {
   }
 }
 
-async function fromTweetFeed(term: string, signal: AbortSignal): Promise<EnrichIoc[]> {
+// Each upstream call owns its own timeout/abort so a slow or hung source can
+// never abort the other — previously one shared AbortController meant a slow
+// ThreatFox call took TweetFeed's results down with it.
+async function fetchWithTimeout(url: string, opts: RequestInit, ms: number): Promise<Response> {
+  const c = new AbortController();
+  const t = setTimeout(() => c.abort(), ms);
+  try {
+    return await fetch(url, { ...opts, signal: c.signal });
+  } finally {
+    clearTimeout(t);
+  }
+}
+
+async function fromTweetFeed(term: string): Promise<EnrichIoc[]> {
   const url = `https://api.tweetfeed.live/v1/month/${encodeURIComponent(term.toLowerCase())}`;
-  const res = await fetch(url, { signal, headers: { accept: "application/json" } });
+  const res = await fetchWithTimeout(url, { headers: { accept: "application/json" } }, SOURCE_TIMEOUT_MS);
   if (!res.ok) return [];
   const rows = (await res.json()) as Array<{
     date?: string; user?: string; type?: string; value?: string;
@@ -82,13 +95,12 @@ function mapThreatFoxType(t: string): IocType | null {
   return null;
 }
 
-async function fromThreatFox(term: string, key: string, signal: AbortSignal): Promise<EnrichIoc[]> {
-  const res = await fetch("https://threatfox-api.abuse.ch/api/v1/", {
+async function fromThreatFox(term: string, key: string): Promise<EnrichIoc[]> {
+  const res = await fetchWithTimeout("https://threatfox-api.abuse.ch/api/v1/", {
     method: "POST",
-    signal,
     headers: { "Content-Type": "application/json", "Auth-Key": key },
     body: JSON.stringify({ query: "malwareinfo", malware: term, limit: MAX_RESULTS }),
-  });
+  }, SOURCE_TIMEOUT_MS);
   if (!res.ok) return [];
   const json = (await res.json()) as {
     query_status?: string;
@@ -130,17 +142,13 @@ function dedupe(iocs: EnrichIoc[]): EnrichIoc[] {
   return out;
 }
 
-async function enrichOne(
-  term: string,
-  key: string | undefined,
-  signal: AbortSignal
-): Promise<EnrichIoc[]> {
+async function enrichOne(term: string, key: string | undefined): Promise<EnrichIoc[]> {
   const tasks: Promise<EnrichIoc[]>[] = [
-    fromTweetFeed(term, signal).catch(() => []),
+    fromTweetFeed(term).catch(() => []),
   ];
   // ThreatFox is family/actor-oriented — don't waste a call on a generic tag.
   if (key && !GENERIC_TAGS.has(term)) {
-    tasks.push(fromThreatFox(term, key, signal).catch(() => []));
+    tasks.push(fromThreatFox(term, key).catch(() => []));
   }
   const results = (await Promise.all(tasks)).flat();
   return dedupe(
@@ -175,14 +183,12 @@ export async function GET(req: Request) {
     );
   }
 
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
   const key = process.env.THREATFOX_API_KEY;
   try {
     let matchedTerm = terms[terms.length - 1];
     let iocs: EnrichIoc[] = [];
     for (const term of terms) {
-      const got = await enrichOne(term, key, controller.signal);
+      const got = await enrichOne(term, key);
       if (got.length > 0) {
         matchedTerm = term;
         iocs = got;
@@ -205,7 +211,5 @@ export async function GET(req: Request) {
     );
   } catch {
     return NextResponse.json({ term: terms[0], iocs: [], error: "upstream_unavailable" });
-  } finally {
-    clearTimeout(timer);
   }
 }
