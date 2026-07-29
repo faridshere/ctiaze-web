@@ -90,7 +90,7 @@ export default async function HomePage() {
 
       {/* Instrument teasers — windows from daylight into the darkroom. Both
           tools surfaced so Kripto is discoverable beyond the nav word. */}
-      <div className="ops mt-16 border-y border-hairline bg-surface">
+      <div className="darkroom mt-16 border-y border-hairline bg-surface">
         <div className="mx-auto grid max-w-6xl gap-6 px-4 py-8 sm:grid-cols-2">
           <Link href="/exposure" className="group block">
             <div className="font-mono text-[11px] uppercase tracking-[0.16em] text-brand">
