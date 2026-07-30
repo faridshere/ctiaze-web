@@ -88,6 +88,19 @@ export default async function ExposurePage() {
   const maxCity = Math.max(1, ...cities.map((c) => c.count));
   const watchlist = snap.watchlist ?? [];
 
+  // Narrator — turn the bare headline into intel: week-over-week delta,
+  // per-capita framing, and a one-line verdict. All from data already present.
+  const prevTotal = trend.length >= 2 ? trend[trend.length - 2].total : null;
+  const deltaAbs = prevTotal != null ? snap.total_hosts - prevTotal : null;
+  const deltaPct = prevTotal ? (deltaAbs! / prevTotal) * 100 : null;
+  const AZ_POP = 10_400_000; // ~2026 estimate
+  const perCapita = snap.total_hosts > 0 ? Math.round(AZ_POP / snap.total_hosts) : null;
+  const rdpCount =
+    snap.risky_services.find((s) => s.port === 3389)?.count ??
+    regional.find((r) => r.code === "AZ")?.rdp ??
+    null;
+  const trendWord = deltaAbs == null ? "" : deltaAbs > 0 ? "artdı" : deltaAbs < 0 ? "azaldı" : "sabit qaldı";
+
   return (
     <div className="ops min-h-screen flex flex-col">
       <Header />
@@ -113,14 +126,54 @@ export default async function ExposurePage() {
           Azərbaycan · milli mənzərə
         </p>
 
-        {/* headline number */}
+        {/* headline number + narrator */}
         <div className="mt-6 border-y border-hairline py-8">
-          <div className="font-mono text-5xl sm:text-6xl text-ink-primary tabular-nums">
-            {snap.total_hosts.toLocaleString("en-US")}
+          <div className="flex flex-wrap items-end gap-x-4 gap-y-2">
+            <div className="font-mono text-5xl sm:text-6xl text-ink-primary tabular-nums">
+              {snap.total_hosts.toLocaleString("en-US")}
+            </div>
+            {deltaAbs != null && (
+              <span
+                className={`pb-1.5 font-mono text-sm ${
+                  deltaAbs > 0 ? "text-accent-critical" : deltaAbs < 0 ? "text-accent-good" : "text-ink-muted"
+                }`}
+              >
+                {deltaAbs > 0 ? "▲" : deltaAbs < 0 ? "▼" : "■"}{" "}
+                {deltaAbs > 0 ? "+" : ""}{deltaAbs.toLocaleString("en-US")}
+                {deltaPct != null && (
+                  <span className="text-ink-muted"> ({deltaPct > 0 ? "+" : ""}{deltaPct.toFixed(1)}%)</span>
+                )}
+                <span className="text-ink-muted"> keçən həftə</span>
+              </span>
+            )}
           </div>
           <div className="mt-2 font-mono text-xs uppercase tracking-widest text-ink-muted">
             açıq host · {snap.country} · {fmtDate(new Date(snap.swept_at).toISOString())}
           </div>
+          {perCapita && (
+            <div className="mt-1 font-mono text-[11px] text-ink-muted">
+              ≈ 1 açıq host hər {perCapita.toLocaleString("en-US")} nəfərə (əhali ~10.4M)
+            </div>
+          )}
+          <p className="mt-3 max-w-xl text-sm leading-relaxed text-ink-secondary">
+            Bu həftə Azərbaycanda internetə açıq host sayı{" "}
+            {deltaAbs != null ? (
+              <>
+                <span className={deltaAbs > 0 ? "text-accent-critical" : deltaAbs < 0 ? "text-accent-good" : ""}>
+                  {trendWord}
+                </span>
+                {" "}(keçən həftədən {deltaAbs > 0 ? "+" : ""}{deltaAbs.toLocaleString("en-US")}).
+              </>
+            ) : (
+              "izlənilir."
+            )}
+            {rdpCount != null && (
+              <>
+                {" "}Bunlardan <span className="text-accent-critical tabular-nums">{rdpCount.toLocaleString("en-US")}</span>-i
+                açıq <span className="text-accent-critical">RDP</span> — ransomware-in №1 giriş qapısı.
+              </>
+            )}
+          </p>
         </div>
 
         {/* risky services by category */}
