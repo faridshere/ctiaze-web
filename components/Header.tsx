@@ -6,6 +6,7 @@ import { NavLink } from "./NavLink";
 
 const NAV = [
   ["/", "Xəbərlər"],
+  ["/ioc", "IOC / CVE"],
   ["/exposure", "Exposure"],
   ["/kripto", "Kripto"],
   ["/haqqinda", "Haqqında"],
