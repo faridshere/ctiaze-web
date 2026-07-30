@@ -20,6 +20,16 @@ any time to steer what gets attention — add, remove, or reprioritize items.
 - [ ] Mobile responsiveness spot-check after any layout change.
 
 ## Shipped (Farid gave explicit go-ahead 2026-07-28)
+- [x] IOC/CVE lookup tool — DONE 2026-07-30 (Farid: "fix everything that doesn't
+      need my actions, I give permissions"). Built on the MAIN site at `/ioc`
+      (not ctiaze.dev): paste any IP/domain/URL/hash → abuse.ch ThreatFox
+      reputation + geo; paste a CVE → CISA KEV + FIRST EPSS + NVD. Deliberately
+      KEYLESS (ThreatFox recent-export, not the Auth-Key API) so it can't go dark
+      if a key rotates — the local abuse.ch key currently 401s. Also renders a
+      live malicious-infra board. `lib/threatfox.ts`, `lib/cveintel.ts`,
+      `app/api/threat/route.ts`, `components/ThreatLookup.tsx`, `app/ioc/page.tsx`.
+      Verified live on the vercel alias. (Shodan is NOT used here — kept on
+      `/exposure` only, still daily-capped on the academic acct.)
 - [x] Public JSON/RSS feed export — DONE. `feed.json`, `rss.xml`, `llms.txt`
       routes (reuse `getStories()`, snake_case `FeedItem` contract, CDN-cached).
       Verified live. This was the roadmap's "structured substrate" wedge.
@@ -30,10 +40,9 @@ any time to steer what gets attention — add, remove, or reprioritize items.
 
 ## Pending Farid's go-ahead (researched, DO NOT build unattended — see
 ## memory: ctiaze-platform-roadmap.md for the full research + reasoning)
-- [ ] IOC/CVE lookup tool (paste CVE/IP/domain/hash, get AbuseIPDB + GreyNoise
-      + NVD + Shodan + own-archive back). Zero LLM cost. Farid picked the MCP
-      server first (done); this is the likely next ctiaze.dev build once he says
-      go. Shodan must be cached + daily-capped (academic acct ~100 credits/mo).
+- (IOC/CVE lookup tool shipped 2026-07-30 — see Shipped above. If Farid still
+  wants a ctiaze.dev-side version with AbuseIPDB/GreyNoise/Shodan enrichment,
+  that's a separate, still-pending build needing his nod + those API keys.)
 
 ## Guardrails (see CLAUDE.md for the full autonomous-work policy)
 - Safe to fix directly: genuine bugs with verification, dependency patch
