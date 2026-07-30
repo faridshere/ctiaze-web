@@ -6,7 +6,7 @@ export function Footer() {
       <div className="mx-auto max-w-6xl px-4 py-9 flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
         <div className="max-w-md">
           <p className="text-sm text-ink-secondary">
-            50+ mənbə → AI qiymətləndirmə və yoxlama → Azərbaycan dilində. 24/7,
+            ~50 mənbə → AI qiymətləndirmə və yoxlama → Azərbaycan dilində. 24/7,
             insan müdaxiləsi olmadan.
           </p>
           <p className="mt-3 font-mono text-[11px] text-ink-muted">

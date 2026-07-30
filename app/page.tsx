@@ -56,7 +56,7 @@ export default async function HomePage() {
             <Sig k="24 saat" v={`${last24} xəbər`} />
             <Sig k="kev" v={String(stats.kevCount)} hot={stats.kevCount > 0} />
             {azHosts > 0 && <Sig k="AZ açıq host" v={compact(azHosts)} href="/exposure" />}
-            <Sig k="mənbə" v="50+" />
+            <Sig k="mənbə" v="~50" />
             <Sig k="arxiv" v={String(stats.total)} />
           </dl>
         </div>

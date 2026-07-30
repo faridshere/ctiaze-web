@@ -54,8 +54,30 @@ export default async function StoryPage({
   const pivots = enrichmentPivots(...iocText);
   const hasIntel = extracted.length > 0 || actors.length > 0 || pivots.length > 0;
 
+  // Structured data — makes each story eligible as a rich/citable result for
+  // search + AI answer engines (the per-CVE Azerbaijani long-tail).
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "NewsArticle",
+    headline: story.titleAz,
+    datePublished: story.publishedAt,
+    dateModified: story.publishedAt,
+    inLanguage: "az",
+    author: { "@type": "Organization", name: "Hackxana" },
+    publisher: { "@type": "Organization", name: "ctiaze" },
+    mainEntityOfPage: `https://ctiaze.tech/xeber/${story.slug}`,
+    ...(story.bodyAz ? { description: story.bodyAz.slice(0, 200) } : {}),
+    ...(story.cveIds.length
+      ? { about: story.cveIds.map((c) => ({ "@type": "Thing", name: c })) }
+      : {}),
+  };
+
   return (
     <div className="min-h-screen flex flex-col">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
       <Header />
       <main className="flex-1 mx-auto w-full max-w-2xl px-4 py-12">
         <Link

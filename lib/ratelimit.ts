@@ -23,6 +23,16 @@ export function rateLimit(key: string, limit: number, windowMs: number): boolean
 }
 
 export function clientIp(req: Request): string {
-  const xff = req.headers.get("x-forwarded-for") || "";
-  return xff.split(",")[0].trim() || req.headers.get("x-real-ip") || "unknown";
+  // x-real-ip is set by Vercel's edge to the TRUE connecting IP and is overwritten
+  // on every request, so the client cannot spoof it — prefer it. Only fall back to
+  // X-Forwarded-For's RIGHTMOST hop (the one the trusted proxy appended), never the
+  // leftmost: the leftmost is attacker-controlled, so a rotating header would mint a
+  // fresh rate-limit bucket per request and silently defeat every cap.
+  const real = req.headers.get("x-real-ip");
+  if (real && real.trim()) return real.trim();
+  const hops = (req.headers.get("x-forwarded-for") || "")
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
+  return hops[hops.length - 1] || "unknown";
 }
