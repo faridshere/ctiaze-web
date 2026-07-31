@@ -1,66 +1,151 @@
 @import "tailwindcss";
 
 /* ---------------------------------------------------------------------------
-   ctiaze — "Xəzər Standard": a dual-register intelligence product.
+   ctiaze — "Növbə" (The Watch Ledger): a Baku signals desk.
 
-   Editorial surfaces (home, story, about) render in a warm "daylight briefing"
-   (Bone White) — calm, credible, forwardable by a CISO. Operational tools
-   (/exposure, /kripto) render in a purpose-built "instrument mode" (Ops Black,
-   green-cast) — dense, mono, for practitioners. One ownable brand hue, Caspian
-   teal, binds both. Severity color is functional-only and never the brand.
+   The product's default face is warm-asphalt DARK (#141210) — a night-shift
+   ledger, sodium-amber for interaction only. Light-preference users and print
+   get a "day-print" newsprint register (gray-tan, not cream). ONE brand hue
+   (amber/copper) is interaction-only; category color is a single muted ink
+   family; severity is never shown (it is null across the archive).
 
-   Architecture: the SAME token names carry both registers. :root is the light
-   default; a `.ops` wrapper (put on the tool pages) overrides the tokens to the
-   dark instrument palette, so every component adapts with zero markup churn.
+   Architecture: the SAME token names carry both registers, plus a --cat-* map
+   for the threat-category taxonomy. :root is DARK by default; a
+   `@media (prefers-color-scheme: light)` block remaps to the day-print values;
+   a `.ops` wrapper (tool pages) / `.darkroom` inset force the dark register for
+   their subtree regardless of OS. Hex values live once in --d-* / --l-* so the
+   two registers can never drift.
    ------------------------------------------------------------------------- */
 :root {
-  /* --- Dark palette: SINGLE SOURCE OF TRUTH (the "Ops"/instrument values).
-     Applied by `.ops` always (tool pages), and by `:root` when the OS prefers
-     dark (night-shift editorial). Defined once here so light/dark never drift. */
-  --d-surface: #0d1210; /* Ops Black — green-cast */
-  --d-surface-raised: #141b18; /* Ops Panel */
-  --d-ink-primary: #f1f5f3;
-  --d-ink-secondary: #a9b4ae;
-  --d-ink-muted: #6b7671;
-  --d-hairline: #1e2622;
-  --d-border: rgba(255, 255, 255, 0.07);
-  --d-brand: #2fbfa4; /* Signal Teal (8:1 on Ops Black) */
-  --d-brand-wash: rgba(47, 191, 164, 0.08);
-  --d-accent-critical: #e0514f;
-  --d-accent-serious: #ec835a;
-  --d-accent-warning: #fab219;
-  --d-accent-good: #35b135;
-  --d-shadow-card: 0 1px 2px rgba(0, 0, 0, 0.4);
+  /* --- DARK "asphalt" register — SINGLE SOURCE (--d-*). The default face. --- */
+  --d-surface: #141210; /* warm near-black asphalt */
+  --d-surface-raised: #1c1915;
+  --d-ink-primary: #ede8df; /* warm gauze ~14:1 */
+  --d-ink-secondary: #a69f92; /* ~8:1 */
+  --d-ink-muted: #8a8478; /* ~5.5:1 — AA for 11px mono meta */
+  --d-hairline: #2b2721;
+  --d-border: rgba(237, 232, 223, 0.08);
+  --d-brand: #e39a3b; /* sodium amber ~8:1 — interaction ONLY */
+  --d-brand-wash: rgba(227, 154, 59, 0.09);
+  --d-accent-critical: #eb6a62; /* KEV only in the feed */
+  --d-accent-serious: #e08543; /* reserved: tool output */
+  --d-accent-warning: #d9b23f; /* gold ~50° — hue-separated from amber ~35° */
+  --d-accent-good: #6fae6f; /* live / grounded */
+  --d-shadow-card: none; /* hairlines, never shadows */
+  --d-cat-vuln: #8aa8c7;
+  --d-cat-exploit: #c0876f;
+  --d-cat-malware: #a691c7;
+  --d-cat-ransomware: #c27f9f;
+  --d-cat-apt: #79b3a4;
+  --d-cat-breach: #bc8f62;
+  --d-cat-research: #8fae8c;
+  --d-cat-supply-chain: #a9a29a;
+  --d-cat-policy: #98a0aa;
+  --d-cat-other: #857f76; /* one muted family, L≈0.74 C≈0.07 — cannot scream */
 
-  /* --- editorial / daylight (applied by default) --- */
-  --surface: #fafaf7; /* Bone White — warm, print-like */
-  --surface-raised: #ffffff; /* Card White */
-  --ink-primary: #14181c; /* Ink (~16:1 on Bone) */
-  --ink-secondary: #5b6470; /* Slate (AA) */
-  --ink-muted: #6b7280; /* meta / timestamps — darkened to pass WCAG AA on Bone */
-  --hairline: #e5e3db;
-  --border: rgba(20, 24, 28, 0.09);
-  --brand: #0e7c6b; /* Xəzər Teal — links, CTAs, chart bars, focus */
-  --brand-wash: #eaf3f0; /* tinted panels: digest card, selected rows */
-  --accent-critical: #c43d35; /* KEV / actively-exploited (AA on Bone) */
-  --accent-serious: #a8480f; /* high severity (dark orange, AA) */
-  --accent-warning: #946300; /* medium (dark amber, AA) */
-  --accent-good: #1e7a3d; /* live / verified / grounded */
-  --shadow-card: 0 1px 2px rgba(20, 24, 28, 0.04), 0 3px 10px rgba(20, 24, 28, 0.05);
+  /* --- LIGHT "day-print" register — SINGLE SOURCE (--l-*). Newsprint gray-tan. --- */
+  --l-surface: #efede7;
+  --l-surface-raised: #f7f5f0;
+  --l-ink-primary: #1a1814;
+  --l-ink-secondary: #57524a;
+  --l-ink-muted: #6e675c;
+  --l-hairline: #d8d4ca;
+  --l-border: rgba(26, 24, 20, 0.1);
+  --l-brand: #8a5410;
+  --l-brand-wash: #f1e4d2;
+  --l-accent-critical: #b3382f;
+  --l-accent-serious: #a54a0e;
+  --l-accent-warning: #8f6a00;
+  --l-accent-good: #22703b;
+  --l-shadow-card: none;
+  --l-cat-vuln: #3e6285;
+  --l-cat-exploit: #8a4f37;
+  --l-cat-malware: #64518a;
+  --l-cat-ransomware: #8a4a68;
+  --l-cat-apt: #2f6e5f;
+  --l-cat-breach: #7d5a2d;
+  --l-cat-research: #4c7049;
+  --l-cat-supply-chain: #6b655c;
+  --l-cat-policy: #565e68;
+  --l-cat-other: #5d584f; /* same family at L≈0.45 */
+
+  /* --- APPLIED tokens — DARK by default (the flip vs. the old site) --- */
+  --surface: var(--d-surface);
+  --surface-raised: var(--d-surface-raised);
+  --ink-primary: var(--d-ink-primary);
+  --ink-secondary: var(--d-ink-secondary);
+  --ink-muted: var(--d-ink-muted);
+  --hairline: var(--d-hairline);
+  --border: var(--d-border);
+  --brand: var(--d-brand);
+  --brand-wash: var(--d-brand-wash);
+  --accent-critical: var(--d-accent-critical);
+  --accent-serious: var(--d-accent-serious);
+  --accent-warning: var(--d-accent-warning);
+  --accent-good: var(--d-accent-good);
+  --shadow-card: var(--d-shadow-card);
+  --cat-vuln: var(--d-cat-vuln);
+  --cat-exploit: var(--d-cat-exploit);
+  --cat-malware: var(--d-cat-malware);
+  --cat-ransomware: var(--d-cat-ransomware);
+  --cat-apt: var(--d-cat-apt);
+  --cat-breach: var(--d-cat-breach);
+  --cat-research: var(--d-cat-research);
+  --cat-supply-chain: var(--d-cat-supply-chain);
+  --cat-policy: var(--d-cat-policy);
+  --cat-other: var(--d-cat-other);
+
+  /* --- Fluid type scale + spacing (identical intent at every width) --- */
+  --t-display: clamp(1.875rem, 1.1rem + 3.2vw, 3rem);
+  --t-h2: clamp(1.375rem, 1.15rem + 1.1vw, 1.75rem);
+  --t-row: clamp(1.0625rem, 0.98rem + 0.4vw, 1.25rem);
+  --t-body: clamp(0.9375rem, 0.9rem + 0.25vw, 1.0625rem);
+  --t-meta: clamp(0.6875rem, 0.65rem + 0.18vw, 0.78125rem);
+  --t-micro: 0.65625rem;
+  --sp-gutter: clamp(1rem, 3.5vw, 2rem);
+  --sp-section: clamp(2.5rem, 6vw, 4.5rem);
+  --sp-row: clamp(0.875rem, 2vw, 1.25rem);
+  --radius-chip: 2px; /* the only radius in the system (plus focus outline) */
 
   --font-headline: var(--font-headline);
   --font-body: var(--font-body);
   --font-mono: var(--font-mono);
 }
 
-/* Map the applied tokens to the dark palette. Used three ways: on `.ops`
-   (full tool pages, always dark — also flips the body via body:has(.ops)); on
-   `.darkroom` (a dark *inset* inside an otherwise-light page, e.g. the story
-   intel block — remaps tokens for its subtree only, deliberately NOT matched by
-   body:has(.ops) so the surrounding narrative keeps its own register); and on
-   `:root` under prefers-color-scheme: dark (editorial night mode). The value
-   hexes live once in the --d-* vars above, so only these var() references are
-   duplicated — no color can drift. */
+/* Day-print register — light-preference users + print/forwarding (a CISO
+   forwards a briefing and it prints as newsprint, not black asphalt). */
+@media (prefers-color-scheme: light) {
+  :root {
+    --surface: var(--l-surface);
+    --surface-raised: var(--l-surface-raised);
+    --ink-primary: var(--l-ink-primary);
+    --ink-secondary: var(--l-ink-secondary);
+    --ink-muted: var(--l-ink-muted);
+    --hairline: var(--l-hairline);
+    --border: var(--l-border);
+    --brand: var(--l-brand);
+    --brand-wash: var(--l-brand-wash);
+    --accent-critical: var(--l-accent-critical);
+    --accent-serious: var(--l-accent-serious);
+    --accent-warning: var(--l-accent-warning);
+    --accent-good: var(--l-accent-good);
+    --shadow-card: var(--l-shadow-card);
+    --cat-vuln: var(--l-cat-vuln);
+    --cat-exploit: var(--l-cat-exploit);
+    --cat-malware: var(--l-cat-malware);
+    --cat-ransomware: var(--l-cat-ransomware);
+    --cat-apt: var(--l-cat-apt);
+    --cat-breach: var(--l-cat-breach);
+    --cat-research: var(--l-cat-research);
+    --cat-supply-chain: var(--l-cat-supply-chain);
+    --cat-policy: var(--l-cat-policy);
+    --cat-other: var(--l-cat-other);
+    color-scheme: light;
+  }
+}
+
+/* Tool pages (.ops, always dark) and dark insets (.darkroom) force the dark
+   register for their subtree — including the category map — regardless of OS. */
 .ops,
 .darkroom {
   --surface: var(--d-surface);
@@ -77,32 +162,19 @@
   --accent-warning: var(--d-accent-warning);
   --accent-good: var(--d-accent-good);
   --shadow-card: var(--d-shadow-card);
+  --cat-vuln: var(--d-cat-vuln);
+  --cat-exploit: var(--d-cat-exploit);
+  --cat-malware: var(--d-cat-malware);
+  --cat-ransomware: var(--d-cat-ransomware);
+  --cat-apt: var(--d-cat-apt);
+  --cat-breach: var(--d-cat-breach);
+  --cat-research: var(--d-cat-research);
+  --cat-supply-chain: var(--d-cat-supply-chain);
+  --cat-policy: var(--d-cat-policy);
+  --cat-other: var(--d-cat-other);
   color-scheme: dark;
   background: var(--surface);
   color: var(--ink-primary);
-}
-
-/* Dark editorial variant — night-shift analysts. Follows the OS (no toggle, no
-   flash): editorial pages flip to the same dark palette the tools use. Tool
-   pages carry `.ops` so they stay dark in either OS mode regardless. */
-@media (prefers-color-scheme: dark) {
-  :root {
-    --surface: var(--d-surface);
-    --surface-raised: var(--d-surface-raised);
-    --ink-primary: var(--d-ink-primary);
-    --ink-secondary: var(--d-ink-secondary);
-    --ink-muted: var(--d-ink-muted);
-    --hairline: var(--d-hairline);
-    --border: var(--d-border);
-    --brand: var(--d-brand);
-    --brand-wash: var(--d-brand-wash);
-    --accent-critical: var(--d-accent-critical);
-    --accent-serious: var(--d-accent-serious);
-    --accent-warning: var(--d-accent-warning);
-    --accent-good: var(--d-accent-good);
-    --shadow-card: var(--d-shadow-card);
-    color-scheme: dark;
-  }
 }
 
 @theme inline {
@@ -120,6 +192,17 @@
   --color-accent-warning: var(--accent-warning);
   --color-accent-good: var(--accent-good);
 
+  --color-cat-vuln: var(--cat-vuln);
+  --color-cat-exploit: var(--cat-exploit);
+  --color-cat-malware: var(--cat-malware);
+  --color-cat-ransomware: var(--cat-ransomware);
+  --color-cat-apt: var(--cat-apt);
+  --color-cat-breach: var(--cat-breach);
+  --color-cat-research: var(--cat-research);
+  --color-cat-supply-chain: var(--cat-supply-chain);
+  --color-cat-policy: var(--cat-policy);
+  --color-cat-other: var(--cat-other);
+
   --font-headline: var(--font-headline);
   --font-body: var(--font-body);
   --font-mono: var(--font-mono);
@@ -131,11 +214,13 @@
 
 ::selection {
   background: var(--brand);
-  color: #ffffff;
+  color: var(--surface); /* register-aware: dark text on amber, light on copper */
 }
 
 html {
-  color-scheme: light;
+  color-scheme: dark;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
 }
 
 body {
@@ -143,15 +228,16 @@ body {
   color: var(--ink-primary);
 }
 
-/* Dark tool pages (.ops) sit above the page body; without this the light body
-   flashes on scroll overscroll / behind the scrollbar. Match the underlay. */
+/* Dark tool pages (.ops) sit above the page body; for a light-preference user
+   the newsprint body would flash behind the dark tool page on overscroll — keep
+   the underlay matched to asphalt. */
 body:has(.ops) {
   background-color: var(--d-surface);
 }
 
-/* Visible keyboard focus everywhere — the `*{border-color}` reset was defeating
-   the inputs' focus:border, so use an outline (unaffected by border-color) so
-   focus is never invisible. :where() keeps specificity at 0. */
+/* Visible keyboard focus everywhere — the `*{border-color}` reset defeats
+   focus:border, so use an outline (unaffected by border-color). :where() keeps
+   specificity at 0. */
 :where(a, button, input, select, textarea, [tabindex]):focus-visible {
   outline: 2px solid var(--brand);
   outline-offset: 2px;

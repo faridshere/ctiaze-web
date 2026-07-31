@@ -1,28 +1,35 @@
-import type { Metadata } from "next";
-import { Archivo, Inter, JetBrains_Mono } from "next/font/google";
+import type { Metadata, Viewport } from "next";
+import { IBM_Plex_Sans_Condensed, IBM_Plex_Sans, IBM_Plex_Mono } from "next/font/google";
 import { Analytics } from "@vercel/analytics/next";
 import { CommandPalette } from "@/components/CommandPalette";
 import "./globals.css";
 
-// Xəzər Standard type system: Archivo (product grotesk) for display, Inter for
-// UI/body, JetBrains Mono for all data/evidence. All three load latin + latin-
-// ext so Azerbaijani ə (U+0259) renders correctly.
-const headline = Archivo({
+// Növbə type system: the IBM Plex superfamily IS the identity — one voice, three
+// weights of it. Plex Sans Condensed for display (the ledger's condensed
+// headlines), Plex Sans for Azerbaijani prose, Plex Mono for ALL telemetry
+// (timestamps, glyph codes, tickers, CVE/IOC values). next/font self-hosts the
+// woff2 from our own origin (no runtime CDN) and ships the SAME files to every
+// OS — removing the per-device font-fallback drift that made the old site look
+// different on PC/iPhone/Android. latin-ext pins Azerbaijani ə (U+0259).
+const headline = IBM_Plex_Sans_Condensed({
   variable: "--font-headline",
   subsets: ["latin", "latin-ext"],
-  weight: ["500", "600", "700"],
+  weight: ["500", "600"],
+  display: "swap",
 });
 
-const body = Inter({
+const body = IBM_Plex_Sans({
   variable: "--font-body",
   subsets: ["latin", "latin-ext"],
-  weight: ["400", "500", "600"],
+  weight: ["400", "500"],
+  display: "swap",
 });
 
-const mono = JetBrains_Mono({
+const mono = IBM_Plex_Mono({
   variable: "--font-mono",
   subsets: ["latin", "latin-ext"],
   weight: ["400", "500"],
+  display: "swap",
 });
 
 export const metadata: Metadata = {
@@ -47,6 +54,15 @@ export const metadata: Metadata = {
       "application/feed+json": [{ url: "/feed.json", title: "ctiaze — JSON Feed" }],
     },
   },
+};
+
+// Dark-first: the browser chrome matches the asphalt surface, then flips to the
+// newsprint register for light-preference users.
+export const viewport: Viewport = {
+  themeColor: [
+    { media: "(prefers-color-scheme: dark)", color: "#141210" },
+    { media: "(prefers-color-scheme: light)", color: "#EFEDE7" },
+  ],
 };
 
 export default function RootLayout({

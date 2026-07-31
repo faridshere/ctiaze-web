@@ -1,0 +1,67 @@
+import { StoryLink } from "./StoryLink";
+import { GlyphChip } from "./GlyphChip";
+import { FlagChips } from "./FlagChips";
+import { formatStoryDate } from "@/lib/format";
+import { outletCode, outletHost } from "@/lib/outlets";
+import type { Story } from "@/lib/types";
+
+// One ledger entry. The DOM shape is identical for the lead (display) entry and a
+// dense row — only type size and excerpt length differ — so the page reads as one
+// continuous instrument. The telemetry gutter sits left on desktop and reflows to
+// an inline first line on phones (same DOM order, CSS grid re-templating only).
+export function LedgerRow({ story, display = false }: { story: Story; display?: boolean }) {
+  const { time } = formatStoryDate(story.publishedAt);
+  const host = outletHost(story.sourceUrl);
+  const code = outletCode(story.sourceUrl);
+  return (
+    <article className="grid grid-cols-1 gap-x-4 gap-y-1.5 border-t border-hairline py-[var(--sp-row)] transition-colors first:border-t-0 hover:bg-surface-raised min-[700px]:grid-cols-[7rem_minmax(0,1fr)] min-[1100px]:grid-cols-[9.5rem_minmax(0,1fr)]">
+      {/* gutter: telemetry — inline row on phone, stacked column on ≥700px */}
+      <div className="flex flex-wrap items-center gap-x-2 gap-y-1 font-mono text-[length:var(--t-meta)] text-ink-muted min-[700px]:flex-col min-[700px]:items-start min-[700px]:gap-1.5">
+        <time dateTime={story.publishedAt} className="tabular-nums">
+          {time}
+        </time>
+        <span className="flex items-center gap-1.5">
+          <GlyphChip category={story.category} />
+          <span className="uppercase tracking-[0.06em]">{code}</span>
+        </span>
+        <FlagChips kev={story.kev} cveIds={story.cveIds} region={story.region} />
+      </div>
+
+      {/* main */}
+      <div className="min-w-0">
+        <StoryLink slug={story.slug} title={story.titleAz} className="group block">
+          <h2
+            className={`font-headline font-semibold text-ink-primary transition-colors group-hover:text-brand ${
+              display
+                ? "text-[length:var(--t-display)] leading-[1.05] tracking-[-0.01em]"
+                : "text-[length:var(--t-row)] leading-[1.3]"
+            }`}
+          >
+            {story.titleAz}
+          </h2>
+          {story.bodyAz && (
+            <p
+              className={`mt-1.5 text-[length:var(--t-body)] leading-[1.6] text-ink-secondary ${
+                display ? "max-w-[42rem] line-clamp-3" : "line-clamp-2"
+              }`}
+            >
+              {story.bodyAz}
+            </p>
+          )}
+        </StoryLink>
+        <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 font-mono text-[length:var(--t-meta)] text-ink-muted">
+          <span className="text-accent-good">əsaslandırılıb ✓</span>
+          <a
+            href={story.sourceUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            title={host}
+            className="transition-colors hover:text-brand"
+          >
+            mənbə · {code} ↗
+          </a>
+        </div>
+      </div>
+    </article>
+  );
+}

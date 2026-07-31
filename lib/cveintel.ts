@@ -40,6 +40,30 @@ export async function epssFor(cve: string): Promise<number | null> {
   return row ? parseFloat(row.epss) : null;
 }
 
+// Batched EPSS for many CVEs in one request (FIRST accepts a comma list).
+export async function epssMap(cves: string[]): Promise<Map<string, number>> {
+  const m = new Map<string, number>();
+  if (!cves.length) return m;
+  const d = await j<{ data?: { cve: string; epss: string }[] }>(
+    `https://api.first.org/data/v1/epss?cve=${cves.slice(0, 100).map(encodeURIComponent).join(",")}`,
+    8000
+  );
+  for (const row of d?.data || []) m.set(row.cve.toUpperCase(), parseFloat(row.epss));
+  return m;
+}
+
+// Cheap "small info" badges for a story's CVEs: KEV (one cached file) + EPSS
+// (one batched request). No per-CVE NVD here — the full NVD detail lives on /cve.
+export type CveBadge = { kev: boolean; epss: number | null };
+export async function cveBadges(cves: string[]): Promise<Map<string, CveBadge>> {
+  const out = new Map<string, CveBadge>();
+  if (!cves.length) return out;
+  const upper = cves.map((c) => c.toUpperCase());
+  const [kev, epss] = await Promise.all([kevSet(), epssMap(upper)]);
+  for (const c of upper) out.set(c, { kev: kev.has(c), epss: epss.get(c) ?? null });
+  return out;
+}
+
 export type NvdInfo = {
   description?: string;
   cvss?: number;

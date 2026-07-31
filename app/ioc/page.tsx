@@ -2,7 +2,20 @@ import type { Metadata } from "next";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { ThreatLookup } from "@/components/ThreatLookup";
-import { infraBoard } from "@/lib/threatfox";
+import { NewsIocFeed } from "@/components/NewsIocFeed";
+import { infraBoard, lookupThreatFox, type TfKind } from "@/lib/threatfox";
+import { getIocFeed, groupIocsByType } from "@/lib/iocfeed";
+import type { IocType } from "@/lib/ioc";
+
+const IOC_WINDOW = 150;
+
+function tfKindOf(t: IocType): TfKind | null {
+  if (t === "ipv4") return "ip";
+  if (t === "domain") return "domain";
+  if (t === "url") return "url";
+  if (t === "sha256" || t === "sha1" || t === "md5") return "hash";
+  return null;
+}
 
 export const revalidate = 1800; // the board refreshes ~2×/hour; the lib caches 1h
 
@@ -23,9 +36,22 @@ function defang(kind: string, v: string): string {
 }
 
 export default async function IocPage() {
-  const board = await infraBoard(12);
+  const [board, iocFeed] = await Promise.all([infraBoard(12), getIocFeed(IOC_WINDOW).catch(() => [])]);
   const example = board?.samples.find((s) => s.kind === "ip" || s.kind === "domain")?.ioc;
   const maxFam = Math.max(1, ...(board?.families.map((f) => f.count) ?? [1]));
+
+  // Cross-check each news indicator against the live ThreatFox feed (shared cached
+  // index — the first call builds it, the rest are in-memory lookups).
+  const liveChecks = await Promise.all(
+    iocFeed.map(async (i) => {
+      const k = tfKindOf(i.type);
+      if (!k) return null;
+      const hits = await lookupThreatFox(i.value, k).catch(() => []);
+      return hits.length ? `${i.type}:${i.value.toLowerCase()}` : null;
+    })
+  );
+  const liveSet = new Set(liveChecks.filter((x): x is string => x !== null));
+  const iocGroups = groupIocsByType(iocFeed);
 
   return (
     <div className="ops min-h-screen flex flex-col">
@@ -46,6 +72,14 @@ export default async function IocPage() {
         <div className="mt-8">
           <ThreatLookup exampleIndicator={example} />
         </div>
+
+        {/* Zone 2 — every indicator the wire carried, linked to its briefings */}
+        <NewsIocFeed
+          groups={iocGroups}
+          total={iocFeed.length}
+          window={IOC_WINDOW}
+          liveSet={liveSet}
+        />
 
         {/* Live malicious-infrastructure board — from the same keyless ThreatFox
             feed, so it's always populated. This is the "what's active right now"

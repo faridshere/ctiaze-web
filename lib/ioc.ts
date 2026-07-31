@@ -44,6 +44,9 @@ const FILE_EXTS = new Set([
   "png", "jpg", "jpeg", "gif", "svg", "webp", "ico", "mp4", "mp3",
   "html", "htm", "php", "asp", "aspx", "json", "xml", "txt", "log",
   "dmg", "pkg", "apk", "msi", "lnk", "scr", "hta", "wsf",
+  // config / dump / build files that read as "name.ext" and falsely match a domain
+  "yml", "yaml", "toml", "ini", "conf", "cfg", "env", "lock", "hprof",
+  "md", "sql", "db", "pem", "key", "crt", "pcap", "class", "so", "o",
 ]);
 
 // Refang so the same regex catches both fanged and analyst-defanged text.

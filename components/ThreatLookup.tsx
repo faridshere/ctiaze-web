@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 type TfHit = {
   ioc: string;
@@ -96,6 +96,17 @@ export function ThreatLookup({ exampleIndicator }: { exampleIndicator?: string }
       setLoading(false);
     }
   }
+
+  // Prefill + auto-run from ?q= (the "yoxla →" links on the aggregation feed).
+  // Read on mount from the URL so the page itself stays statically rendered.
+  useEffect(() => {
+    const q0 = new URLSearchParams(window.location.search).get("q");
+    if (q0 && q0.trim()) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- one-time ?q= prefill + auto-run on mount; keeps the page statically rendered
+      setQ(q0.trim());
+      run(q0.trim());
+    }
+  }, []);
 
   const examples = [
     ["CVE-2021-44228", "CVE nümunə"],

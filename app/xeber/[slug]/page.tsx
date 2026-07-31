@@ -3,13 +3,18 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
-import { SeverityMarker } from "@/components/SeverityMarker";
+import { GlyphChip } from "@/components/GlyphChip";
+import { FlagChips } from "@/components/FlagChips";
+import { SpektrStrip } from "@/components/SpektrStrip";
 import { ThreatActorCard } from "@/components/ThreatActorCard";
 import { IocPanel } from "@/components/IocPanel";
 import { formatStoryDate } from "@/lib/format";
-import { getStoryBySlug } from "@/lib/stories";
+import { getStoryBySlug, getStories } from "@/lib/stories";
 import { extractIocs } from "@/lib/ioc";
 import { detectActors, enrichmentPivots } from "@/lib/actors";
+import { outletCode, outletHost } from "@/lib/outlets";
+import { categoryName } from "@/lib/taxonomy";
+import { cveBadges } from "@/lib/cveintel";
 
 export const revalidate = 180;
 
@@ -35,27 +40,27 @@ export async function generateMetadata({
   };
 }
 
-export default async function StoryPage({
-  params,
-}: {
-  params: Promise<Params>;
-}) {
+export default async function StoryPage({ params }: { params: Promise<Params> }) {
   const { slug } = await params;
   const story = await getStoryBySlug(slug);
   if (!story) notFound();
 
-  const { time, date } = formatStoryDate(story.publishedAt);
+  const [recent, badges] = await Promise.all([
+    getStories(60).catch(() => []),
+    cveBadges(story.cveIds).catch(() => new Map()),
+  ]);
 
-  // Threat intelligence derived from the story: indicators lifted from the text,
-  // the actor(s) named in it, and pivot terms to pull live indicators for.
+  const { time, date } = formatStoryDate(story.publishedAt);
+  const host = outletHost(story.sourceUrl);
+  const code = outletCode(story.sourceUrl);
+
+  // Threat intelligence derived from the story text.
   const iocText = [story.titleAz, story.titleEn, story.bodyAz];
   const extracted = extractIocs(...iocText);
   const actors = detectActors(...iocText);
   const pivots = enrichmentPivots(...iocText);
   const hasIntel = extracted.length > 0 || actors.length > 0 || pivots.length > 0;
 
-  // Structured data — makes each story eligible as a rich/citable result for
-  // search + AI answer engines (the per-CVE Azerbaijani long-tail).
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "NewsArticle",
@@ -73,80 +78,123 @@ export default async function StoryPage({
   };
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="flex min-h-screen flex-col">
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
       <Header />
-      <main className="flex-1 mx-auto w-full max-w-2xl px-4 py-12">
+      <main className="mx-auto w-full max-w-[42rem] flex-1 px-[var(--sp-gutter)] py-[var(--sp-section)]">
         <Link
           href="/"
-          className="font-mono text-[11px] uppercase tracking-wider text-ink-muted hover:text-ink-primary transition-colors"
+          className="font-mono text-[length:var(--t-micro)] uppercase tracking-[0.14em] text-ink-muted transition-colors hover:text-ink-primary"
         >
-          ← bütün dispaçlar
+          ← lent
         </Link>
 
-        <div className="mt-9 flex flex-wrap items-center gap-x-3 gap-y-2 font-mono text-[11px] text-ink-muted">
-          <time dateTime={story.publishedAt}>
+        {/* telemetry */}
+        <div className="mt-8 flex flex-wrap items-center gap-x-3 gap-y-2 font-mono text-[length:var(--t-meta)] text-ink-muted">
+          <time dateTime={story.publishedAt} className="tabular-nums">
             {date} · {time}
           </time>
-          <SeverityMarker kev={story.kev} severity={story.severity} />
-          <span className="uppercase tracking-wider">{story.category}</span>
-          {story.region && <span className="text-ink-secondary">AZ</span>}
-          {story.cveIds[0] && <span>{story.cveIds[0]}</span>}
+          <span className="flex items-center gap-1.5">
+            <GlyphChip category={story.category} />
+            <span className="uppercase tracking-[0.06em]">{categoryName(story.category)}</span>
+          </span>
+          <FlagChips kev={story.kev} cveIds={story.cveIds} region={story.region} />
+          <a
+            href={story.sourceUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            title={host}
+            className="ml-auto transition-colors hover:text-brand"
+          >
+            mənbə · {code} ↗
+          </a>
         </div>
 
-        <h1 className="mt-4 font-headline text-[2rem] sm:text-[2.6rem] leading-[1.1] text-ink-primary">
+        <h1 className="mt-4 font-headline text-[length:var(--t-display)] font-semibold leading-[1.05] tracking-[-0.01em] text-ink-primary">
           {story.titleAz}
         </h1>
 
-        {story.cveIds.length > 0 && (
-          <div className="mt-6 flex flex-wrap items-center gap-2">
-            <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-ink-muted">
-              CVE
-            </span>
-            {story.cveIds.map((cve) => (
-              <a
-                key={cve}
-                href={`https://nvd.nist.gov/vuln/detail/${cve}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="rounded-sm border border-accent-critical/40 bg-accent-critical/5 px-2 py-0.5 font-mono text-[12px] text-accent-critical hover:bg-accent-critical/10"
-                title="NVD-də bax (CVSS, EPSS, təfərrüat)"
-              >
-                {cve} ↗
-              </a>
-            ))}
+        {/* mini-Spektr — situates this briefing in the live threat spectrum */}
+        {recent.length > 0 && (
+          <div className="mt-5">
+            <SpektrStrip
+              stories={recent}
+              variant="mini"
+              ownCategory={story.category}
+              caption="son 60 dispaç üzrə spektr"
+            />
           </div>
         )}
 
         <div className="mt-6 h-px w-full bg-hairline" />
 
-        <p className="mt-7 text-lg leading-[1.75] text-ink-secondary whitespace-pre-line">
+        <p className="mt-7 whitespace-pre-line text-[length:var(--t-body)] leading-[1.75] text-ink-secondary">
           {story.bodyAz}
         </p>
 
-        <div className="mt-12 pt-6 border-t border-hairline flex flex-wrap items-center justify-between gap-x-6 gap-y-2 font-mono text-xs text-ink-muted">
-          {story.cveIds.length > 0 ? (
-            <span className="text-ink-secondary">{story.cveIds.join(" · ")}</span>
-          ) : (
-            <span />
-          )}
+        {/* CVE small-info block — cross-links into the registry */}
+        {story.cveIds.length > 0 && (
+          <div className="mt-8 border-t border-hairline pt-6">
+            <div className="font-mono text-[length:var(--t-micro)] uppercase tracking-[0.14em] text-ink-muted">
+              CVE · təfərrüat
+            </div>
+            <ul className="mt-3 flex flex-col gap-2.5">
+              {story.cveIds.map((cve) => {
+                const b = badges.get(cve.toUpperCase());
+                const epssPct = b?.epss != null ? b.epss * 100 : null;
+                return (
+                  <li key={cve} className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                    <Link
+                      href={`/cve#${cve.toUpperCase()}`}
+                      className="font-mono text-[length:var(--t-meta)] text-ink-primary transition-colors hover:text-brand"
+                    >
+                      {cve}
+                    </Link>
+                    {b?.kev && (
+                      <span className="rounded-[var(--radius-chip)] bg-accent-critical px-1 py-px font-mono text-[length:var(--t-micro)] font-semibold uppercase text-surface">
+                        KEV
+                      </span>
+                    )}
+                    {epssPct != null && (
+                      <span className="rounded-[var(--radius-chip)] border border-ink-secondary px-1 py-px font-mono text-[length:var(--t-micro)] text-ink-secondary">
+                        EPSS {epssPct.toFixed(epssPct < 1 ? 2 : 0)}%
+                      </span>
+                    )}
+                    <a
+                      href={`https://nvd.nist.gov/vuln/detail/${cve}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="font-mono text-[length:var(--t-micro)] uppercase tracking-wider text-ink-muted transition-colors hover:text-brand"
+                    >
+                      NVD ↗
+                    </a>
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+        )}
+
+        {/* attribution footer */}
+        <div className="mt-10 flex flex-wrap items-center justify-between gap-x-6 gap-y-2 border-t border-hairline pt-5 font-mono text-[length:var(--t-meta)] text-ink-muted">
+          <span className="text-accent-good">əsaslandırılıb ✓</span>
           <a
             href={story.sourceUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="uppercase tracking-wider text-ink-secondary hover:text-ink-primary transition-colors"
+            title={host}
+            className="uppercase tracking-wider transition-colors hover:text-ink-primary"
           >
             ilkin mənbə ↗
           </a>
         </div>
 
-        {/* Threat-intelligence inset — a darkroom window under the narrative:
-            actor dossier + machine-readable indicators (extracted + live). */}
+        {/* threat-intelligence inset — actor dossier + indicators (extracted + live) */}
         {hasIntel && (
-          <section className="darkroom mt-10 rounded-xl border border-hairline bg-surface p-5 sm:p-6">
+          <section className="darkroom mt-10 border border-hairline bg-surface p-5 sm:p-6">
             {actors.length > 0 && (
               <>
                 <ThreatActorCard actors={actors} />
