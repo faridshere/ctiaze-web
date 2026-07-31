@@ -112,9 +112,13 @@
   --font-mono: var(--font-mono);
 }
 
-/* Day-print register — light-preference users + print/forwarding (a CISO
-   forwards a briefing and it prints as newsprint, not black asphalt). */
-@media (prefers-color-scheme: light) {
+/* Day-print register — PRINT ONLY (a CISO forwards/prints a briefing and it
+   comes out as newsprint, not black asphalt). Screen is ALWAYS the dark asphalt
+   identity on every device and every page — the old prefers-color-scheme: light
+   screen switch made editorial pages go light while .ops tool pages stayed dark,
+   so a light-mode phone showed "different colours per page". One register on
+   screen fixes that by construction. */
+@media print {
   :root {
     --surface: var(--l-surface);
     --surface-raised: var(--l-surface-raised);

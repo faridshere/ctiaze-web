@@ -1,65 +1,58 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { IOC_TYPE_LABEL, type Ioc, type IocType } from "@/lib/ioc";
 
 type Rep = { malware: string; threatType: string; confidence: number };
 type ExtractedIoc = Ioc & { rep?: Rep | null };
 
-type EnrichIoc = {
-  type: IocType;
-  value: string;
-  defanged: string;
-  source: "TweetFeed" | "ThreatFox";
-  firstSeen?: string;
-  tags?: string[];
-  ref?: string;
-  malware?: string;
-  confidence?: number;
+// The named threat's live infra, resolved server-side from the keyless ThreatFox
+// export (reliable — no client fetch, no loading/empty flicker).
+type FamilyIoc = {
+  kind: "ip" | "domain" | "url" | "hash";
+  ioc: string;
+  malware: string;
+  threatType: string;
+  confidence: number;
+  firstSeen: string | null;
+  reference: string | null;
+  port: number | null;
 };
 
-// Bottom-of-story indicators block. Two clearly-separated things:
-//   1. Indicators lifted from THIS article's own text — genuinely tied to the
-//      news, each cross-checked against the live ThreatFox feed (reputation).
-//   2. ONLY when the article names a specific malware family/actor: that named
-//      threat's current live infrastructure — labelled as threat-context, not
-//      as this article's own indicators. Generic category feeds live on /ioc.
+const THREAT_LABEL: Record<string, string> = {
+  botnet_cc: "Botnet C2",
+  payload_delivery: "Yük çatdırılması",
+  payload: "Zərərli yük",
+  malware_download: "Malware endirmə",
+};
+const KIND_LABEL: Record<FamilyIoc["kind"], string> = {
+  ip: "IP", domain: "Domen", url: "URL", hash: "Hash",
+};
+
+function defangFamily(kind: FamilyIoc["kind"], v: string): string {
+  if (kind === "hash") return v;
+  const d = v.replace(/\./g, "[.]");
+  return kind === "url" ? d.replace(/^http/i, "hxxp") : d;
+}
+
+// Bottom-of-story indicators block. Two clearly-separated, honest things:
+//   1. "Bu xəbərdən çıxarılan" — indicators lifted from THIS article's own text,
+//      each cross-checked against ThreatFox (a "zərərli · <family>" badge when the
+//      article's own IOC is known-malicious). Enrichment tied to the news.
+//   2. "<family> — aktiv infrastruktur" — ONLY when the article names a specific
+//      malware family ThreatFox tracks: that family's real active indicators,
+//      explicitly labelled as threat-context (not this article's own IOCs).
 export function IocPanel({
   extracted,
-  pivots,
+  familyName,
+  familyIocs,
 }: {
   extracted: ExtractedIoc[];
-  pivots: string[];
+  familyName: string;
+  familyIocs: FamilyIoc[];
 }) {
-  const query = pivots.join(",");
-  const [live, setLive] = useState<EnrichIoc[] | null>(null);
-  const [matched, setMatched] = useState<string | null>(null);
-  const [state, setState] = useState<"idle" | "loading" | "done" | "error">(
-    query ? "loading" : "idle"
-  );
-
-  useEffect(() => {
-    if (!query) return;
-    let cancelled = false;
-    fetch(`/api/ioc-enrich?term=${encodeURIComponent(query)}`)
-      .then((r) => (r.ok ? r.json() : Promise.reject()))
-      .then((d: { iocs?: EnrichIoc[]; term?: string }) => {
-        if (cancelled) return;
-        setLive(d.iocs ?? []);
-        setMatched(d.term ?? pivots[0]);
-        setState("done");
-      })
-      .catch(() => {
-        if (!cancelled) setState("error");
-      });
-    return () => {
-      cancelled = true;
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [query]);
-
   const hasExtracted = extracted.length > 0;
-  const hasLive = query && (state === "loading" || (live && live.length > 0));
+  const hasFamily = familyIocs.length > 0;
 
   return (
     <div>
@@ -72,7 +65,7 @@ export function IocPanel({
         </span>
       </div>
 
-      {!hasExtracted && !hasLive && (
+      {!hasExtracted && !hasFamily && (
         <p className="mt-4 font-mono text-[length:var(--t-meta)] text-ink-muted">
           Bu dispaçda maşınla oxunan indikator aşkarlanmadı. Aktiv təhdid göstəriciləri üçün{" "}
           <a href="/ioc" className="text-brand hover:underline">
@@ -82,11 +75,9 @@ export function IocPanel({
         </p>
       )}
 
-      {/* 1 — this article's own indicators, with reputation */}
       {hasExtracted && <ExtractedGroups iocs={extracted} />}
 
-      {/* 2 — the named threat's live infrastructure (only for a specific pivot) */}
-      {query && (
+      {hasFamily && (
         <div className="mt-6">
           <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
             <span className="relative flex size-1.5">
@@ -94,29 +85,16 @@ export function IocPanel({
               <span className="relative inline-flex size-1.5 rounded-full bg-accent-good" />
             </span>
             <h3 className="font-mono text-[length:var(--t-meta)] uppercase tracking-[0.14em] text-ink-secondary">
-              {matched ?? pivots[0]} — aktiv infrastruktur · canlı
+              {familyName} — aktiv infrastruktur · canlı
             </h3>
+            <span className="font-mono text-[length:var(--t-micro)] tabular-nums text-ink-muted">
+              {familyIocs.length}
+            </span>
           </div>
           <p className="mt-1 font-mono text-[length:var(--t-micro)] text-ink-muted">
-            bu xəbərin adını çəkdiyi təhdidin hazırda aktiv göstəriciləri — xəbərə deyil, təhdidə aiddir
+            bu xəbərin adını çəkdiyi təhdidin hazırda abuse.ch-də aktiv göstəriciləri — xəbərə deyil, təhdidə aiddir
           </p>
-
-          {state === "loading" && (
-            <p className="mt-3 font-mono text-[length:var(--t-meta)] text-ink-muted animate-pulse">
-              canlı təhdid lentindən yüklənir…
-            </p>
-          )}
-          {state === "error" && (
-            <p className="mt-3 font-mono text-[length:var(--t-meta)] text-ink-muted">
-              Canlı lent hazırda əlçatan deyil.
-            </p>
-          )}
-          {state === "done" && live && live.length === 0 && (
-            <p className="mt-3 font-mono text-[length:var(--t-meta)] text-ink-muted">
-              Bu təhdid üçün açıq lentdə hazırda aktiv göstərici tapılmadı.
-            </p>
-          )}
-          {live && live.length > 0 && <LiveList iocs={live} />}
+          <FamilyList iocs={familyIocs} />
         </div>
       )}
     </div>
@@ -140,9 +118,7 @@ function ExtractedGroups({ iocs }: { iocs: ExtractedIoc[] }) {
       <div className="mb-2 flex items-center justify-between gap-3">
         <span className="font-mono text-[length:var(--t-micro)] uppercase tracking-[0.14em] text-ink-secondary">
           Bu xəbərdən çıxarılan · {iocs.length}
-          {flagged > 0 && (
-            <span className="ml-2 text-accent-critical">· {flagged} zərərli</span>
-          )}
+          {flagged > 0 && <span className="ml-2 text-accent-critical">· {flagged} zərərli</span>}
         </span>
         <CopyAll values={iocs.map((i) => i.value)} />
       </div>
@@ -174,44 +150,45 @@ function ExtractedGroups({ iocs }: { iocs: ExtractedIoc[] }) {
   );
 }
 
-function LiveList({ iocs }: { iocs: EnrichIoc[] }) {
+function FamilyList({ iocs }: { iocs: FamilyIoc[] }) {
   const [expanded, setExpanded] = useState(false);
-  const shown = expanded ? iocs : iocs.slice(0, 20);
+  const shown = expanded ? iocs : iocs.slice(0, 15);
   return (
     <div className="mt-3">
       <div className="mb-2 flex items-center justify-end">
-        <CopyAll values={iocs.map((i) => i.value)} />
+        <CopyAll values={iocs.map((i) => (i.port ? `${i.ioc}:${i.port}` : i.ioc))} />
       </div>
       <div className="divide-y divide-hairline rounded-[var(--radius-chip)] border border-hairline bg-surface-raised">
         {shown.map((i, idx) => (
-          <div key={`${i.value}-${idx}`} className="flex flex-wrap items-center gap-x-3 gap-y-1 p-3">
+          <div key={`${i.ioc}-${idx}`} className="flex flex-wrap items-center gap-x-3 gap-y-1 p-3">
             <span className="w-14 shrink-0 font-mono text-[length:var(--t-micro)] uppercase tracking-wider text-ink-muted">
-              {IOC_TYPE_LABEL[i.type]}
+              {KIND_LABEL[i.kind]}
             </span>
             <div className="min-w-0 flex-1">
-              <IocRow defanged={i.defanged} value={i.value} />
+              <IocRow
+                defanged={defangFamily(i.kind, i.ioc) + (i.port ? `:${i.port}` : "")}
+                value={i.port ? `${i.ioc}:${i.port}` : i.ioc}
+              />
             </div>
             <div className="flex items-center gap-2 font-mono text-[length:var(--t-micro)] text-ink-muted">
-              {i.malware && <span className="text-ink-secondary">{i.malware}</span>}
-              {typeof i.confidence === "number" && <span>{i.confidence}%</span>}
+              {i.threatType && <span className="text-accent-serious">{THREAT_LABEL[i.threatType] || i.threatType}</span>}
+              <span className="tabular-nums">{i.confidence}%</span>
               {i.firstSeen && <span>{i.firstSeen.slice(0, 10)}</span>}
-              {i.ref ? (
-                <a href={i.ref} target="_blank" rel="noopener noreferrer" className="text-brand hover:underline">
-                  {i.source} ↗
+              {i.reference && (
+                <a href={i.reference} target="_blank" rel="noopener noreferrer" className="text-brand hover:underline">
+                  mənbə ↗
                 </a>
-              ) : (
-                <span className="text-brand/70">{i.source}</span>
               )}
             </div>
           </div>
         ))}
       </div>
-      {iocs.length > 20 && (
+      {iocs.length > 15 && (
         <button
           onClick={() => setExpanded((v) => !v)}
           className="mt-2 font-mono text-[length:var(--t-micro)] uppercase tracking-wider text-brand hover:underline"
         >
-          {expanded ? "daha az göstər" : `+${iocs.length - 20} daha göstər`}
+          {expanded ? "daha az göstər" : `+${iocs.length - 15} daha göstər`}
         </button>
       )}
     </div>

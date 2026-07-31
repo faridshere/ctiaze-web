@@ -56,13 +56,11 @@ export const metadata: Metadata = {
   },
 };
 
-// Dark-first: the browser chrome matches the asphalt surface, then flips to the
-// newsprint register for light-preference users.
+// The screen identity is always the dark asphalt register (light is print-only),
+// so the browser chrome is dark on every device — no per-page/per-OS colour drift.
 export const viewport: Viewport = {
-  themeColor: [
-    { media: "(prefers-color-scheme: dark)", color: "#141210" },
-    { media: "(prefers-color-scheme: light)", color: "#EFEDE7" },
-  ],
+  themeColor: "#141210",
+  colorScheme: "dark",
 };
 
 export default function RootLayout({

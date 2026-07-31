@@ -170,6 +170,43 @@ export async function lookupThreatFox(value: string, kind: TfKind): Promise<TfHi
   return [];
 }
 
+// Given the malware-family/actor names an article mentions, return THAT family's
+// current active indicators from the live export — reliable, keyless, family-
+// specific. This is the per-news enrichment source (replaces the sparse TweetFeed
+// path): a story about Cobalt Strike / AsyncRAT / Remcos / Lumma / … gets that
+// family's real active C2s. Actor-only names (APT28, LockBit) that ThreatFox
+// doesn't track as malware simply return [] (the actor dossier carries them).
+function normFam(s: string): string {
+  return s.toLowerCase().replace(/[^a-z0-9]/g, "");
+}
+
+export async function iocsByMalware(
+  names: string[],
+  limit = 24
+): Promise<{ family: string; hits: TfHit[] }> {
+  const idx = await getIndex();
+  const first = names[0] ?? "";
+  if (!idx || !names.length) return { family: first, hits: [] };
+  // guard against tiny tokens ("rat", "c2") that would over-match
+  const pivots = names.map(normFam).filter((p) => p.length >= 4);
+  if (!pivots.length) return { family: first, hits: [] };
+
+  const out: TfHit[] = [];
+  const seen = new Set<string>();
+  let matched = "";
+  for (const r of idx.rows) {
+    const cands = [normFam(r.malware), r.malwareAlias ? normFam(r.malwareAlias) : ""].filter(Boolean);
+    if (!pivots.some((p) => cands.some((c) => c.includes(p) || p.includes(c)))) continue;
+    const key = `${r.kind}:${r.ioc.toLowerCase()}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    if (!matched) matched = r.malware;
+    out.push(r);
+    if (out.length >= limit) break;
+  }
+  return { family: matched || first, hits: out };
+}
+
 export type InfraBoard = {
   total: number;
   ageHours: number | null;

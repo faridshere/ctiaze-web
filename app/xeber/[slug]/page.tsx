@@ -12,7 +12,7 @@ import { formatStoryDate } from "@/lib/format";
 import { getStoryBySlug, getStories } from "@/lib/stories";
 import { extractIocs, type IocType } from "@/lib/ioc";
 import { detectActors, specificPivots } from "@/lib/actors";
-import { lookupThreatFox, type TfKind } from "@/lib/threatfox";
+import { lookupThreatFox, iocsByMalware, type TfKind } from "@/lib/threatfox";
 import { outletCode, outletHost } from "@/lib/outlets";
 import { categoryName } from "@/lib/taxonomy";
 import { cveBadges } from "@/lib/cveintel";
@@ -92,7 +92,23 @@ export default async function StoryPage({ params }: { params: Promise<Params> })
     ...i,
     rep: repMap.get(`${i.type}:${i.value.toLowerCase()}`) ?? null,
   }));
-  const hasIntel = extracted.length > 0 || actors.length > 0 || pivots.length > 0;
+
+  // The named threat's live infrastructure, from the reliable keyless ThreatFox
+  // export filtered by family (server-rendered — no client loading/empty states).
+  const familyResult = pivots.length
+    ? await iocsByMalware(pivots, 20).catch(() => ({ family: "", hits: [] }))
+    : { family: "", hits: [] };
+  const familyIocs = familyResult.hits.map((h) => ({
+    kind: h.kind,
+    ioc: h.ioc,
+    malware: h.malware,
+    threatType: h.threatType,
+    confidence: h.confidence,
+    firstSeen: h.firstSeen ?? null,
+    reference: h.reference ?? null,
+    port: h.port ?? null,
+  }));
+  const hasIntel = extracted.length > 0 || actors.length > 0 || familyIocs.length > 0;
 
   const jsonLd = {
     "@context": "https://schema.org",
@@ -234,7 +250,11 @@ export default async function StoryPage({ params }: { params: Promise<Params> })
                 <div className="my-6 h-px w-full bg-hairline" />
               </>
             )}
-            <IocPanel extracted={enrichedExtracted} pivots={pivots} />
+            <IocPanel
+              extracted={enrichedExtracted}
+              familyName={familyResult.family}
+              familyIocs={familyIocs}
+            />
           </section>
         )}
       </main>
