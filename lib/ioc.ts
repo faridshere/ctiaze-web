@@ -33,6 +33,11 @@ const BENIGN_DOMAINS = new Set([
   "krebsonsecurity.com", "therecord.media", "darkreading.com",
   "theregister.com", "arstechnica.com", "wired.com", "zdnet.com",
   "bankinfosecurity.com", "hackread.com", "ctiaze.tech",
+  // security-vendor / research blogs that appear as source citations, not IOCs
+  "catonetworks.com", "group-ib.com", "intezer.com", "malwarebytes.com",
+  "welivesecurity.com", "securelist.com", "unit42.paloaltonetworks.com",
+  "research.checkpoint.com", "blog.talosintelligence.com", "talosintelligence.com",
+  "cloudblog.withgoogle.com", "thedfirreport.com", "abuse.ch", "urlhaus.abuse.ch",
 ]);
 
 // Common file extensions that a bare "name.ext" token would falsely match as a
@@ -69,7 +74,11 @@ function defangEmail(v: string): string {
   return v.replace(/@/g, "[@]").replace(/\./g, "[.]");
 }
 
-const RE_URL = /\bhttps?:\/\/[^\s<>"'`)\]]+/gi;
+// A whole URL token (brackets allowed, so defang markers like [.] aren't cut off).
+const RE_URL_TOKEN = /\b(?:hxxps?|fxp|https?):\/\/[^\s<>"'`]+/gi;
+// The author's "this is malicious" signal — a defang marker. Only URLs carrying
+// one are treated as indicators; a plain https link is a source citation.
+const RE_DEFANG_MARK = /\[\.\]|\(\.\)|\{\.\}|\[dot\]|\[:\]|hxxp|fxp/i;
 const RE_EMAIL = /\b[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,24}\b/gi;
 const RE_SHA256 = /\b[a-f0-9]{64}\b/gi;
 const RE_SHA1 = /\b[a-f0-9]{40}\b/gi;
@@ -107,8 +116,25 @@ export function extractIocs(...texts: (string | undefined | null)[]): Ioc[] {
   // an email's domain isn't also emitted as a bare domain.
   const consumed: string[] = [];
 
-  for (const m of text.matchAll(RE_URL)) {
-    const v = m[0].replace(/[.,;:)\]]+$/, "");
+  // URLs: only those the author DEFANGED (hxxp / [.] / [dot] / [:] …). A plain
+  // https:// link in an AI news summary is almost always a SOURCE CITATION
+  // (vendor blog, press) — not an indicator — so matching plain URLs produced
+  // misleading "defensive IOCs". We therefore match defanged URLs in the RAW
+  // text (the author's flag that it's malicious), refang for the value, and still
+  // drop any whose host is a benign vendor/press domain. Real malicious URLs for
+  // a story's threat now come from the ThreatFox family-infrastructure section.
+  for (const m of raw.matchAll(RE_URL_TOKEN)) {
+    const token = m[0].replace(/[.,;:)\]]+$/, "");
+    if (!RE_DEFANG_MARK.test(token)) continue; // plain link = citation, not an IOC
+    const v = refang(token);
+    let host = "";
+    try {
+      host = new URL(v).hostname.replace(/^www\./, "").toLowerCase();
+    } catch {
+      /* unparseable — skip */
+    }
+    if (!host) continue;
+    if ([...BENIGN_DOMAINS].some((b) => host === b || host.endsWith("." + b))) continue;
     consumed.push(v);
     push(out, { type: "url", value: v, defanged: defangUrl(v) });
   }
