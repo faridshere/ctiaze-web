@@ -10,8 +10,9 @@ import { ThreatActorCard } from "@/components/ThreatActorCard";
 import { IocPanel } from "@/components/IocPanel";
 import { formatStoryDate } from "@/lib/format";
 import { getStoryBySlug, getStories } from "@/lib/stories";
-import { extractIocs } from "@/lib/ioc";
-import { detectActors, enrichmentPivots } from "@/lib/actors";
+import { extractIocs, type IocType } from "@/lib/ioc";
+import { detectActors, specificPivots } from "@/lib/actors";
+import { lookupThreatFox, type TfKind } from "@/lib/threatfox";
 import { outletCode, outletHost } from "@/lib/outlets";
 import { categoryName } from "@/lib/taxonomy";
 import { cveBadges } from "@/lib/cveintel";
@@ -19,6 +20,14 @@ import { cveBadges } from "@/lib/cveintel";
 export const revalidate = 180;
 
 type Params = { slug: string };
+
+function tfKindOf(t: IocType): TfKind | null {
+  if (t === "ipv4") return "ip";
+  if (t === "domain") return "domain";
+  if (t === "url") return "url";
+  if (t === "sha256" || t === "sha1" || t === "md5") return "hash";
+  return null;
+}
 
 export async function generateMetadata({
   params,
@@ -54,11 +63,35 @@ export default async function StoryPage({ params }: { params: Promise<Params> })
   const host = outletHost(story.sourceUrl);
   const code = outletCode(story.sourceUrl);
 
-  // Threat intelligence derived from the story text.
+  // Threat intelligence derived from THIS story: indicators lifted from its text
+  // (genuinely tied to this news), the actor(s) it names, and — only when it names
+  // a SPECIFIC malware family/actor — that named threat's live infrastructure.
   const iocText = [story.titleAz, story.titleEn, story.bodyAz];
   const extracted = extractIocs(...iocText);
   const actors = detectActors(...iocText);
-  const pivots = enrichmentPivots(...iocText);
+  const pivots = specificPivots(...iocText);
+
+  // Enrich the story's OWN indicators: cross-check each against the live ThreatFox
+  // feed so a defender learns which of this article's IOCs are known-malicious and
+  // behind what family — enrichment tied to the news, not a generic category dump.
+  const repChecks = await Promise.all(
+    extracted.map(async (i) => {
+      const k = tfKindOf(i.type);
+      if (!k) return null;
+      const hits = await lookupThreatFox(i.value, k).catch(() => []);
+      return hits.length
+        ? {
+            key: `${i.type}:${i.value.toLowerCase()}`,
+            rep: { malware: hits[0].malware, threatType: hits[0].threatType, confidence: hits[0].confidence },
+          }
+        : null;
+    })
+  );
+  const repMap = new Map(repChecks.filter((x): x is NonNullable<typeof x> => x !== null).map((x) => [x.key, x.rep]));
+  const enrichedExtracted = extracted.map((i) => ({
+    ...i,
+    rep: repMap.get(`${i.type}:${i.value.toLowerCase()}`) ?? null,
+  }));
   const hasIntel = extracted.length > 0 || actors.length > 0 || pivots.length > 0;
 
   const jsonLd = {
@@ -201,7 +234,7 @@ export default async function StoryPage({ params }: { params: Promise<Params> })
                 <div className="my-6 h-px w-full bg-hairline" />
               </>
             )}
-            <IocPanel extracted={extracted} pivots={pivots} />
+            <IocPanel extracted={enrichedExtracted} pivots={pivots} />
           </section>
         )}
       </main>

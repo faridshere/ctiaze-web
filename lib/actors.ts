@@ -56,6 +56,25 @@ function genericPivots(text: string): string[] {
   return out;
 }
 
+// Pivots that are SPECIFIC named threats ONLY — matched malware families +
+// named actors, never generic category tags. Used on a story page so the live
+// indicators shown under an article are tied to the actual threat it names, not
+// the same "top ransomware/phishing IOCs" that would appear under every story in
+// that category (which correctly read as unrelated to the specific news).
+export function specificPivots(...texts: (string | undefined | null)[]): string[] {
+  const text = texts.filter(Boolean).join("\n");
+  if (!text) return [];
+  const pivots: string[] = [];
+  for (const { family, res } of FAMILY_MATCHERS) {
+    if (res.some((re) => re.test(text))) pivots.push(family.name);
+  }
+  for (const actor of detectActors(text)) {
+    const tag = actor.aliases.find((a) => /^[A-Za-z0-9]+$/.test(a)) ?? actor.name;
+    if (!pivots.includes(tag)) pivots.push(tag);
+  }
+  return [...new Set(pivots)].slice(0, 4);
+}
+
 // Pivot terms for enrichment, most specific first so the feed is queried in
 // priority order: matched malware families → named actors → generic category.
 export function enrichmentPivots(...texts: (string | undefined | null)[]): string[] {

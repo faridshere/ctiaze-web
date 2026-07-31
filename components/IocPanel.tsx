@@ -3,6 +3,9 @@
 import { useEffect, useMemo, useState } from "react";
 import { IOC_TYPE_LABEL, type Ioc, type IocType } from "@/lib/ioc";
 
+type Rep = { malware: string; threatType: string; confidence: number };
+type ExtractedIoc = Ioc & { rep?: Rep | null };
+
 type EnrichIoc = {
   type: IocType;
   value: string;
@@ -15,34 +18,35 @@ type EnrichIoc = {
   confidence?: number;
 };
 
-// Bottom-of-story indicators block. Shows IOCs pulled from the story text and,
-// when the story names a malware family or actor, live indicators currently
-// seen in the wild for that threat (via /api/ioc-enrich).
+// Bottom-of-story indicators block. Two clearly-separated things:
+//   1. Indicators lifted from THIS article's own text — genuinely tied to the
+//      news, each cross-checked against the live ThreatFox feed (reputation).
+//   2. ONLY when the article names a specific malware family/actor: that named
+//      threat's current live infrastructure — labelled as threat-context, not
+//      as this article's own indicators. Generic category feeds live on /ioc.
 export function IocPanel({
   extracted,
   pivots,
 }: {
-  extracted: Ioc[];
+  extracted: ExtractedIoc[];
   pivots: string[];
 }) {
   const query = pivots.join(",");
   const [live, setLive] = useState<EnrichIoc[] | null>(null);
-  const [matched, setMatched] = useState<{ term: string; generic: boolean } | null>(null);
+  const [matched, setMatched] = useState<string | null>(null);
   const [state, setState] = useState<"idle" | "loading" | "done" | "error">(
     query ? "loading" : "idle"
   );
 
   useEffect(() => {
     if (!query) return;
-    // Initial state is already "loading" when a term is present (see useState),
-    // so no synchronous setState here — the effect only resolves it.
     let cancelled = false;
     fetch(`/api/ioc-enrich?term=${encodeURIComponent(query)}`)
       .then((r) => (r.ok ? r.json() : Promise.reject()))
-      .then((d: { iocs?: EnrichIoc[]; term?: string; generic?: boolean }) => {
+      .then((d: { iocs?: EnrichIoc[]; term?: string }) => {
         if (cancelled) return;
         setLive(d.iocs ?? []);
-        setMatched({ term: d.term ?? pivots[0], generic: Boolean(d.generic) });
+        setMatched(d.term ?? pivots[0]);
         setState("done");
       })
       .catch(() => {
@@ -54,30 +58,34 @@ export function IocPanel({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [query]);
 
-  const hasAnything =
-    extracted.length > 0 || (live && live.length > 0) || state === "loading";
+  const hasExtracted = extracted.length > 0;
+  const hasLive = query && (state === "loading" || (live && live.length > 0));
 
   return (
     <div>
       <div className="flex items-baseline justify-between gap-3">
-        <h2 className="font-mono text-[11px] uppercase tracking-[0.18em] text-brand">
+        <h2 className="font-mono text-[length:var(--t-micro)] uppercase tracking-[0.16em] text-brand">
           İndikatorlar · IOC
         </h2>
-        <span className="font-mono text-[10px] uppercase tracking-wider text-ink-muted">
+        <span className="font-mono text-[length:var(--t-micro)] uppercase tracking-wider text-ink-muted">
           müdafiə üçün · defanged
         </span>
       </div>
 
-      {!hasAnything && (
-        <p className="mt-4 font-mono text-[13px] text-ink-muted">
-          Bu dispaçda maşınla oxunan indikator aşkarlanmadı.
+      {!hasExtracted && !hasLive && (
+        <p className="mt-4 font-mono text-[length:var(--t-meta)] text-ink-muted">
+          Bu dispaçda maşınla oxunan indikator aşkarlanmadı. Aktiv təhdid göstəriciləri üçün{" "}
+          <a href="/ioc" className="text-brand hover:underline">
+            IOC səhifəsi
+          </a>
+          .
         </p>
       )}
 
-      {extracted.length > 0 && (
-        <ExtractedGroups iocs={extracted} />
-      )}
+      {/* 1 — this article's own indicators, with reputation */}
+      {hasExtracted && <ExtractedGroups iocs={extracted} />}
 
+      {/* 2 — the named threat's live infrastructure (only for a specific pivot) */}
       {query && (
         <div className="mt-6">
           <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
@@ -85,31 +93,27 @@ export function IocPanel({
               <span className="absolute inline-flex size-full animate-ping rounded-full bg-accent-good opacity-60" />
               <span className="relative inline-flex size-1.5 rounded-full bg-accent-good" />
             </span>
-            <h3 className="font-mono text-[11px] uppercase tracking-[0.14em] text-ink-secondary">
-              {matched?.generic
-                ? `Aktiv ${matched.term} indikatorları · canlı`
-                : `Aktiv əlaqəli IOC-lar${matched ? ` · ${matched.term}` : ""} · canlı`}
+            <h3 className="font-mono text-[length:var(--t-meta)] uppercase tracking-[0.14em] text-ink-secondary">
+              {matched ?? pivots[0]} — aktiv infrastruktur · canlı
             </h3>
           </div>
-          {matched?.generic && live && live.length > 0 && (
-            <p className="mt-1 font-mono text-[10px] text-ink-muted">
-              bu təhdid növü üzrə hazırda təpədə görünən indikatorlar (ümumi lent)
-            </p>
-          )}
+          <p className="mt-1 font-mono text-[length:var(--t-micro)] text-ink-muted">
+            bu xəbərin adını çəkdiyi təhdidin hazırda aktiv göstəriciləri — xəbərə deyil, təhdidə aiddir
+          </p>
 
           {state === "loading" && (
-            <p className="mt-3 font-mono text-[12px] text-ink-muted animate-pulse">
+            <p className="mt-3 font-mono text-[length:var(--t-meta)] text-ink-muted animate-pulse">
               canlı təhdid lentindən yüklənir…
             </p>
           )}
           {state === "error" && (
-            <p className="mt-3 font-mono text-[12px] text-ink-muted">
+            <p className="mt-3 font-mono text-[length:var(--t-meta)] text-ink-muted">
               Canlı lent hazırda əlçatan deyil.
             </p>
           )}
           {state === "done" && live && live.length === 0 && (
-            <p className="mt-3 font-mono text-[12px] text-ink-muted">
-              Hazırda açıq təhdid lentində uyğun indikator tapılmadı.
+            <p className="mt-3 font-mono text-[length:var(--t-meta)] text-ink-muted">
+              Bu təhdid üçün açıq lentdə hazırda aktiv göstərici tapılmadı.
             </p>
           )}
           {live && live.length > 0 && <LiveList iocs={live} />}
@@ -119,9 +123,9 @@ export function IocPanel({
   );
 }
 
-function ExtractedGroups({ iocs }: { iocs: Ioc[] }) {
+function ExtractedGroups({ iocs }: { iocs: ExtractedIoc[] }) {
   const groups = useMemo(() => {
-    const m = new Map<IocType, Ioc[]>();
+    const m = new Map<IocType, ExtractedIoc[]>();
     for (const i of iocs) {
       const arr = m.get(i.type) ?? [];
       arr.push(i);
@@ -129,24 +133,38 @@ function ExtractedGroups({ iocs }: { iocs: Ioc[] }) {
     }
     return [...m.entries()];
   }, [iocs]);
+  const flagged = iocs.filter((i) => i.rep).length;
 
   return (
     <div className="mt-4">
       <div className="mb-2 flex items-center justify-between gap-3">
-        <span className="font-mono text-[11px] uppercase tracking-[0.14em] text-ink-secondary">
+        <span className="font-mono text-[length:var(--t-micro)] uppercase tracking-[0.14em] text-ink-secondary">
           Bu xəbərdən çıxarılan · {iocs.length}
+          {flagged > 0 && (
+            <span className="ml-2 text-accent-critical">· {flagged} zərərli</span>
+          )}
         </span>
         <CopyAll values={iocs.map((i) => i.value)} />
       </div>
-      <div className="divide-y divide-hairline rounded-lg border border-hairline bg-surface-raised">
+      <div className="divide-y divide-hairline rounded-[var(--radius-chip)] border border-hairline bg-surface-raised">
         {groups.map(([type, list]) => (
           <div key={type} className="flex gap-3 p-3">
-            <span className="w-16 shrink-0 pt-0.5 font-mono text-[10px] uppercase tracking-wider text-ink-muted">
+            <span className="w-16 shrink-0 pt-0.5 font-mono text-[length:var(--t-micro)] uppercase tracking-wider text-ink-muted">
               {IOC_TYPE_LABEL[type]}
             </span>
             <div className="flex flex-1 flex-col gap-1.5">
               {list.map((i) => (
-                <IocRow key={i.value} defanged={i.defanged} value={i.value} />
+                <div key={i.value} className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                  <IocRow defanged={i.defanged} value={i.value} />
+                  {i.rep && (
+                    <span
+                      className="rounded-[var(--radius-chip)] border border-accent-critical/50 px-1 font-mono text-[length:var(--t-micro)] uppercase tracking-wider text-accent-critical"
+                      title={`abuse.ch: ${i.rep.threatType} · ${i.rep.confidence}% əminlik`}
+                    >
+                      zərərli · {i.rep.malware}
+                    </span>
+                  )}
+                </div>
               ))}
             </div>
           </div>
@@ -164,16 +182,16 @@ function LiveList({ iocs }: { iocs: EnrichIoc[] }) {
       <div className="mb-2 flex items-center justify-end">
         <CopyAll values={iocs.map((i) => i.value)} />
       </div>
-      <div className="divide-y divide-hairline rounded-lg border border-hairline bg-surface-raised">
+      <div className="divide-y divide-hairline rounded-[var(--radius-chip)] border border-hairline bg-surface-raised">
         {shown.map((i, idx) => (
           <div key={`${i.value}-${idx}`} className="flex flex-wrap items-center gap-x-3 gap-y-1 p-3">
-            <span className="w-14 shrink-0 font-mono text-[10px] uppercase tracking-wider text-ink-muted">
+            <span className="w-14 shrink-0 font-mono text-[length:var(--t-micro)] uppercase tracking-wider text-ink-muted">
               {IOC_TYPE_LABEL[i.type]}
             </span>
             <div className="min-w-0 flex-1">
               <IocRow defanged={i.defanged} value={i.value} />
             </div>
-            <div className="flex items-center gap-2 font-mono text-[10px] text-ink-muted">
+            <div className="flex items-center gap-2 font-mono text-[length:var(--t-micro)] text-ink-muted">
               {i.malware && <span className="text-ink-secondary">{i.malware}</span>}
               {typeof i.confidence === "number" && <span>{i.confidence}%</span>}
               {i.firstSeen && <span>{i.firstSeen.slice(0, 10)}</span>}
@@ -191,7 +209,7 @@ function LiveList({ iocs }: { iocs: EnrichIoc[] }) {
       {iocs.length > 20 && (
         <button
           onClick={() => setExpanded((v) => !v)}
-          className="mt-2 font-mono text-[11px] uppercase tracking-wider text-brand hover:underline"
+          className="mt-2 font-mono text-[length:var(--t-micro)] uppercase tracking-wider text-brand hover:underline"
         >
           {expanded ? "daha az göstər" : `+${iocs.length - 20} daha göstər`}
         </button>
@@ -213,11 +231,11 @@ function IocRow({ defanged, value }: { defanged: string; value: string }) {
   };
   return (
     <div className="group flex items-center gap-2">
-      <code className="break-all font-mono text-[12.5px] text-ink-primary">{defanged}</code>
+      <code className="break-all font-mono text-[length:var(--t-meta)] text-ink-primary">{defanged}</code>
       <button
         onClick={copy}
         aria-label="Kopyala"
-        className="shrink-0 font-mono text-[10px] uppercase tracking-wider text-ink-muted opacity-0 transition-opacity hover:text-brand group-hover:opacity-100"
+        className="shrink-0 font-mono text-[length:var(--t-micro)] uppercase tracking-wider text-ink-muted opacity-0 transition-opacity hover:text-brand group-hover:opacity-100"
       >
         {copied ? "✓" : "kopyala"}
       </button>
@@ -239,7 +257,7 @@ function CopyAll({ values }: { values: string[] }) {
   return (
     <button
       onClick={copy}
-      className="font-mono text-[10px] uppercase tracking-wider text-ink-muted hover:text-brand"
+      className="font-mono text-[length:var(--t-micro)] uppercase tracking-wider text-ink-muted hover:text-brand"
     >
       {copied ? "✓ kopyalandı" : "hamısını kopyala"}
     </button>
