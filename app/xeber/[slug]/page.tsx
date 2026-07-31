@@ -227,6 +227,41 @@ export default async function StoryPage({ params }: { params: Promise<Params> })
           </div>
         )}
 
+        {/* sources — the reader chooses which outlet to read (Ground-News-style) */}
+        {story.altSources.length > 0 && (
+          <div className="mt-8 border-t border-hairline pt-5">
+            <div className="font-mono text-[length:var(--t-micro)] uppercase tracking-[0.14em] text-ink-muted">
+              Mənbələr · {story.altSources.length + 1}
+            </div>
+            <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1.5 font-mono text-[length:var(--t-meta)]">
+              <a
+                href={story.sourceUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                title={host}
+                className="text-ink-primary transition-colors hover:text-brand"
+              >
+                {code} · ilkin ↗
+              </a>
+              {story.altSources.map((u) => (
+                <a
+                  key={u}
+                  href={u}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  title={outletHost(u)}
+                  className="text-ink-secondary transition-colors hover:text-brand"
+                >
+                  {outletCode(u)} ↗
+                </a>
+              ))}
+            </div>
+            <p className="mt-1.5 font-mono text-[length:var(--t-micro)] text-ink-muted">
+              eyni hadisəni bildirən mənbələr — oxumaq üçün birini seçin
+            </p>
+          </div>
+        )}
+
         {/* attribution footer */}
         <div className="mt-10 flex flex-wrap items-center justify-between gap-x-6 gap-y-2 border-t border-hairline pt-5 font-mono text-[length:var(--t-meta)] text-ink-muted">
           <span className="text-accent-good">əsaslandırılıb ✓</span>

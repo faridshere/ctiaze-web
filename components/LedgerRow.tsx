@@ -60,6 +60,11 @@ export function LedgerRow({ story, display = false }: { story: Story; display?: 
           >
             mənbə · {code} ↗
           </a>
+          {story.altSources.length > 0 && (
+            <span className="text-ink-secondary" title="eyni hadisəni bildirən digər mənbələr">
+              +{story.altSources.length} mənbə
+            </span>
+          )}
         </div>
       </div>
     </article>

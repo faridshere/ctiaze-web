@@ -14,6 +14,7 @@ export type StoryDoc = {
   az_title?: string;
   az_body?: string;
   published_at?: Date | string;
+  alt_sources?: { source?: string; url?: string; title?: string }[];
 };
 
 export type Story = {
@@ -30,6 +31,7 @@ export type Story = {
   region: boolean;
   cveIds: string[];
   publishedAt: string; // ISO
+  altSources: string[]; // URLs of other outlets that ran the same story (deduped)
 };
 
 function slugify(id: string, titleAz: string): string {
@@ -49,6 +51,13 @@ export function toStory(doc: StoryDoc): Story {
   const publishedAt = doc.published_at
     ? new Date(doc.published_at).toISOString()
     : new Date().toISOString();
+  // "Also reported by" — other outlets that ran the same story, deduped by URL and
+  // never the primary source, so a reader can choose where to read it.
+  const altSources: string[] = [];
+  for (const a of doc.alt_sources ?? []) {
+    const u = (a?.url ?? "").trim();
+    if (u && u !== doc.url && !altSources.includes(u)) altSources.push(u);
+  }
   return {
     id: doc._id,
     slug: slugify(doc._id, doc.az_title || doc.title || "xəbər"),
@@ -63,5 +72,6 @@ export function toStory(doc: StoryDoc): Story {
     region: Boolean(doc.ai_region),
     cveIds: doc.cve_ids ?? [],
     publishedAt,
+    altSources: altSources.slice(0, 6),
   };
 }
