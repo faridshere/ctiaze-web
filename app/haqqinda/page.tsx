@@ -9,11 +9,11 @@ export const revalidate = 300;
 export const metadata: Metadata = {
   title: "Haqqında",
   description:
-    "ctiaze necə işləyir — təxminən 50 qlobal mənbədən avtomatik toplanan kibertəhlükəsizlik xəbərləri AI ilə süzülür, mənbəyə qarşı yoxlanılır və Azərbaycan dilinə tərcümə olunur.",
+    "ctiaze necə işləyir — təxminən 60 qlobal mənbədən avtomatik toplanan kibertəhlükəsizlik xəbərləri AI ilə süzülür, mənbəyə qarşı yoxlanılır və Azərbaycan dilinə tərcümə olunur.",
 };
 
 const STEPS: [string, string][] = [
-  ["Toplama", "~50 qlobal təhlükəsizlik mənbəyi (NVD, CISA KEV, ransomware.live, aparıcı security bloqları) hər 2 saatdan bir avtomatik oxunur."],
+  ["Toplama", "~60 qlobal təhlükəsizlik mənbəyi (NVD, CISA KEV, ransomware.live, aparıcı security bloqları) hər 2 saatdan bir avtomatik oxunur."],
   ["Relevance", "Süni intellekt (Claude) hər xəbərin Azərbaycan üçün əhəmiyyətini qiymətləndirir — gündəlik gurultunu kəsir, yalnız vacib olanı saxlayır."],
   ["Grounding (anti-hallucination)", "Determinist yoxlama hər iddianı orijinal mənbə ilə tutuşdurur — model uydursa, xəbər saxlanılır. Hər başlıqdakı «əsaslandırılıb ✓» budur."],
   ["Tərcümə", "Yoxlanmış xəbər Claude ilə peşəkar Azərbaycan dilinə çevrilir — CVE, RCE kimi texniki terminlər qorunur, tərcümə də mənbəyə qarşı yoxlanılır."],
@@ -82,7 +82,7 @@ export default async function AboutPage() {
           <div className="font-mono text-[10px] uppercase tracking-[0.16em] text-ink-muted">In English</div>
           <p className="mt-1.5 text-[13.5px] leading-relaxed text-ink-secondary">
             ctiaze is an autonomous Azerbaijani-language cyber threat-intelligence
-            service. Every 2 hours it pulls ~50 global security sources; Claude
+            service. Every 2 hours it pulls ~60 global security sources; Claude
             judges what matters for Azerbaijan; a deterministic grounding step
             fact-checks every claim against its source before Claude rewrites it in
             Azerbaijani; and a signal gate publishes only real CVEs, live IOCs, and
