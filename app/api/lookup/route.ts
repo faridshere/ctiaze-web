@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { rateLimit, clientIp } from "@/lib/ratelimit";
+import { lookupThreatFox } from "@/lib/threatfox";
 
 // Live exposure lookup. Core source is Shodan's FREE InternetDB
 // (https://internetdb.shodan.io/{ip}) — keyless, 0 query credits. But InternetDB
@@ -159,7 +160,21 @@ export async function GET(req: Request) {
   const idbPromise = j<{ ports?: number[]; vulns?: string[]; hostnames?: string[]; tags?: string[]; cpes?: string[] }>(
     `https://internetdb.shodan.io/${encodeURIComponent(ip)}`, 10000,
     { headers: { "User-Agent": "ctiaze.tech exposure lookup (+https://ctiaze.tech)" } });
-  const [idb, identity] = await Promise.all([idbPromise, ipContext(ip)]);
+  // Reputation cross-check (keyless abuse.ch ThreatFox live feed) — makes the
+  // verdict trustworthy: InternetDB can say "invisible" for an IP that is in
+  // fact a known C2, so a malicious-reputation hit overrides everything.
+  const repPromise = lookupThreatFox(ip, "ip").catch(() => []);
+  const [idb, identity, repHits] = await Promise.all([idbPromise, ipContext(ip), repPromise]);
+  const reputation =
+    repHits.length > 0
+      ? {
+          malware: repHits[0].malware,
+          threatType: repHits[0].threatType,
+          confidence: repHits[0].confidence,
+          firstSeen: repHits[0].firstSeen ?? null,
+          reference: repHits[0].reference ?? null,
+        }
+      : null;
 
   const found = idb !== null;
   const ports = Array.isArray(idb?.ports) ? [...idb!.ports].sort((a, b) => a - b) : [];
@@ -176,13 +191,15 @@ export async function GET(req: Request) {
   }
   const kevCount = vulns.filter((v) => v.kev).length;
 
-  // Verdict — the user's question, not Shodan's: exposed / visible / invisible.
-  const verdict: "exposed" | "visible" | "invisible" =
-    vulns.length > 0 ? "exposed" : ports.length > 0 ? "visible" : "invisible";
+  // Verdict — the user's question, not Shodan's. A known-malicious reputation
+  // hit is the strongest signal and outranks the exposure ladder.
+  const verdict: "malicious" | "exposed" | "visible" | "invisible" =
+    reputation ? "malicious" : vulns.length > 0 ? "exposed" : ports.length > 0 ? "visible" : "invisible";
 
   return NextResponse.json(
     {
       ip, own, resolvedFrom, verdict, found,
+      reputation,
       ports,
       vulns,
       kevCount,

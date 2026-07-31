@@ -7,12 +7,20 @@ type Identity = {
   country?: string; countryCode?: string; city?: string;
   asn?: string; org?: string; isp?: string; abuse?: string;
 };
+type Reputation = {
+  malware: string;
+  threatType: string;
+  confidence: number;
+  firstSeen?: string | null;
+  reference?: string | null;
+} | null;
 type Result = {
   ip: string;
   own: boolean;
   resolvedFrom?: string;
-  verdict: "exposed" | "visible" | "invisible";
+  verdict: "malicious" | "exposed" | "visible" | "invisible";
   found: boolean;
+  reputation?: Reputation;
   ports: number[];
   vulns: Vuln[];
   kevCount: number;
@@ -125,6 +133,11 @@ export function ExposureLookup() {
 }
 
 const VERDICT = {
+  malicious: {
+    dot: "text-accent-critical", ring: "border-accent-critical/60 bg-accent-critical/10",
+    title: "Zərərli infrastruktur — abuse.ch",
+    sub: "Bu ünvan hazırda aktiv təhdid infrastrukturu kimi qeydə alınıb. Ekspozisiyadan asılı olmayaraq, bu ünvana etibar etməyin.",
+  },
   invisible: {
     dot: "text-accent-good", ring: "border-accent-good/40 bg-accent-good/5",
     title: "İnternetdən görünmür ✓",
@@ -170,6 +183,31 @@ function ResultView({ r }: { r: Result }) {
         </div>
         <p className="mt-1 text-[13.5px] text-ink-secondary">{v.sub}</p>
       </div>
+
+      {/* reputation — a known-malicious hit, the strongest signal */}
+      {r.reputation && (
+        <div className="mt-4 rounded-md border border-accent-critical/40 bg-accent-critical/[0.04] px-4 py-3">
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+            <span className="font-semibold text-ink-primary">{r.reputation.malware}</span>
+            {r.reputation.threatType && (
+              <span className="rounded-sm border border-hairline px-1.5 py-0.5 font-mono text-[10px] uppercase tracking-widest text-accent-serious">
+                {r.reputation.threatType}
+              </span>
+            )}
+            <span className="ml-auto font-mono text-[11px] text-ink-muted tabular-nums">
+              {r.reputation.confidence}% əminlik
+            </span>
+          </div>
+          <div className="mt-1.5 flex flex-wrap items-center gap-x-4 gap-y-1 font-mono text-[11px] text-ink-muted">
+            {r.reputation.firstSeen && <span>ilk görünüş {r.reputation.firstSeen.slice(0, 10)}</span>}
+            {r.reputation.reference && (
+              <a href={r.reputation.reference} target="_blank" rel="noopener noreferrer" className="text-brand hover:underline">
+                abuse.ch mənbə ↗
+              </a>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* identity card — always present, so a "clean" IP still says something */}
       {hasId && (
