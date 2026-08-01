@@ -4,11 +4,17 @@ Checked/worked each night by the scheduled Claude Code session. Edit this file
 any time to steer what gets attention — add, remove, or reprioritize items.
 
 ## Always check first (health, ~5 min)
-- [ ] Live site responds (via the ctiaze-web.vercel.app alias, since this
-      sandbox's network filter blocks the bare ctiaze.tech domain directly).
+- [ ] Run the automated smoke test. It covers homepage + every category page,
+      the feeds, `/api/latest` sane count, AND real `/xeber/<slug>` article
+      pages — one CVE slug and one URL-hash slug — asserting each rendered
+      `<title>` matches the story its slug points to. From `ctiaze-web/`:
+        `node scripts/health-check.mjs https://ctiaze-web.vercel.app`
+      (pass the Vercel alias — the scheduled sandbox's network filter blocks the
+      bare ctiaze.tech domain). Exit 0 = healthy; any `FAIL` line names what broke.
+      WHY the article check exists: on 2026-08-01 the homepage and `/api/latest`
+      were fully green while every CVE article page silently served the wrong
+      (latest CVE) story — a green homepage does NOT mean article pages are OK.
 - [ ] Latest Vercel deployment status — Ready, no build errors.
-- [ ] `/api/latest` returns a sane count; story count roughly matches the
-      engine's published total.
 - [ ] Any new console/runtime errors surfaced since the last check.
 
 ## Investigate / improve (pick 1-2 per night, don't boil the ocean)
