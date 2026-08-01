@@ -29,14 +29,18 @@ export async function getStories(limit = 60): Promise<Story[]> {
 }
 
 export async function getStoryBySlug(slug: string): Promise<Story | null> {
-  // The slug is prefixed with the first 12 chars of the doc id (see slugify) —
-  // enough to identify the exact document via a targeted regex, no full scan.
-  const shortId = slug.split("-")[0].replace(/[^a-z0-9]/gi, "");
+  // slugify() builds the slug as `${id.slice(0,12)}-${titleSlug}` where id has its
+  // cve:/url: prefix stripped. CVE ids contain hyphens (e.g. "CVE-2026-484"), so the
+  // stable prefix is the FIRST 12 CHARACTERS of the slug — not the first hyphen
+  // segment (that returned just "CVE" and collapsed every CVE page onto one story).
+  const shortId = slug.slice(0, 12);
   if (!shortId) return null;
+  // escape regex metacharacters so the prefix match stays literal
+  const escaped = shortId.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   const col = await items();
   const filter: Filter<StoryDoc> = {
     ...PUBLISHED_FILTER,
-    _id: { $regex: `^(cve:|url:)${shortId}` },
+    _id: { $regex: `^(cve:|url:)${escaped}` },
   };
   const doc = await col.findOne(filter);
   return doc ? toStory(doc) : null;
