@@ -9,7 +9,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const base = "https://ctiaze.tech";
   const stories = await getStories(500).catch(() => []);
 
-  const staticUrls: MetadataRoute.Sitemap = ["", "/cve", "/ioc", "/exposure", "/kripto", "/haqqinda"].map(
+  const staticUrls: MetadataRoute.Sitemap = ["", "/cve", "/ioc", "/exposure", "/actors", "/scan-me", "/kripto", "/haqqinda"].map(
     (p) => ({
       url: `${base}${p}`,
       lastModified: new Date(),

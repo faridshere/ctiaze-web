@@ -9,6 +9,8 @@ const NAV = [
   ["/cve", "CVE"],
   ["/ioc", "IOC"],
   ["/exposure", "Exposure"],
+  ["/actors", "Aktorlar"],
+  ["/scan-me", "Özünü yoxla"],
   ["/kripto", "Kripto"],
   ["/haqqinda", "Haqqında"],
 ];
