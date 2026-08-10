@@ -56,6 +56,8 @@ type XonBreach = {
 type XonAnalytics = {
   BreachMetrics?: { risk?: { risk_label?: string; risk_score?: number }[] } | null;
   ExposedBreaches?: { breaches_details?: XonBreach[] } | null;
+  ExposedPastes?: { pastes_details?: unknown[] } | null;
+  PastesSummary?: { cnt?: number } | null;
 };
 
 function emailResult(status: string, extra: Record<string, unknown> = {}) {
@@ -68,6 +70,7 @@ function emailResult(status: string, extra: Record<string, unknown> = {}) {
     passwordsExposed: false,
     breaches: [],
     exposedData: [],
+    pastesCount: 0,
     source: EMAIL_SOURCE,
     fetched_at: status === "invalid" ? null : nowIso(),
     ...extra,
@@ -118,6 +121,7 @@ async function scanEmail(email: string) {
   const rows = shapeBreaches(details);
   const exposedData = [...new Set(rows.flatMap((r) => r.exposed))].sort();
   const risk = data.BreachMetrics?.risk?.[0];
+  const pastesCount = data.PastesSummary?.cnt ?? data.ExposedPastes?.pastes_details?.length ?? 0;
   return emailResult("ok", {
     count: rows.length,
     riskLabel: risk?.risk_label ?? null,
@@ -125,6 +129,7 @@ async function scanEmail(email: string) {
     passwordsExposed: rows.some((r) => r.hasPassword),
     breaches: rows.slice(0, BREACH_LIMIT),
     exposedData,
+    pastesCount,
   });
 }
 

@@ -27,6 +27,7 @@ export async function GET(req: Request) {
       targets_countries: (h.targets_countries || []).slice(0, 6),
       targets_sectors: (h.targets_sectors || []).slice(0, 6),
       description_az: h.description_az || null,
+      description_en: h.description_en || null,
       source: h.source,
       refsCount: (h.refs || []).length,
       recentCount: (h.recent_activity || []).length,

@@ -1,10 +1,10 @@
 import {
-  ACTOR_TYPE_LABEL,
   actorInitials,
   flagEmoji,
   originLabel,
   type ThreatActor,
 } from "@/lib/threatactors";
+import { getDict, type Locale } from "@/lib/i18n";
 
 const TYPE_CHIP: Record<string, string> = {
   "nation-state": "border-accent-critical/40 bg-accent-critical/10 text-accent-critical",
@@ -12,15 +12,18 @@ const TYPE_CHIP: Record<string, string> = {
   unknown: "border-hairline bg-surface text-ink-muted",
 };
 
-function fmtDay(d?: string | Date): string {
+function fmtDay(d: string | Date | undefined, locale: Locale): string {
   if (!d) return "";
   const dt = new Date(d);
   if (Number.isNaN(dt.getTime())) return "";
-  const mon = ["yan", "fev", "mar", "apr", "may", "iyn", "iyl", "avq", "sen", "okt", "noy", "dek"];
+  const mon = locale === "en"
+    ? ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+    : ["yan", "fev", "mar", "apr", "may", "iyn", "iyl", "avq", "sen", "okt", "noy", "dek"];
   return `${String(dt.getUTCDate()).padStart(2, "0")} ${mon[dt.getUTCMonth()]}`;
 }
 
-export function ActorDossier({ a }: { a: ThreatActor }) {
+export function ActorDossier({ a, locale }: { a: ThreatActor; locale: Locale }) {
+  const t = getDict(locale).actors;
   const origin = originLabel(a);
   const flag = flagEmoji(a.origin_country);
   const aliases = (a.aliases || []).filter((x) => x !== a.name).slice(0, 3);
@@ -28,6 +31,8 @@ export function ActorDossier({ a }: { a: ThreatActor }) {
   const sectors = (a.targets_sectors || []).slice(0, 4);
   const recent = (a.recent_activity || []).slice(0, 3);
   const primaryRef = (a.refs || [])[0] || null;
+  const desc = locale === "en" ? a.description_en || a.description_az : a.description_az || a.description_en;
+  const typeLabel = a.type === "unknown" ? t.nameleum : a.type;
 
   return (
     <article className="flex flex-col rounded-md border border-hairline bg-surface-raised/40">
@@ -40,49 +45,41 @@ export function ActorDossier({ a }: { a: ThreatActor }) {
           {aliases.length > 0 && (
             <div className="mt-1.5 flex flex-wrap gap-1.5">
               {aliases.map((al) => (
-                <span key={al} className="rounded-sm border border-hairline bg-surface px-1.5 py-0.5 font-mono text-[10.5px] text-ink-muted">
-                  {al}
-                </span>
+                <span key={al} className="rounded-sm border border-hairline bg-surface px-1.5 py-0.5 font-mono text-[10.5px] text-ink-muted">{al}</span>
               ))}
             </div>
           )}
         </div>
         <span className={`ml-auto shrink-0 rounded-full border px-2 py-0.5 font-mono text-[10px] uppercase tracking-wider ${TYPE_CHIP[a.type] ?? TYPE_CHIP.unknown}`}>
-          {ACTOR_TYPE_LABEL[a.type] ?? a.type}
+          {typeLabel}
         </span>
       </div>
 
       <div className="grid gap-3 px-4 pb-3">
-        {a.description_az && (
-          <p className="text-[13px] leading-relaxed text-ink-secondary">{a.description_az}</p>
-        )}
+        {desc && <p className="text-[13px] leading-relaxed text-ink-secondary line-clamp-4">{desc}</p>}
         {origin && (
           <div>
-            <div className="font-mono text-[10px] uppercase tracking-[0.12em] text-ink-muted">mənşə (suspected)</div>
+            <div className="font-mono text-[10px] uppercase tracking-[0.12em] text-ink-muted">{t.originLabel}</div>
             <div className="mt-1 flex items-center gap-2 text-[13.5px] text-ink-primary">
               {flag && <span aria-hidden="true">{flag}</span>}
               <span>{origin}</span>
-              {a.state_sponsor && a.type === "nation-state" && (
-                <span className="text-ink-muted">· dövlət sponsoru</span>
-              )}
+              {a.state_sponsor && a.type === "nation-state" && <span className="text-ink-muted">· {t.sponsorSuffix}</span>}
             </div>
           </div>
         )}
         {countries.length > 0 && (
           <div>
-            <div className="font-mono text-[10px] uppercase tracking-[0.12em] text-ink-muted">
-              hədəf ölkələr (mənbənin bildirdiyi)
-            </div>
+            <div className="font-mono text-[10px] uppercase tracking-[0.12em] text-ink-muted">{t.targetCountries}</div>
             <div className="mt-1.5 flex flex-wrap gap-1.5">
-              {countries.map((c) => (
-                <span key={c} className="rounded-sm border border-hairline bg-surface px-2 py-0.5 text-[12px] text-ink-primary">{c}</span>
+              {countries.map((cc) => (
+                <span key={cc} className="rounded-sm border border-hairline bg-surface px-2 py-0.5 text-[12px] text-ink-primary">{cc}</span>
               ))}
             </div>
           </div>
         )}
         {sectors.length > 0 && (
           <div>
-            <div className="font-mono text-[10px] uppercase tracking-[0.12em] text-ink-muted">hədəf sektorlar</div>
+            <div className="font-mono text-[10px] uppercase tracking-[0.12em] text-ink-muted">{t.targetSectors}</div>
             <div className="mt-1.5 flex flex-wrap gap-1.5">
               {sectors.map((s) => (
                 <span key={s} className="rounded-sm border border-hairline bg-surface px-2 py-0.5 text-[12px] text-ink-primary">{s}</span>
@@ -94,7 +91,7 @@ export function ActorDossier({ a }: { a: ThreatActor }) {
 
       {recent.length > 0 && (
         <div className="border-t border-hairline px-4 py-3">
-          <div className="font-mono text-[10px] uppercase tracking-[0.12em] text-ink-muted">son fəaliyyət · bizim intel</div>
+          <div className="font-mono text-[10px] uppercase tracking-[0.12em] text-ink-muted">{t.recentLabel}</div>
           <div className="mt-2 space-y-2">
             {recent.map((r, i) => (
               <a
@@ -106,7 +103,7 @@ export function ActorDossier({ a }: { a: ThreatActor }) {
               >
                 <span className="mt-1.5 size-1.5 self-start rounded-full bg-brand" aria-hidden="true" />
                 <span className="text-[12.5px] leading-snug text-ink-secondary">{r.title}</span>
-                <span className="whitespace-nowrap font-mono text-[10.5px] text-ink-muted">{fmtDay(r.date)}</span>
+                <span className="whitespace-nowrap font-mono text-[10.5px] text-ink-muted">{fmtDay(r.date, locale)}</span>
               </a>
             ))}
           </div>
@@ -114,11 +111,16 @@ export function ActorDossier({ a }: { a: ThreatActor }) {
       )}
 
       <div className="mt-auto flex items-center gap-2 border-t border-hairline px-4 py-2.5 font-mono text-[11px] text-ink-muted">
-        <span>source: <span className="text-ink-secondary">{a.source}</span></span>
+        <span>{t.sourceLabel}: <span className="text-ink-secondary">{a.source}</span></span>
         <span className="flex-1" />
+        {a.mitre && (
+          <a href={`https://attack.mitre.org/groups/${a.mitre}`} target="_blank" rel="noopener noreferrer" className="text-brand hover:underline">
+            {a.mitre}
+          </a>
+        )}
         {primaryRef && (a.refs?.length ?? 0) > 0 && (
           <a href={primaryRef} target="_blank" rel="noopener noreferrer" className="text-brand hover:underline">
-            {a.refs.length} ref →
+            {t.refWord(a.refs.length)}
           </a>
         )}
       </div>

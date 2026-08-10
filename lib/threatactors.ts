@@ -16,7 +16,8 @@ export type ThreatActor = {
   description_en?: string | null;
   description_az?: string | null;
   refs: string[];
-  source: "misp-galaxy" | "ransomware.live" | string;
+  mitre?: string | null;
+  source: "misp-galaxy" | "ransomware.live" | "mitre-attack" | string;
   recent_activity: ActorRecentItem[];
   last_refreshed?: Date | string;
 };

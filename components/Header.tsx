@@ -1,25 +1,29 @@
+"use client";
+
 import Link from "next/link";
 import { LiveStatus } from "./LiveStatus";
 import { SearchTrigger } from "./SearchTrigger";
 import { CtiazeMark } from "./CtiazeMark";
 import { NavLink } from "./NavLink";
+import { LocaleToggle, useLocale } from "./locale";
+import { getDict } from "@/lib/i18n";
 
-const NAV = [
-  ["/", "Lent"],
-  ["/cve", "CVE"],
-  ["/ioc", "IOC"],
-  ["/exposure", "Exposure"],
-  ["/actors", "Aktorlar"],
-  ["/scan-me", "Özünü yoxla"],
-  ["/kripto", "Kripto"],
-  ["/haqqinda", "Haqqında"],
+const NAV: [string, keyof ReturnType<typeof getDict>["nav"]][] = [
+  ["/", "feed"],
+  ["/cve", "cve"],
+  ["/ioc", "ioc"],
+  ["/exposure", "exposure"],
+  ["/actors", "actors"],
+  ["/scan-me", "scanme"],
+  ["/kripto", "kripto"],
+  ["/haqqinda", "about"],
 ];
 
 export function Header() {
+  const locale = useLocale();
+  const t = getDict(locale).nav;
   return (
     <header>
-      {/* sticky top bar (48px) — the mobile nav row below it stays in normal flow
-          and scrolls away */}
       <div className="sticky top-0 z-40 border-b border-hairline bg-surface">
         <div className="mx-auto flex h-12 max-w-[75rem] items-center gap-5 px-[var(--sp-gutter)]">
           <Link href="/" className="group flex shrink-0 items-center gap-2">
@@ -30,9 +34,9 @@ export function Header() {
           </Link>
 
           <nav className="hidden items-center gap-5 sm:flex">
-            {NAV.map(([href, label]) => (
+            {NAV.map(([href, key]) => (
               <NavLink key={href} href={href}>
-                {label}
+                {t[key]}
               </NavLink>
             ))}
           </nav>
@@ -45,16 +49,16 @@ export function Header() {
               </span>
               <LiveStatus />
             </span>
+            <LocaleToggle initial={locale} />
             <SearchTrigger />
           </div>
         </div>
       </div>
 
-      {/* Mobile nav — non-sticky, six links in a scrollable row (nothing hidden) */}
       <nav className="flex items-center gap-5 overflow-x-auto border-b border-hairline px-[var(--sp-gutter)] py-2.5 sm:hidden">
-        {NAV.map(([href, label]) => (
+        {NAV.map(([href, key]) => (
           <NavLink key={href} href={href}>
-            {label}
+            {t[key]}
           </NavLink>
         ))}
       </nav>

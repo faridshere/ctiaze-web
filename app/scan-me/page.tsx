@@ -2,30 +2,31 @@ import type { Metadata } from "next";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { ScanMe } from "@/components/ScanMe";
+import { getDict } from "@/lib/i18n";
+import { getLocale } from "@/lib/i18n-server";
 
 export const revalidate = 0;
 
 export const metadata: Metadata = {
-  title: "Özünü yoxla — breach və domain exposure",
+  title: "Özünü yoxla — breach və domain exposure · Scan me",
   description:
-    "E-poçt ünvanını və ya iş domain-ini yaz: hansı data breach-lərdə görünüb (XposedOrNot) və domain-in nə qədəri açıq internetdə görünür (certspotter + Shodan). False positive yoxdur — hər fakt mənbəsi ilə gəlir.",
+    "Check your email, password and work domain exposure. Breach lookup (XposedOrNot), pwned-password check (k-anonymity), subdomains (certspotter) and Shodan attack surface. No false positives.",
 };
 
-export default function ScanMePage() {
+export default async function ScanMePage() {
+  const locale = await getLocale();
+  const t = getDict(locale).scan;
+
   return (
     <div className="ops flex min-h-screen flex-col">
       <Header />
       <main className="mx-auto w-full max-w-3xl flex-1 px-4 py-14 sm:py-20">
-        <p className="font-mono text-xs uppercase tracking-[0.2em] text-brand">
-          Şəxsi exposure yoxlaması
-        </p>
-        <h1 className="mt-3 text-balance font-headline text-3xl text-ink-primary sm:text-4xl">
-          Sən internetdə nə qədər açıqdasan?
-        </h1>
+        <p className="font-mono text-xs uppercase tracking-[0.2em] text-brand">{t.eyebrow}</p>
+        <h1 className="mt-3 text-balance font-headline text-3xl text-ink-primary sm:text-4xl">{t.h1}</h1>
         <p className="mt-4 max-w-xl leading-relaxed text-ink-secondary">
-          E-poçt ünvanını və ya iş domain-ini yaz — sənə düz cavab verək: ünvanın hansı{" "}
-          <span className="text-ink-primary">breach</span>-lərdə görünüb, və domain-inin nə qədəri açıq
-          internetdə görünür. Heç nə uydurmuruq.
+          {t.leadPre}
+          <span className="text-ink-primary">{t.leadMid}</span>
+          {t.leadEnd}
         </p>
         <p className="mt-4 inline-flex items-center gap-2 rounded-sm border border-hairline bg-surface-raised/40 px-3 py-1.5 text-[13px] text-ink-secondary">
           <span className="relative flex size-1.5">
@@ -33,22 +34,17 @@ export default function ScanMePage() {
             <span className="relative inline-flex size-1.5 rounded-full bg-accent-good" />
           </span>
           <span>
-            <b className="text-ink-primary">False positive yoxdur.</b> Hər fakt mənbəsi ilə gəlir;
-            təsdiqləyə bilmədiyimizi <span className="font-mono text-ink-muted">unavailable</span> kimi göstəririk.
+            <b className="text-ink-primary">{t.pledgeBold}</b>
+            {t.pledgeRest}
           </span>
         </p>
 
         <div className="mt-8">
-          <ScanMe />
+          <ScanMe locale={locale} />
         </div>
 
         <p className="mt-14 border-t border-hairline pt-8 font-mono text-xs leading-relaxed text-ink-muted">
-          Mənbələr: <span className="text-ink-secondary">XposedOrNot</span> (breach-analytics, keyless),{" "}
-          <span className="text-ink-secondary">certspotter + crt.sh</span>,{" "}
-          <span className="text-ink-secondary">Shodan InternetDB</span>,{" "}
-          <span className="text-ink-secondary">ctiaze</span> coverage, və həftəlik{" "}
-          <span className="text-ink-secondary">Shodan AZ</span> snapshot. Hamısı açarsız/pulsuz — e-poçt
-          ünvanın heç yerdə saxlanmır.
+          {t.sources}
         </p>
       </main>
       <Footer />
