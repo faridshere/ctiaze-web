@@ -30,40 +30,50 @@ const TYPE_LABEL: Record<IocType, string> = {
   btc: "BTC ünvanları",
   eth: "ETH ünvanları",
 };
+const TYPE_LABEL_EN: Record<IocType, string> = {
+  ipv4: "IP addresses", domain: "Domains", url: "URLs",
+  sha256: "Hashes (SHA256)", sha1: "Hashes (SHA1)", md5: "Hashes (MD5)",
+  email: "Emails", btc: "BTC addresses", eth: "ETH addresses",
+};
 
 export function NewsIocFeed({
   groups,
   total,
   window: win,
   liveSet,
+  locale = "az",
 }: {
   groups: { type: IocType; items: IocRef[] }[];
   total: number;
   window: number;
   liveSet: Set<string>;
+  locale?: "az" | "en";
 }) {
+  const en = locale === "en";
+  const typeLabel = en ? TYPE_LABEL_EN : TYPE_LABEL;
   return (
     <section className="mt-16">
       <p className="font-mono text-[length:var(--t-micro)] uppercase tracking-[0.16em] text-brand">
-        Lent göstəriciləri
+        {en ? "Feed indicators" : "Lent göstəriciləri"}
       </p>
       <p className="mt-2 font-mono text-[length:var(--t-meta)] text-ink-muted">
-        son {win} dispaçdan çıxarılıb ·{" "}
-        <span className="tabular-nums text-ink-secondary">{total}</span> göstərici. Yuxarıdakı
-        yoxlama məhz bunları zənginləşdirir.
+        {en ? "extracted from the last " : "son "}{win}{en ? " dispatches · " : " dispaçdan çıxarılıb · "}
+        <span className="tabular-nums text-ink-secondary">{total}</span>
+        {en ? " indicators. The lookup above enriches exactly these." : " göstərici. Yuxarıdakı yoxlama məhz bunları zənginləşdirir."}
       </p>
 
       {total === 0 ? (
         <p className="mt-6 font-mono text-[length:var(--t-meta)] text-ink-muted">
-          son pəncərədə maşınla oxunan göstərici tapılmadı — dispaçlar əsasən AI xülasələridir,
-          xam indikator nadir hallarda olur. Canlı lent üçün yuxarıdakı yoxlamadan istifadə edin.
+          {en
+            ? "No machine-readable indicators in the recent window — dispatches are mostly AI summaries, raw indicators are rare. Use the lookup above for the live feed."
+            : "son pəncərədə maşınla oxunan göstərici tapılmadı — dispaçlar əsasən AI xülasələridir, xam indikator nadir hallarda olur. Canlı lent üçün yuxarıdakı yoxlamadan istifadə edin."}
         </p>
       ) : (
         <div className="mt-6 flex flex-col gap-8">
           {groups.map(({ type, items }) => (
             <div key={type}>
               <div className="font-mono text-[length:var(--t-micro)] uppercase tracking-[0.14em] text-ink-secondary">
-                {TYPE_LABEL[type]} · <span className="tabular-nums">{items.length}</span>
+                {typeLabel[type]} · <span className="tabular-nums">{items.length}</span>
               </div>
               <div className="mt-3">
                 {items.map((ioc) => {
@@ -78,11 +88,11 @@ export function NewsIocFeed({
                           {TYPE_CODE[type]}
                         </span>
                         <span className="tabular-nums text-ink-muted">
-                          {ioc.stories.length} dispaç
+                          {ioc.stories.length} {en ? "dispatches" : "dispaç"}
                         </span>
                         {live && (
                           <span className="rounded-[var(--radius-chip)] bg-accent-critical px-1 font-semibold uppercase text-surface">
-                            canlı
+                            {en ? "live" : "canlı"}
                           </span>
                         )}
                       </div>
@@ -107,7 +117,7 @@ export function NewsIocFeed({
                             href={`/ioc?q=${encodeURIComponent(ioc.value)}`}
                             className="uppercase tracking-wider text-brand hover:underline"
                           >
-                            yoxla →
+                            {en ? "check" : "yoxla"} →
                           </Link>
                         </div>
                       </div>

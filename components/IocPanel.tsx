@@ -2,6 +2,13 @@
 
 import { useMemo, useState } from "react";
 import { IOC_TYPE_LABEL, type Ioc, type IocType } from "@/lib/ioc";
+import { useLocale } from "./locale";
+
+const IOC_TYPE_LABEL_EN: Record<string, string> = {
+  ipv4: "IPv4", ipv6: "IPv6", domain: "Domains", url: "URLs",
+  sha256: "Hashes (SHA256)", sha1: "Hashes (SHA1)", md5: "Hashes (MD5)",
+  email: "Emails", btc: "BTC addresses", eth: "ETH addresses", cve: "CVEs",
+};
 
 type Rep = { malware: string; threatType: string; confidence: number };
 type ExtractedIoc = Ioc & { rep?: Rep | null };
@@ -25,8 +32,15 @@ const THREAT_LABEL: Record<string, string> = {
   payload: "Zərərli yük",
   malware_download: "Malware endirmə",
 };
+const THREAT_LABEL_EN: Record<string, string> = {
+  botnet_cc: "Botnet C2", payload_delivery: "Payload delivery",
+  payload: "Payload", malware_download: "Malware download",
+};
 const KIND_LABEL: Record<FamilyIoc["kind"], string> = {
   ip: "IP", domain: "Domen", url: "URL", hash: "Hash",
+};
+const KIND_LABEL_EN: Record<FamilyIoc["kind"], string> = {
+  ip: "IP", domain: "Domain", url: "URL", hash: "Hash",
 };
 
 function defangFamily(kind: FamilyIoc["kind"], v: string): string {
@@ -51,6 +65,7 @@ export function IocPanel({
   familyName: string;
   familyIocs: FamilyIoc[];
 }) {
+  const en = useLocale() === "en";
   const hasExtracted = extracted.length > 0;
   const hasFamily = familyIocs.length > 0;
 
@@ -58,18 +73,18 @@ export function IocPanel({
     <div>
       <div className="flex items-baseline justify-between gap-3">
         <h2 className="font-mono text-[length:var(--t-micro)] uppercase tracking-[0.16em] text-brand">
-          İndikatorlar · IOC
+          {en ? "Indicators · IOC" : "İndikatorlar · IOC"}
         </h2>
         <span className="font-mono text-[length:var(--t-micro)] uppercase tracking-wider text-ink-muted">
-          müdafiə üçün · defanged
+          {en ? "for defense · defanged" : "müdafiə üçün · defanged"}
         </span>
       </div>
 
       {!hasExtracted && !hasFamily && (
         <p className="mt-4 font-mono text-[length:var(--t-meta)] text-ink-muted">
-          Bu dispaçda maşınla oxunan indikator aşkarlanmadı. Aktiv təhdid göstəriciləri üçün{" "}
+          {en ? "No machine-readable indicators detected in this dispatch. For active threat indicators see the " : "Bu dispaçda maşınla oxunan indikator aşkarlanmadı. Aktiv təhdid göstəriciləri üçün "}
           <a href="/ioc" className="text-brand hover:underline">
-            IOC səhifəsi
+            {en ? "IOC page" : "IOC səhifəsi"}
           </a>
           .
         </p>
@@ -85,14 +100,14 @@ export function IocPanel({
               <span className="relative inline-flex size-1.5 rounded-full bg-accent-good" />
             </span>
             <h3 className="font-mono text-[length:var(--t-meta)] uppercase tracking-[0.14em] text-ink-secondary">
-              {familyName} — aktiv infrastruktur · canlı
+              {familyName} — {en ? "active infrastructure · live" : "aktiv infrastruktur · canlı"}
             </h3>
             <span className="font-mono text-[length:var(--t-micro)] tabular-nums text-ink-muted">
               {familyIocs.length}
             </span>
           </div>
           <p className="mt-1 font-mono text-[length:var(--t-micro)] text-ink-muted">
-            bu xəbərin adını çəkdiyi təhdidin hazırda abuse.ch-də aktiv göstəriciləri — xəbərə deyil, təhdidə aiddir
+            {en ? "the threat this story names — its currently-active indicators on abuse.ch; tied to the threat, not the story" : "bu xəbərin adını çəkdiyi təhdidin hazırda abuse.ch-də aktiv göstəriciləri — xəbərə deyil, təhdidə aiddir"}
           </p>
           <FamilyList iocs={familyIocs} />
         </div>
@@ -102,6 +117,7 @@ export function IocPanel({
 }
 
 function ExtractedGroups({ iocs }: { iocs: ExtractedIoc[] }) {
+  const en = useLocale() === "en";
   const groups = useMemo(() => {
     const m = new Map<IocType, ExtractedIoc[]>();
     for (const i of iocs) {
@@ -117,8 +133,8 @@ function ExtractedGroups({ iocs }: { iocs: ExtractedIoc[] }) {
     <div className="mt-4">
       <div className="mb-2 flex items-center justify-between gap-3">
         <span className="font-mono text-[length:var(--t-micro)] uppercase tracking-[0.14em] text-ink-secondary">
-          Bu xəbərdən çıxarılan · {iocs.length}
-          {flagged > 0 && <span className="ml-2 text-accent-critical">· {flagged} zərərli</span>}
+          {en ? "Extracted from this story" : "Bu xəbərdən çıxarılan"} · {iocs.length}
+          {flagged > 0 && <span className="ml-2 text-accent-critical">· {flagged} {en ? "malicious" : "zərərli"}</span>}
         </span>
         <CopyAll values={iocs.map((i) => i.value)} />
       </div>
@@ -126,7 +142,7 @@ function ExtractedGroups({ iocs }: { iocs: ExtractedIoc[] }) {
         {groups.map(([type, list]) => (
           <div key={type} className="flex gap-3 p-3">
             <span className="w-16 shrink-0 pt-0.5 font-mono text-[length:var(--t-micro)] uppercase tracking-wider text-ink-muted">
-              {IOC_TYPE_LABEL[type]}
+              {en ? (IOC_TYPE_LABEL_EN[type] || IOC_TYPE_LABEL[type]) : IOC_TYPE_LABEL[type]}
             </span>
             <div className="flex flex-1 flex-col gap-1.5">
               {list.map((i) => (
@@ -135,9 +151,9 @@ function ExtractedGroups({ iocs }: { iocs: ExtractedIoc[] }) {
                   {i.rep && (
                     <span
                       className="rounded-[var(--radius-chip)] border border-accent-critical/50 px-1 font-mono text-[length:var(--t-micro)] uppercase tracking-wider text-accent-critical"
-                      title={`abuse.ch: ${i.rep.threatType} · ${i.rep.confidence}% əminlik`}
+                      title={`abuse.ch: ${i.rep.threatType} · ${i.rep.confidence}%${en ? " confidence" : " əminlik"}`}
                     >
-                      zərərli · {i.rep.malware}
+                      {en ? "malicious" : "zərərli"} · {i.rep.malware}
                     </span>
                   )}
                 </div>
@@ -151,6 +167,7 @@ function ExtractedGroups({ iocs }: { iocs: ExtractedIoc[] }) {
 }
 
 function FamilyList({ iocs }: { iocs: FamilyIoc[] }) {
+  const en = useLocale() === "en";
   const [expanded, setExpanded] = useState(false);
   const shown = expanded ? iocs : iocs.slice(0, 15);
   return (
@@ -162,7 +179,7 @@ function FamilyList({ iocs }: { iocs: FamilyIoc[] }) {
         {shown.map((i, idx) => (
           <div key={`${i.ioc}-${idx}`} className="flex flex-wrap items-center gap-x-3 gap-y-1 p-3">
             <span className="w-14 shrink-0 font-mono text-[length:var(--t-micro)] uppercase tracking-wider text-ink-muted">
-              {KIND_LABEL[i.kind]}
+              {(en ? KIND_LABEL_EN : KIND_LABEL)[i.kind]}
             </span>
             <div className="min-w-0 flex-1">
               <IocRow
@@ -171,12 +188,12 @@ function FamilyList({ iocs }: { iocs: FamilyIoc[] }) {
               />
             </div>
             <div className="flex items-center gap-2 font-mono text-[length:var(--t-micro)] text-ink-muted">
-              {i.threatType && <span className="text-accent-serious">{THREAT_LABEL[i.threatType] || i.threatType}</span>}
+              {i.threatType && <span className="text-accent-serious">{(en ? THREAT_LABEL_EN : THREAT_LABEL)[i.threatType] || i.threatType}</span>}
               <span className="tabular-nums">{i.confidence}%</span>
               {i.firstSeen && <span>{i.firstSeen.slice(0, 10)}</span>}
               {i.reference && (
                 <a href={i.reference} target="_blank" rel="noopener noreferrer" className="text-brand hover:underline">
-                  mənbə ↗
+                  {en ? "source" : "mənbə"} ↗
                 </a>
               )}
             </div>
@@ -188,7 +205,7 @@ function FamilyList({ iocs }: { iocs: FamilyIoc[] }) {
           onClick={() => setExpanded((v) => !v)}
           className="mt-2 font-mono text-[length:var(--t-micro)] uppercase tracking-wider text-brand hover:underline"
         >
-          {expanded ? "daha az göstər" : `+${iocs.length - 15} daha göstər`}
+          {expanded ? (en ? "show less" : "daha az göstər") : `+${iocs.length - 15} ${en ? "show more" : "daha göstər"}`}
         </button>
       )}
     </div>
@@ -196,6 +213,7 @@ function FamilyList({ iocs }: { iocs: FamilyIoc[] }) {
 }
 
 function IocRow({ defanged, value }: { defanged: string; value: string }) {
+  const en = useLocale() === "en";
   const [copied, setCopied] = useState(false);
   const copy = async () => {
     try {
@@ -214,13 +232,14 @@ function IocRow({ defanged, value }: { defanged: string; value: string }) {
         aria-label="Kopyala"
         className="shrink-0 font-mono text-[length:var(--t-micro)] uppercase tracking-wider text-ink-muted opacity-0 transition-opacity hover:text-brand group-hover:opacity-100"
       >
-        {copied ? "✓" : "kopyala"}
+        {copied ? "✓" : (en ? "copy" : "kopyala")}
       </button>
     </div>
   );
 }
 
 function CopyAll({ values }: { values: string[] }) {
+  const en = useLocale() === "en";
   const [copied, setCopied] = useState(false);
   const copy = async () => {
     try {
@@ -236,7 +255,7 @@ function CopyAll({ values }: { values: string[] }) {
       onClick={copy}
       className="font-mono text-[length:var(--t-micro)] uppercase tracking-wider text-ink-muted hover:text-brand"
     >
-      {copied ? "✓ kopyalandı" : "hamısını kopyala"}
+      {copied ? (en ? "✓ copied" : "✓ kopyalandı") : (en ? "copy all" : "hamısını kopyala")}
     </button>
   );
 }

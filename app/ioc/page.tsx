@@ -79,6 +79,7 @@ export default async function IocPage() {
           total={iocFeed.length}
           window={IOC_WINDOW}
           liveSet={liveSet}
+          locale={en ? "en" : "az"}
         />
 
         {/* Live malicious-infrastructure board — from the same keyless ThreatFox

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useLocale } from "./locale";
 
 type TfHit = {
   ioc: string;
@@ -36,9 +37,16 @@ type Result = {
 const KIND_LABEL: Record<Result["kind"], string> = {
   cve: "CVE", ip: "IP", domain: "Domen", url: "URL", hash: "Hash",
 };
+const KIND_LABEL_EN: Record<Result["kind"], string> = {
+  cve: "CVE", ip: "IP", domain: "Domain", url: "URL", hash: "Hash",
+};
 const THREAT_LABEL: Record<string, string> = {
   botnet_cc: "Botnet C2", payload_delivery: "Zərərli yük çatdırılması",
   payload: "Zərərli yük", malware_download: "Malware endirmə",
+};
+const THREAT_LABEL_EN: Record<string, string> = {
+  botnet_cc: "Botnet C2", payload_delivery: "Payload delivery",
+  payload: "Payload", malware_download: "Malware download",
 };
 
 function defang(kind: string, v: string): string {
@@ -47,35 +55,34 @@ function defang(kind: string, v: string): string {
   return kind === "url" ? d.replace(/^http/i, "hxxp") : d;
 }
 
-const VERDICT = {
-  malicious: {
-    ring: "border-accent-critical/50 bg-accent-critical/5", dot: "text-accent-critical",
-    title: "Zərərli — abuse.ch-də qeydə alınıb",
-    sub: "Bu indikator hazırda aktiv təhdid infrastrukturuna aiddir. Aşağıda arxasındakı zərərli proqram ailəsi.",
-  },
-  exploited: {
-    ring: "border-accent-critical/50 bg-accent-critical/5", dot: "text-accent-critical",
-    title: "Aktiv istismar olunur — CISA KEV",
-    sub: "Bu CVE vəhşi təbiətdə aktiv istismar olunur. Təcili yamaqlama prioritetidir.",
-  },
-  elevated: {
-    ring: "border-accent-serious/50 bg-accent-serious/5", dot: "text-accent-serious",
-    title: "Yüksək risk",
-    sub: "Yüksək CVSS və ya istismar ehtimalı. Qısa müddətdə yamaqlanmalıdır.",
-  },
-  known: {
-    ring: "border-accent-warning/40 bg-accent-warning/5", dot: "text-accent-warning",
-    title: "Məlum zəiflik",
-    sub: "NVD-də qeydə alınıb. Aktiv istismar əlaməti yoxdur, amma izlənilməlidir.",
-  },
-  unknown: {
-    ring: "border-hairline bg-surface", dot: "text-ink-muted",
-    title: "abuse.ch-nin aktiv siyahısında deyil",
-    sub: "Son günlərin aktiv təhdid siyahısında tapılmadı. Diqqət: bu «təhlükəsiz» demək deyil — yalnız hazırda məlum zərərli kimi işarələnməyib.",
-  },
-} as const;
+const RING: Record<string, string> = {
+  malicious: "border-accent-critical/50 bg-accent-critical/5",
+  exploited: "border-accent-critical/50 bg-accent-critical/5",
+  elevated: "border-accent-serious/50 bg-accent-serious/5",
+  known: "border-accent-warning/40 bg-accent-warning/5",
+  unknown: "border-hairline bg-surface",
+};
+const DOT: Record<string, string> = {
+  malicious: "text-accent-critical", exploited: "text-accent-critical",
+  elevated: "text-accent-serious", known: "text-accent-warning", unknown: "text-ink-muted",
+};
+const VERDICT_AZ: Record<string, { title: string; sub: string }> = {
+  malicious: { title: "Zərərli — abuse.ch-də qeydə alınıb", sub: "Bu indikator hazırda aktiv təhdid infrastrukturuna aiddir. Aşağıda arxasındakı zərərli proqram ailəsi." },
+  exploited: { title: "Aktiv istismar olunur — CISA KEV", sub: "Bu CVE vəhşi təbiətdə aktiv istismar olunur. Təcili yamaqlama prioritetidir." },
+  elevated: { title: "Yüksək risk", sub: "Yüksək CVSS və ya istismar ehtimalı. Qısa müddətdə yamaqlanmalıdır." },
+  known: { title: "Məlum zəiflik", sub: "NVD-də qeydə alınıb. Aktiv istismar əlaməti yoxdur, amma izlənilməlidir." },
+  unknown: { title: "abuse.ch-nin aktiv siyahısında deyil", sub: "Son günlərin aktiv təhdid siyahısında tapılmadı. Diqqət: bu «təhlükəsiz» demək deyil — yalnız hazırda məlum zərərli kimi işarələnməyib." },
+};
+const VERDICT_EN: Record<string, { title: string; sub: string }> = {
+  malicious: { title: "Malicious — logged by abuse.ch", sub: "This indicator currently belongs to active threat infrastructure. The malware family behind it is below." },
+  exploited: { title: "Actively exploited — CISA KEV", sub: "This CVE is being actively exploited in the wild. It's an urgent patch priority." },
+  elevated: { title: "Elevated risk", sub: "High CVSS or exploit probability. Should be patched soon." },
+  known: { title: "Known vulnerability", sub: "Logged in NVD. No sign of active exploitation, but worth tracking." },
+  unknown: { title: "Not on abuse.ch's active list", sub: "Not found in the recent active-threat list. Note: this does not mean «safe» — only that it isn't currently flagged as known-malicious." },
+};
 
 export function ThreatLookup({ exampleIndicator }: { exampleIndicator?: string }) {
+  const en = useLocale() === "en";
   const [q, setQ] = useState("");
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<Result | null>(null);
@@ -88,10 +95,10 @@ export function ThreatLookup({ exampleIndicator }: { exampleIndicator?: string }
     try {
       const r = await fetch(`/api/threat?q=${encodeURIComponent(term)}`);
       const data = await r.json();
-      if (!r.ok) setError(data.error || "Xəta baş verdi");
+      if (!r.ok) setError(data.error || (en ? "Something went wrong" : "Xəta baş verdi"));
       else setResult(data as Result);
     } catch {
-      setError("Şəbəkə xətası — yenidən cəhd edin");
+      setError(en ? "Network error — try again" : "Şəbəkə xətası — yenidən cəhd edin");
     } finally {
       setLoading(false);
     }
@@ -128,8 +135,8 @@ export function ThreatLookup({ exampleIndicator }: { exampleIndicator?: string }
           inputMode="text"
           autoComplete="off"
           spellCheck={false}
-          placeholder="IP · domen · URL · hash · CVE — yapışdırın"
-          aria-label="İndikator: IP, domen, URL, hash və ya CVE"
+          placeholder={en ? "IP · domain · URL · hash · CVE — paste here" : "IP · domen · URL · hash · CVE — yapışdırın"}
+          aria-label={en ? "Indicator: IP, domain, URL, hash or CVE" : "İndikator: IP, domen, URL, hash və ya CVE"}
           className="flex-1 rounded-sm border border-hairline bg-surface px-3.5 py-2.5 font-mono text-sm text-ink-primary placeholder:text-ink-muted focus:border-brand focus:outline-none"
         />
         <button
@@ -137,12 +144,12 @@ export function ThreatLookup({ exampleIndicator }: { exampleIndicator?: string }
           disabled={loading || !q.trim()}
           className="rounded-sm bg-brand px-4 py-2.5 font-mono text-xs font-semibold uppercase tracking-widest text-[#07110e] transition-opacity hover:opacity-90 disabled:opacity-40"
         >
-          Yoxla
+          {en ? "Check" : "Yoxla"}
         </button>
       </form>
 
       <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 font-mono text-[11px] text-ink-muted">
-        <span>nümunə:</span>
+        <span>{en ? "examples:" : "nümunə:"}</span>
         {examples.map(([ex, label]) => (
           <button
             key={ex}
@@ -156,12 +163,12 @@ export function ThreatLookup({ exampleIndicator }: { exampleIndicator?: string }
         ))}
       </div>
       <p className="mt-2 font-mono text-[11px] text-ink-muted">
-        İndikatorun reputasiyası (abuse.ch ThreatFox) və ya CVE triage-i (CISA KEV · FIRST EPSS · NVD). Açar tələb olunmur.
+        {en ? "Indicator reputation (abuse.ch ThreatFox) or CVE triage (CISA KEV · FIRST EPSS · NVD). No key required." : "İndikatorun reputasiyası (abuse.ch ThreatFox) və ya CVE triage-i (CISA KEV · FIRST EPSS · NVD). Açar tələb olunmur."}
       </p>
 
       {loading && (
         <p className="mt-5 font-mono text-xs text-ink-secondary">
-          <span className="text-accent-good">●</span> yoxlanılır…
+          <span className="text-accent-good">●</span> {en ? "checking…" : "yoxlanılır…"}
         </p>
       )}
       {error && <p className="mt-5 font-mono text-xs text-accent-critical">{error}</p>}
@@ -178,7 +185,9 @@ function dateOnly(s?: string | null): string {
 }
 
 function ResultView({ r }: { r: Result }) {
-  const v = VERDICT[r.verdict];
+  const en = useLocale() === "en";
+  const v = { ...(en ? VERDICT_EN : VERDICT_AZ)[r.verdict], ring: RING[r.verdict], dot: DOT[r.verdict] };
+  const kindLabel = en ? KIND_LABEL_EN : KIND_LABEL;
   return (
     <div className="mt-6 border-t border-hairline pt-5">
       <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
@@ -186,7 +195,7 @@ function ResultView({ r }: { r: Result }) {
           {r.kind === "cve" ? r.input : defang(r.kind, r.input)}
         </span>
         <span className="font-mono text-[10px] uppercase tracking-widest text-ink-secondary">
-          {KIND_LABEL[r.kind]}
+          {kindLabel[r.kind]}
         </span>
         {r.resolvedFrom && <span className="font-mono text-[11px] text-ink-muted">host → {r.resolvedFrom}</span>}
       </div>
@@ -206,18 +215,19 @@ function ResultView({ r }: { r: Result }) {
 }
 
 function CveView({ c }: { c: Cve }) {
+  const en = useLocale() === "en";
   return (
     <>
       <div className="mt-4 grid grid-cols-2 gap-x-4 gap-y-3 rounded-md border border-hairline bg-surface px-4 py-3 sm:grid-cols-4">
-        <Field k="Aktiv istismar" v={c.kev ? "Bəli · CISA KEV" : "Əlamət yox"} accent={c.kev ? "critical" : undefined} />
-        <Field k="EPSS (istismar eht.)" v={pct(c.epss)} mono />
+        <Field k={en ? "Actively exploited" : "Aktiv istismar"} v={c.kev ? (en ? "Yes · CISA KEV" : "Bəli · CISA KEV") : (en ? "No sign" : "Əlamət yox")} accent={c.kev ? "critical" : undefined} />
+        <Field k={en ? "EPSS (exploit prob.)" : "EPSS (istismar eht.)"} v={pct(c.epss)} mono />
         <Field
           k="CVSS"
           v={c.cvss != null ? `${c.cvss}${c.severity ? ` · ${c.severity}` : ""}` : "—"}
           mono
           accent={c.cvss != null && c.cvss >= 9 ? "critical" : c.cvss != null && c.cvss >= 7 ? "serious" : undefined}
         />
-        <Field k="Dərc olundu" v={dateOnly(c.published)} mono />
+        <Field k={en ? "Published" : "Dərc olundu"} v={dateOnly(c.published)} mono />
       </div>
       {c.description && (
         <p className="mt-4 text-[13.5px] leading-relaxed text-ink-secondary">{c.description}</p>
@@ -232,7 +242,7 @@ function CveView({ c }: { c: Cve }) {
           rel="noopener noreferrer"
           className="font-mono text-[11px] uppercase tracking-widest text-accent-critical hover:underline"
         >
-          NVD-də bax ↗
+          {en ? "View on NVD" : "NVD-də bax"} ↗
         </a>
         {c.refs.slice(0, 3).map((u, i) => (
           <a
@@ -242,7 +252,7 @@ function CveView({ c }: { c: Cve }) {
             rel="noopener noreferrer"
             className="font-mono text-[11px] text-ink-muted hover:text-ink-secondary hover:underline"
           >
-            istinad {i + 1} ↗
+            {en ? "ref" : "istinad"} {i + 1} ↗
           </a>
         ))}
       </div>
@@ -251,22 +261,23 @@ function CveView({ c }: { c: Cve }) {
 }
 
 function IndicatorView({ r }: { r: Result }) {
+  const en = useLocale() === "en";
   const id = r.identity;
   const hasId = id && (id.country || id.asn || id.org);
   return (
     <>
       {hasId && (
         <div className="mt-4 grid grid-cols-2 gap-x-4 gap-y-2 rounded-md border border-hairline bg-surface px-4 py-3 sm:grid-cols-3">
-          <Field k="Ölkə" v={[id!.city, id!.country].filter(Boolean).join(", ") || id!.countryCode} />
+          <Field k={en ? "Country" : "Ölkə"} v={[id!.city, id!.country].filter(Boolean).join(", ") || id!.countryCode} />
           <Field k="ASN" v={id!.asn} mono />
-          <Field k="Operator" v={id!.org} />
+          <Field k={en ? "Operator" : "Operator"} v={id!.org} />
         </div>
       )}
 
       {r.hits && r.hits.length > 0 ? (
         <div className="mt-5 space-y-3">
           <div className="font-mono text-[11px] uppercase tracking-[0.16em] text-ink-muted">
-            Təhdid qeydləri · <span className="text-accent-critical">{r.hitCount}</span>
+            {en ? "Threat records" : "Təhdid qeydləri"} · <span className="text-accent-critical">{r.hitCount}</span>
           </div>
           {r.hits.map((h, i) => (
             <div key={i} className="rounded-md border border-accent-critical/25 bg-accent-critical/[0.03] px-4 py-3">
@@ -275,20 +286,20 @@ function IndicatorView({ r }: { r: Result }) {
                 {h.malwareAlias && <span className="font-mono text-[11px] text-ink-muted">{h.malwareAlias}</span>}
                 {h.threatType && (
                   <span className="rounded-sm border border-hairline px-1.5 py-0.5 font-mono text-[10px] uppercase tracking-widest text-accent-serious">
-                    {THREAT_LABEL[h.threatType] || h.threatType}
+                    {(en ? THREAT_LABEL_EN : THREAT_LABEL)[h.threatType] || h.threatType}
                   </span>
                 )}
                 <span className="ml-auto font-mono text-[11px] text-ink-muted tabular-nums">
-                  {h.confidence}% əminlik
+                  {h.confidence}% {en ? "confidence" : "əminlik"}
                 </span>
               </div>
               <div className="mt-1.5 flex flex-wrap items-center gap-x-4 gap-y-1 font-mono text-[11px] text-ink-muted">
                 {h.port != null && <span>port :{h.port}</span>}
-                <span>ilk görünüş {dateOnly(h.firstSeen)}</span>
+                <span>{en ? "first seen" : "ilk görünüş"} {dateOnly(h.firstSeen)}</span>
                 {h.tags.length > 0 && <span className="text-ink-secondary">{h.tags.slice(0, 5).join(" · ")}</span>}
                 {h.reference && (
                   <a href={h.reference} target="_blank" rel="noopener noreferrer" className="text-brand hover:underline">
-                    mənbə ↗
+                    {en ? "source" : "mənbə"} ↗
                   </a>
                 )}
               </div>
@@ -297,7 +308,7 @@ function IndicatorView({ r }: { r: Result }) {
         </div>
       ) : (
         <p className="mt-4 font-mono text-[11px] text-ink-muted">
-          Mənbə: abuse.ch ThreatFox — son günlərin aktiv indikator siyahısı.
+          {en ? "Source: abuse.ch ThreatFox — the recent active-indicator list." : "Mənbə: abuse.ch ThreatFox — son günlərin aktiv indikator siyahısı."}
         </p>
       )}
     </>

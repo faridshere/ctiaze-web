@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { SearchEntry } from "@/lib/stories";
+import { useLocale } from "./locale";
 
 export const PALETTE_OPEN_EVENT = "ctiaze:open-palette";
 
@@ -11,6 +12,7 @@ export const PALETTE_OPEN_EVENT = "ctiaze:open-palette";
 // dispatched by the header's trigger button — a single global boolean isn't
 // worth a context provider.
 export function CommandPalette() {
+  const en = useLocale() === "en";
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
@@ -137,7 +139,7 @@ export function CommandPalette() {
       <div
         role="dialog"
         aria-modal="true"
-        aria-label="Xəbər axtarışı"
+        aria-label={en ? "News search" : "Xəbər axtarışı"}
         className="w-full max-w-lg bg-surface-raised border border-hairline shadow-2xl"
         onKeyDown={onKeyDown}
       >
@@ -152,13 +154,13 @@ export function CommandPalette() {
               setQuery(e.target.value);
               setActiveIndex(0);
             }}
-            placeholder="Xəbər, kateqoriya və ya CVE axtar…"
+            placeholder={en ? "Search news, category or CVE…" : "Xəbər, kateqoriya və ya CVE axtar…"}
             className="flex-1 bg-transparent font-mono text-sm text-ink-primary placeholder:text-ink-muted outline-none"
-            aria-label="Axtarış"
+            aria-label={en ? "Search" : "Axtarış"}
           />
           <button
             onClick={close}
-            aria-label="Bağla"
+            aria-label={en ? "Close" : "Bağla"}
             className="font-mono text-[10px] uppercase tracking-wider text-ink-muted hover:text-ink-primary transition-colors"
           >
             esc
@@ -168,15 +170,15 @@ export function CommandPalette() {
         <div className="max-h-[50vh] overflow-y-auto">
           {loadError && (
             <p className="px-4 py-6 text-center font-mono text-xs text-ink-muted">
-              axtarış yüklənmədi — yenidən cəhd edin
+              {en ? "search failed to load — try again" : "axtarış yüklənmədi — yenidən cəhd edin"}
             </p>
           )}
           {!loadError && index === null && (
-            <p className="px-4 py-6 text-center font-mono text-xs text-ink-muted">yüklənir…</p>
+            <p className="px-4 py-6 text-center font-mono text-xs text-ink-muted">{en ? "loading…" : "yüklənir…"}</p>
           )}
           {!loadError && index !== null && results.length === 0 && (
             <p className="px-4 py-6 text-center font-mono text-xs text-ink-muted">
-              nəticə tapılmadı
+              {en ? "no results" : "nəticə tapılmadı"}
             </p>
           )}
           {results.map((entry, i) => (

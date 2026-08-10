@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useLocale } from "./locale";
 
 type Result = {
   chain: string;
@@ -43,6 +44,7 @@ function dateOnly(s?: string | null): string {
 }
 
 export function CryptoLookup() {
+  const en = useLocale() === "en";
   const [chain, setChain] = useState("bitcoin");
   const [address, setAddress] = useState("");
   const [loading, setLoading] = useState(false);
@@ -58,10 +60,10 @@ export function CryptoLookup() {
         `/api/chain?chain=${encodeURIComponent(chain)}&address=${encodeURIComponent(address.trim())}`
       );
       const data = await r.json();
-      if (!r.ok) setError(data.error || "Xəta baş verdi");
+      if (!r.ok) setError(data.error || (en ? "Something went wrong" : "Xəta baş verdi"));
       else setResult(data as Result);
     } catch {
-      setError("Şəbəkə xətası — yenidən cəhd edin");
+      setError(en ? "Network error — try again" : "Şəbəkə xətası — yenidən cəhd edin");
     } finally {
       setLoading(false);
     }
@@ -79,7 +81,7 @@ export function CryptoLookup() {
         <select
           value={chain}
           onChange={(e) => setChain(e.target.value)}
-          aria-label="Blokçeyn"
+          aria-label={en ? "Blockchain" : "Blokçeyn"}
           className="shrink-0 rounded-sm border border-hairline bg-surface px-3 py-2.5 font-mono text-sm text-ink-primary focus:border-brand focus:outline-none"
         >
           {CHAINS.map(([v, label]) => (
@@ -93,8 +95,8 @@ export function CryptoLookup() {
           onChange={(e) => setAddress(e.target.value)}
           autoComplete="off"
           spellCheck={false}
-          placeholder="Kripto ünvanı yapışdırın"
-          aria-label="Kripto ünvanı"
+          placeholder={en ? "Paste a crypto address" : "Kripto ünvanı yapışdırın"}
+          aria-label={en ? "Crypto address" : "Kripto ünvanı"}
           className="flex-1 rounded-sm border border-hairline bg-surface px-3.5 py-2.5 font-mono text-sm text-ink-primary placeholder:text-ink-muted focus:border-brand focus:outline-none"
         />
         <button
@@ -102,18 +104,19 @@ export function CryptoLookup() {
           disabled={loading || !address.trim()}
           className="rounded-sm bg-brand px-4 py-2.5 font-mono text-xs font-semibold uppercase tracking-widest text-[#07110e] transition-opacity hover:opacity-90 disabled:opacity-40"
         >
-          Yoxla
+          {en ? "Check" : "Yoxla"}
         </button>
       </form>
 
       <p className="mt-3 font-mono text-[11px] text-ink-muted">
-        Blockchair on-chain kəşfiyyatı — ünvanın balansı, dövriyyəsi və fəaliyyət
-        tarixçəsi. Ransomware ödənişləri və scam cüzdanlarının araşdırılması üçün.
+        {en
+          ? "Blockchair on-chain intel — the address balance, volume and activity history. For investigating ransomware payments and scam wallets."
+          : "Blockchair on-chain kəşfiyyatı — ünvanın balansı, dövriyyəsi və fəaliyyət tarixçəsi. Ransomware ödənişləri və scam cüzdanlarının araşdırılması üçün."}
       </p>
 
       {loading && (
         <p className="mt-5 font-mono text-xs text-ink-secondary">
-          <span className="text-accent-good">●</span> yoxlanılır…
+          <span className="text-accent-good">●</span> {en ? "checking…" : "yoxlanılır…"}
         </p>
       )}
       {error && <p className="mt-5 font-mono text-xs text-accent-critical">{error}</p>}
@@ -133,6 +136,7 @@ function Stat({ label, value, sub }: { label: string; value: string; sub?: strin
 }
 
 function ResultView({ r }: { r: Result }) {
+  const en = useLocale() === "en";
   return (
     <div className="mt-6 border-t border-hairline pt-5">
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
@@ -149,19 +153,19 @@ function ResultView({ r }: { r: Result }) {
 
       {!r.found ? (
         <p className="mt-4 text-sm text-ink-secondary">
-          Bu ünvan üçün on-chain məlumat tapılmadı (istifadə edilməyib və ya yanlış).
+          {en ? "No on-chain data found for this address (unused or invalid)." : "Bu ünvan üçün on-chain məlumat tapılmadı (istifadə edilməyib və ya yanlış)."}
         </p>
       ) : (
         <>
           <div className="mt-5 grid grid-cols-2 gap-x-6 gap-y-5 sm:grid-cols-4">
-            <Stat label="Balans" value={coin(r.balance, r.symbol)} sub={usd(r.balance_usd)} />
-            <Stat label="Cəmi qəbul" value={coin(r.received, r.symbol)} sub={usd(r.received_usd)} />
-            <Stat label="Cəmi göndərilmiş" value={coin(r.spent, r.symbol)} sub={usd(r.spent_usd)} />
-            <Stat label="Əməliyyat sayı" value={(r.tx_count ?? 0).toLocaleString("en-US")} />
+            <Stat label={en ? "Balance" : "Balans"} value={coin(r.balance, r.symbol)} sub={usd(r.balance_usd)} />
+            <Stat label={en ? "Total received" : "Cəmi qəbul"} value={coin(r.received, r.symbol)} sub={usd(r.received_usd)} />
+            <Stat label={en ? "Total sent" : "Cəmi göndərilmiş"} value={coin(r.spent, r.symbol)} sub={usd(r.spent_usd)} />
+            <Stat label={en ? "Transactions" : "Əməliyyat sayı"} value={(r.tx_count ?? 0).toLocaleString("en-US")} />
           </div>
           <div className="mt-5 flex flex-wrap gap-x-8 gap-y-2 border-t border-hairline pt-4">
-            <Stat label="İlk fəaliyyət" value={dateOnly(r.first_seen)} />
-            <Stat label="Son fəaliyyət" value={dateOnly(r.last_seen)} />
+            <Stat label={en ? "First activity" : "İlk fəaliyyət"} value={dateOnly(r.first_seen)} />
+            <Stat label={en ? "Last activity" : "Son fəaliyyət"} value={dateOnly(r.last_seen)} />
           </div>
           <a
             href={`https://blockchair.com/${r.chain}/address/${r.address}`}
@@ -169,7 +173,7 @@ function ResultView({ r }: { r: Result }) {
             rel="noopener noreferrer"
             className="mt-5 inline-block font-mono text-[11px] uppercase tracking-widest text-accent-critical hover:underline"
           >
-            Blockchair-də tam araşdır ↗
+            {en ? "Full investigation on Blockchair" : "Blockchair-də tam araşdır"} ↗
           </a>
         </>
       )}
