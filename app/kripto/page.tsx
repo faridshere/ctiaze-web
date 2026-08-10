@@ -2,11 +2,12 @@ import type { Metadata } from "next";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { CryptoLookup } from "@/components/CryptoLookup";
+import { getLocale } from "@/lib/i18n-server";
 
 export const metadata: Metadata = {
-  title: "Kripto ünvan kəşfiyyatı",
+  title: "Kripto ünvan kəşfiyyatı · Crypto address intel",
   description:
-    "Bitcoin, Ethereum və digər blokçeyn ünvanlarının on-chain kəşfiyyatı — balans, dövriyyə, fəaliyyət tarixçəsi. Ransomware ödənişləri və crypto scam araşdırması üçün.",
+    "On-chain intelligence for Bitcoin, Ethereum and other blockchain addresses — balance, total volume, activity history. For ransomware-payment and crypto-scam investigation.",
 };
 
 const EXAMPLES: [string, string, string][] = [
@@ -14,22 +15,22 @@ const EXAMPLES: [string, string, string][] = [
   ["ethereum", "ETH2 deposit", "0x00000000219ab540356cBB839Cbe05303d7705Fa"],
 ];
 
-export default function KriptoPage() {
+export default async function KriptoPage() {
+  const en = (await getLocale()) === "en";
   return (
     <div className="ops min-h-screen flex flex-col">
       <Header />
       <main className="flex-1 mx-auto w-full max-w-3xl px-4 py-14 sm:py-20">
         <p className="font-mono text-xs uppercase tracking-[0.2em] text-brand">
-          On-chain kəşfiyyat · Blockchair
+          {en ? "On-chain intel · Blockchair" : "On-chain kəşfiyyat · Blockchair"}
         </p>
         <h1 className="mt-3 font-headline text-3xl sm:text-4xl text-ink-primary text-balance">
-          Kripto ünvan kəşfiyyatı
+          {en ? "Crypto address intelligence" : "Kripto ünvan kəşfiyyatı"}
         </h1>
         <p className="mt-4 max-w-xl leading-relaxed text-ink-secondary">
-          Bir Bitcoin, Ethereum və ya digər blokçeyn ünvanının internetə açıq
-          on-chain izini yoxlayın — balans, cəmi dövriyyə, əməliyyat sayı və
-          fəaliyyət tarixçəsi. Ransomware ödəniş ünvanlarını, scam cüzdanlarını və
-          şübhəli axınları araşdırmaq üçün.
+          {en
+            ? "Check the public on-chain trace of any Bitcoin, Ethereum or other blockchain address — balance, total volume, transaction count and activity history. For investigating ransomware payment addresses, scam wallets and suspicious flows."
+            : "Bir Bitcoin, Ethereum və ya digər blokçeyn ünvanının internetə açıq on-chain izini yoxlayın — balans, cəmi dövriyyə, əməliyyat sayı və fəaliyyət tarixçəsi. Ransomware ödəniş ünvanlarını, scam cüzdanlarını və şübhəli axınları araşdırmaq üçün."}
         </p>
 
         <div className="mt-8">
@@ -38,7 +39,7 @@ export default function KriptoPage() {
 
         <div className="mt-8">
           <div className="font-mono text-[11px] uppercase tracking-[0.16em] text-ink-muted">
-            Nümunə ünvanlar
+            {en ? "Example addresses" : "Nümunə ünvanlar"}
           </div>
           <ul className="mt-2 space-y-1">
             {EXAMPLES.map(([, label, addr]) => (
@@ -51,9 +52,9 @@ export default function KriptoPage() {
         </div>
 
         <p className="mt-14 pt-8 border-t border-hairline font-mono text-xs text-ink-muted leading-relaxed">
-          Mənbə: Blockchair API (41 blokçeyn). Yalnız açıq on-chain məlumat —
-          fərdi identifikasiya deyil. On-chain izləmə şəffafdır; mixer və exchange
-          off-ramp-ları araşdırmanı çətinləşdirir.
+          {en
+            ? "Source: Blockchair API (41 blockchains). Public on-chain data only — not personal identification. On-chain tracing is transparent; mixers and exchange off-ramps make investigation harder."
+            : "Mənbə: Blockchair API (41 blokçeyn). Yalnız açıq on-chain məlumat — fərdi identifikasiya deyil. On-chain izləmə şəffafdır; mixer və exchange off-ramp-ları araşdırmanı çətinləşdirir."}
         </p>
       </main>
       <Footer />

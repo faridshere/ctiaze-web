@@ -16,6 +16,7 @@ import { lookupThreatFox, iocsByMalware, type TfKind } from "@/lib/threatfox";
 import { outletCode, outletHost } from "@/lib/outlets";
 import { categoryName } from "@/lib/taxonomy";
 import { cveBadges } from "@/lib/cveintel";
+import { getLocale } from "@/lib/i18n-server";
 
 export const revalidate = 180;
 
@@ -37,15 +38,13 @@ export async function generateMetadata({
   const { slug } = await params;
   const story = await getStoryBySlug(slug);
   if (!story) return { title: "Tapılmadı" };
+  const en = (await getLocale()) === "en";
+  const title = en ? story.titleEn : story.titleAz;
+  const desc = (en ? story.summaryEn : story.bodyAz).slice(0, 160);
   return {
-    title: story.titleAz,
-    description: story.bodyAz.slice(0, 160),
-    openGraph: {
-      title: story.titleAz,
-      description: story.bodyAz.slice(0, 160),
-      type: "article",
-      publishedTime: story.publishedAt,
-    },
+    title,
+    description: desc,
+    openGraph: { title, description: desc, type: "article", publishedTime: story.publishedAt },
   };
 }
 
@@ -53,6 +52,11 @@ export default async function StoryPage({ params }: { params: Promise<Params> })
   const { slug } = await params;
   const story = await getStoryBySlug(slug);
   if (!story) notFound();
+
+  const en = (await getLocale()) === "en";
+  const loc = en ? "en" : "az";
+  const dTitle = en ? story.titleEn : story.titleAz;
+  const dBody = en ? story.summaryEn : story.bodyAz;
 
   const [recent, badges] = await Promise.all([
     getStories(60).catch(() => []),
@@ -113,10 +117,10 @@ export default async function StoryPage({ params }: { params: Promise<Params> })
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "NewsArticle",
-    headline: story.titleAz,
+    headline: dTitle,
     datePublished: story.publishedAt,
     dateModified: story.publishedAt,
-    inLanguage: "az",
+    inLanguage: loc,
     author: { "@type": "Organization", name: "Hackxana" },
     publisher: { "@type": "Organization", name: "ctiaze" },
     mainEntityOfPage: `https://ctiaze.tech/xeber/${story.slug}`,
@@ -138,7 +142,7 @@ export default async function StoryPage({ params }: { params: Promise<Params> })
           href="/"
           className="font-mono text-[length:var(--t-micro)] uppercase tracking-[0.14em] text-ink-muted transition-colors hover:text-ink-primary"
         >
-          ← lent
+          {en ? "← feed" : "← lent"}
         </Link>
 
         {/* telemetry */}
@@ -148,7 +152,7 @@ export default async function StoryPage({ params }: { params: Promise<Params> })
           </time>
           <span className="flex items-center gap-1.5">
             <GlyphChip category={story.category} />
-            <span className="uppercase tracking-[0.06em]">{categoryName(story.category)}</span>
+            <span className="uppercase tracking-[0.06em]">{categoryName(story.category, loc)}</span>
           </span>
           <FlagChips kev={story.kev} cveIds={story.cveIds} region={story.region} />
           <a
@@ -158,12 +162,12 @@ export default async function StoryPage({ params }: { params: Promise<Params> })
             title={host}
             className="ml-auto transition-colors hover:text-brand"
           >
-            mənbə · {code} ↗
+            {en ? "source" : "mənbə"} · {code} ↗
           </a>
         </div>
 
         <h1 className="mt-4 font-headline text-[length:var(--t-display)] font-semibold leading-[1.05] tracking-[-0.01em] text-ink-primary">
-          {story.titleAz}
+          {dTitle}
         </h1>
 
         {/* mini-Spektr — situates this briefing in the live threat spectrum */}
@@ -173,7 +177,7 @@ export default async function StoryPage({ params }: { params: Promise<Params> })
               stories={recent}
               variant="mini"
               ownCategory={story.category}
-              caption="son 60 dispaç üzrə spektr"
+              caption={en ? "last 60 dispatches · spectrum" : "son 60 dispaç üzrə spektr"}
             />
           </div>
         )}
@@ -181,14 +185,14 @@ export default async function StoryPage({ params }: { params: Promise<Params> })
         <div className="mt-6 h-px w-full bg-hairline" />
 
         <p className="mt-7 whitespace-pre-line text-[length:var(--t-body)] leading-[1.75] text-ink-secondary">
-          {story.bodyAz}
+          {dBody}
         </p>
 
         {/* CVE small-info block — cross-links into the registry */}
         {story.cveIds.length > 0 && (
           <div className="mt-8 border-t border-hairline pt-6">
             <div className="font-mono text-[length:var(--t-micro)] uppercase tracking-[0.14em] text-ink-muted">
-              CVE · təfərrüat
+              {en ? "CVE · detail" : "CVE · təfərrüat"}
             </div>
             <ul className="mt-3 flex flex-col gap-2.5">
               {story.cveIds.map((cve) => {
@@ -231,7 +235,7 @@ export default async function StoryPage({ params }: { params: Promise<Params> })
         {story.altSources.length > 0 && (
           <div className="mt-8 border-t border-hairline pt-5">
             <div className="font-mono text-[length:var(--t-micro)] uppercase tracking-[0.14em] text-ink-muted">
-              Mənbələr · {story.altSources.length + 1}
+              {en ? "Sources" : "Mənbələr"} · {story.altSources.length + 1}
             </div>
             <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1.5 font-mono text-[length:var(--t-meta)]">
               <a
@@ -241,7 +245,7 @@ export default async function StoryPage({ params }: { params: Promise<Params> })
                 title={host}
                 className="text-ink-primary transition-colors hover:text-brand"
               >
-                {code} · ilkin ↗
+                {code} · {en ? "primary" : "ilkin"} ↗
               </a>
               {story.altSources.map((u) => (
                 <a
@@ -257,14 +261,14 @@ export default async function StoryPage({ params }: { params: Promise<Params> })
               ))}
             </div>
             <p className="mt-1.5 font-mono text-[length:var(--t-micro)] text-ink-muted">
-              eyni hadisəni bildirən mənbələr — oxumaq üçün birini seçin
+              {en ? "outlets reporting the same story — pick one to read" : "eyni hadisəni bildirən mənbələr — oxumaq üçün birini seçin"}
             </p>
           </div>
         )}
 
         {/* attribution footer */}
         <div className="mt-10 flex flex-wrap items-center justify-between gap-x-6 gap-y-2 border-t border-hairline pt-5 font-mono text-[length:var(--t-meta)] text-ink-muted">
-          <span className="text-accent-good">əsaslandırılıb ✓</span>
+          <span className="text-accent-good">{en ? "grounded ✓" : "əsaslandırılıb ✓"}</span>
           <a
             href={story.sourceUrl}
             target="_blank"
@@ -272,7 +276,7 @@ export default async function StoryPage({ params }: { params: Promise<Params> })
             title={host}
             className="uppercase tracking-wider transition-colors hover:text-ink-primary"
           >
-            ilkin mənbə ↗
+            {en ? "primary source" : "ilkin mənbə"} ↗
           </a>
         </div>
 

@@ -8,6 +8,7 @@ import { GlyphChip } from "@/components/GlyphChip";
 import { getCveIndex } from "@/lib/cve";
 import { getStories } from "@/lib/stories";
 import { kevSet, epssMap, nvdLookup } from "@/lib/cveintel";
+import { getLocale } from "@/lib/i18n-server";
 
 export const revalidate = 21600; // 6h — CVE authority data moves slowly
 
@@ -34,6 +35,7 @@ function pct(epss: number | null): string | null {
 }
 
 export default async function CvePage() {
+  const en = (await getLocale()) === "en";
   const [index, stories] = await Promise.all([getCveIndex(WINDOW), getStories(WINDOW).catch(() => [])]);
   const cveBearing = stories.filter((s) => s.cveIds.length > 0);
   const cves = index.map((x) => x.cve);
@@ -59,12 +61,10 @@ export default async function CvePage() {
       <Header />
       <main className="mx-auto w-full max-w-[52rem] flex-1 px-[var(--sp-gutter)] py-[var(--sp-section)]">
         <h1 className="font-headline text-[length:var(--t-h2)] font-semibold tracking-[-0.01em] text-ink-primary">
-          CVE reyestri
+          {en ? "CVE registry" : "CVE reyestri"}
         </h1>
         <p className="mt-2 font-mono text-[length:var(--t-meta)] text-ink-muted">
-          son {WINDOW} dispaçdan çıxarılan{" "}
-          <span className="tabular-nums text-ink-secondary">{index.length}</span> CVE · CISA KEV ·
-          FIRST EPSS · NVD
+          {en ? "extracted from the last " : "son "}{WINDOW}{en ? " dispatches · " : " dispaçdan çıxarılan "}<span className="tabular-nums text-ink-secondary">{index.length}</span> CVE · CISA KEV · FIRST EPSS · NVD
         </p>
 
         {cveBearing.length > 0 && (
@@ -72,14 +72,14 @@ export default async function CvePage() {
             <SpektrStrip
               stories={cveBearing}
               variant="mini"
-              caption="CVE daşıyan dispaçlar üzrə spektr"
+              caption={en ? "spectrum over CVE-bearing dispatches" : "CVE daşıyan dispaçlar üzrə spektr"}
             />
           </div>
         )}
 
         {index.length === 0 ? (
           <p className="mt-10 font-mono text-[length:var(--t-meta)] text-ink-muted">
-            hazırkı pəncərədə CVE yoxdur
+            {en ? "no CVEs in the current window" : "hazırkı pəncərədə CVE yoxdur"}
           </p>
         ) : (
           <div className="mt-8">
@@ -139,9 +139,9 @@ export default async function CvePage() {
                           key={s.slug}
                           href={`/xeber/${s.slug}`}
                           className="text-ink-secondary transition-colors hover:text-brand"
-                          title={s.titleAz}
+                          title={en ? s.titleEn : s.titleAz}
                         >
-                          → dispaç: {s.titleAz.length > 46 ? s.titleAz.slice(0, 46) + "…" : s.titleAz}
+                          → {en ? "dispatch" : "dispaç"}: {(en ? s.titleEn : s.titleAz).length > 46 ? (en ? s.titleEn : s.titleAz).slice(0, 46) + "…" : (en ? s.titleEn : s.titleAz)}
                         </Link>
                       ))}
                       <a
@@ -161,8 +161,7 @@ export default async function CvePage() {
         )}
 
         <p className="mt-12 border-t border-hairline pt-6 font-mono text-[length:var(--t-micro)] uppercase tracking-[0.12em] leading-relaxed text-ink-muted">
-          mənbələr: CISA KEV · FIRST EPSS · NIST NVD — açarsız, pulsuz. EPSS = 30 günlük
-          istismar ehtimalı. KEV = vəhşi təbiətdə aktiv istismar.
+          {en ? "sources: CISA KEV · FIRST EPSS · NIST NVD — keyless, free. EPSS = 30-day exploit probability. KEV = actively exploited in the wild." : "mənbələr: CISA KEV · FIRST EPSS · NIST NVD — açarsız, pulsuz. EPSS = 30 günlük istismar ehtimalı. KEV = vəhşi təbiətdə aktiv istismar."}
         </p>
       </main>
       <Footer />

@@ -9,7 +9,7 @@ import { getStories } from "./stories";
 export type CveRef = {
   cve: string;
   kev: boolean; // any linked story is KEV-flagged
-  stories: { slug: string; titleAz: string; publishedAt: string; category: string }[];
+  stories: { slug: string; titleAz: string; titleEn: string; publishedAt: string; category: string }[];
   latest: string; // most-recent linked publishedAt (ISO) — for sorting
 };
 
@@ -25,6 +25,7 @@ export async function getCveIndex(limit = 400): Promise<CveRef[]> {
         cur.stories.push({
           slug: s.slug,
           titleAz: s.titleAz,
+          titleEn: s.titleEn,
           publishedAt: s.publishedAt,
           category: s.category,
         });

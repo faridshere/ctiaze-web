@@ -2,6 +2,7 @@
 
 import { useSyncExternalStore } from "react";
 import { AZ_MONTHS } from "@/lib/format";
+import { useLocale } from "./locale";
 
 const TIME_ZONE = "Asia/Baku";
 
@@ -17,7 +18,7 @@ function computeNow(): string {
   }).formatToParts(new Date());
   const get = (t: string) => parts.find((p) => p.type === t)?.value ?? "";
   const month = AZ_MONTHS[parseInt(get("month"), 10) - 1] ?? "";
-  return `bakı ${get("day")} ${month} · ${get("hour")}:${get("minute")}:${get("second")}`;
+  return `${get("day")} ${month} · ${get("hour")}:${get("minute")}:${get("second")}`;
 }
 
 let cached = "";
@@ -43,15 +44,16 @@ function getSnapshot() {
 }
 
 function getServerSnapshot() {
-  return "bakı";
+  return "";
 }
 
 export function LiveStatus() {
   const now = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
+  const prefix = useLocale() === "en" ? "baku" : "bakı";
 
   return (
     <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-ink-muted tabular-nums">
-      {now}
+      {prefix}{now ? ` ${now}` : ""}
     </span>
   );
 }
