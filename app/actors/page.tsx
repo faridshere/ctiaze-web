@@ -24,7 +24,7 @@ function fmtDate(iso: string | null): string {
 }
 
 export default async function ActorsPage() {
-  const [top, stats] = await Promise.all([getTopActors(12), getActorStats()]);
+  const [top, stats] = await Promise.all([getTopActors(24), getActorStats()]);
 
   return (
     <div className="ops flex min-h-screen flex-col">
