@@ -7,6 +7,7 @@ import {
   type RiskyService,
 } from "@/lib/exposure";
 import { ExposureLookup } from "@/components/ExposureLookup";
+import { getLocale } from "@/lib/i18n-server";
 
 export const revalidate = 3600; // snapshot changes weekly; hourly ISR is ample
 
@@ -19,6 +20,11 @@ export const metadata: Metadata = {
 const CATEGORY_LABEL: Record<string, string> = {
   "remote-access": "Uzaqdan giriş",
   database: "Verilənlər bazası",
+  "ics-scada": "ICS / SCADA",
+};
+const CATEGORY_LABEL_EN: Record<string, string> = {
+  "remote-access": "Remote access",
+  database: "Databases",
   "ics-scada": "ICS / SCADA",
 };
 
@@ -59,6 +65,8 @@ function groupByCategory(services: RiskyService[]) {
 }
 
 export default async function ExposurePage() {
+  const en = (await getLocale()) === "en";
+  const catLabel = en ? CATEGORY_LABEL_EN : CATEGORY_LABEL;
   const snap = await getLatestSnapshot();
   const trend = await getTotalsTrend();
 
@@ -68,10 +76,10 @@ export default async function ExposurePage() {
         <Header />
         <main className="flex-1 mx-auto w-full max-w-2xl px-4 py-20">
           <h1 className="font-headline text-3xl text-ink-primary">
-            Ekspozisiya
+            {en ? "Exposure" : "Ekspozisiya"}
           </h1>
           <p className="mt-6 text-ink-secondary">
-            İlk həftəlik snapshot hazırlanır. Tezliklə burada olacaq.
+            {en ? "The first weekly snapshot is being prepared. It'll be here soon." : "İlk həftəlik snapshot hazırlanır. Tezliklə burada olacaq."}
           </p>
         </main>
         <Footer />
@@ -99,22 +107,24 @@ export default async function ExposurePage() {
     snap.risky_services.find((s) => s.port === 3389)?.count ??
     regional.find((r) => r.code === "AZ")?.rdp ??
     null;
-  const trendWord = deltaAbs == null ? "" : deltaAbs > 0 ? "artdı" : deltaAbs < 0 ? "azaldı" : "sabit qaldı";
+  const trendWord = deltaAbs == null ? "" :
+    en ? (deltaAbs > 0 ? "rose" : deltaAbs < 0 ? "fell" : "held steady")
+       : (deltaAbs > 0 ? "artdı" : deltaAbs < 0 ? "azaldı" : "sabit qaldı");
 
   return (
     <div className="ops min-h-screen flex flex-col">
       <Header />
       <main className="flex-1 mx-auto w-full max-w-3xl px-4 py-14 sm:py-20">
         <p className="font-mono text-xs uppercase tracking-[0.2em] text-brand">
-          Canlı yoxlama · Shodan
+          {en ? "Live check · Shodan" : "Canlı yoxlama · Shodan"}
         </p>
         <h1 className="mt-3 font-headline text-3xl sm:text-4xl text-ink-primary text-balance">
-          İnternetə açıq ekspozisiya
+          {en ? "Internet-exposed attack surface" : "İnternetə açıq ekspozisiya"}
         </h1>
         <p className="mt-4 max-w-xl leading-relaxed text-ink-secondary">
-          İstənilən public IP-nin internetə nə göstərdiyini yoxlayın — açıq
-          portlar və məlum CVE-lər. Aşağıda isə bütün Azərbaycanın həftəlik
-          hücum səthi mənzərəsi.
+          {en
+            ? "Check what any public IP shows to the internet — open ports and known CVEs. Below, the whole of Azerbaijan's weekly attack-surface picture."
+            : "İstənilən public IP-nin internetə nə göstərdiyini yoxlayın — açıq portlar və məlum CVE-lər. Aşağıda isə bütün Azərbaycanın həftəlik hücum səthi mənzərəsi."}
         </p>
 
         <div className="mt-8">
@@ -123,7 +133,7 @@ export default async function ExposurePage() {
 
         {/* national snapshot */}
         <p className="mt-16 font-mono text-xs uppercase tracking-[0.2em] text-brand">
-          Azərbaycan · milli mənzərə
+          {en ? "Azerbaijan · national picture" : "Azərbaycan · milli mənzərə"}
         </p>
 
         {/* headline number + narrator */}
@@ -143,35 +153,46 @@ export default async function ExposurePage() {
                 {deltaPct != null && (
                   <span className="text-ink-muted"> ({deltaPct > 0 ? "+" : ""}{deltaPct.toFixed(1)}%)</span>
                 )}
-                <span className="text-ink-muted"> keçən həftə</span>
+                <span className="text-ink-muted"> {en ? "vs last week" : "keçən həftə"}</span>
               </span>
             )}
           </div>
           <div className="mt-2 font-mono text-xs uppercase tracking-widest text-ink-muted">
-            açıq host · {snap.country} · {fmtDate(new Date(snap.swept_at).toISOString())}
+            {en ? "exposed hosts" : "açıq host"} · {snap.country} · {fmtDate(new Date(snap.swept_at).toISOString())}
           </div>
           {perCapita && (
             <div className="mt-1 font-mono text-[11px] text-ink-muted">
-              ≈ 1 açıq host hər {perCapita.toLocaleString("en-US")} nəfərə (əhali ~10.4M)
+              {en
+                ? `≈ 1 exposed host per ${perCapita.toLocaleString("en-US")} people (pop. ~10.4M)`
+                : `≈ 1 açıq host hər ${perCapita.toLocaleString("en-US")} nəfərə (əhali ~10.4M)`}
             </div>
           )}
           <p className="mt-3 max-w-xl text-sm leading-relaxed text-ink-secondary">
-            Bu həftə Azərbaycanda internetə açıq host sayı{" "}
+            {en ? "This week the number of internet-exposed hosts in Azerbaijan " : "Bu həftə Azərbaycanda internetə açıq host sayı "}
             {deltaAbs != null ? (
               <>
                 <span className={deltaAbs > 0 ? "text-accent-critical" : deltaAbs < 0 ? "text-accent-good" : ""}>
                   {trendWord}
                 </span>
-                {" "}(keçən həftədən {deltaAbs > 0 ? "+" : ""}{deltaAbs.toLocaleString("en-US")}).
+                {en
+                  ? <> (from last week {deltaAbs > 0 ? "+" : ""}{deltaAbs.toLocaleString("en-US")}).</>
+                  : <>{" "}(keçən həftədən {deltaAbs > 0 ? "+" : ""}{deltaAbs.toLocaleString("en-US")}).</>}
               </>
             ) : (
-              "izlənilir."
+              en ? "is being tracked." : "izlənilir."
             )}
             {rdpCount != null && (
-              <>
-                {" "}Bunlardan <span className="text-accent-critical tabular-nums">{rdpCount.toLocaleString("en-US")}</span>-i
-                açıq <span className="text-accent-critical">RDP</span> — ransomware-in №1 giriş qapısı.
-              </>
+              en ? (
+                <>
+                  {" "}Of these <span className="text-accent-critical tabular-nums">{rdpCount.toLocaleString("en-US")}</span> are
+                  open <span className="text-accent-critical">RDP</span> — ransomware&apos;s #1 entry point.
+                </>
+              ) : (
+                <>
+                  {" "}Bunlardan <span className="text-accent-critical tabular-nums">{rdpCount.toLocaleString("en-US")}</span>-i
+                  açıq <span className="text-accent-critical">RDP</span> — ransomware-in №1 giriş qapısı.
+                </>
+              )
             )}
           </p>
         </div>
@@ -185,7 +206,7 @@ export default async function ExposurePage() {
                   CATEGORY_ACCENT[category] ?? "text-ink-secondary"
                 }`}
               >
-                {CATEGORY_LABEL[category] ?? category}
+                {catLabel[category] ?? category}
               </h2>
               <div className="mt-4 space-y-2.5">
                 {items.map((s) => (
@@ -216,13 +237,12 @@ export default async function ExposurePage() {
         {watchlist.length > 0 && (
           <section className="mt-16">
             <h2 className="font-mono text-xs uppercase tracking-[0.18em] text-accent-serious">
-              SOC izləmə siyahısı · kütləvi istismar hədəfləri
+              {en ? "SOC watchlist · mass-exploit targets" : "SOC izləmə siyahısı · kütləvi istismar hədəfləri"}
             </h2>
             <p className="mt-3 max-w-xl text-sm text-ink-secondary">
-              APT və ransomware kampaniyalarında ən çox istismar olunan perimetr
-              texnologiyaları (VPN, mail, virtualizasiya) — Azərbaycanda internetə
-              açıq nüsxələr. Bunlar CISA KEV siyahısında təkrar-təkrar görünən
-              hədəflərdir.
+              {en
+                ? "The perimeter technologies most exploited in APT and ransomware campaigns (VPN, mail, virtualization) — instances exposed to the internet in Azerbaijan. These are targets that appear again and again on the CISA KEV list."
+                : "APT və ransomware kampaniyalarında ən çox istismar olunan perimetr texnologiyaları (VPN, mail, virtualizasiya) — Azərbaycanda internetə açıq nüsxələr. Bunlar CISA KEV siyahısında təkrar-təkrar görünən hədəflərdir."}
             </p>
             <div className="mt-5 border-y border-hairline">
               {watchlist.map((w) => (
@@ -241,7 +261,7 @@ export default async function ExposurePage() {
                       {w.count.toLocaleString("en-US")}
                     </span>
                     <span className="ml-1 font-mono text-[10px] uppercase tracking-widest text-ink-muted">
-                      host
+                      {en ? "hosts" : "host"}
                     </span>
                   </div>
                 </div>
@@ -254,12 +274,12 @@ export default async function ExposurePage() {
         {regional.length > 0 && (
           <section className="mt-16">
             <h2 className="font-mono text-xs uppercase tracking-[0.18em] text-accent-critical">
-              Regional müqayisə · açıq RDP
+              {en ? "Regional comparison · open RDP" : "Regional müqayisə · açıq RDP"}
             </h2>
             <p className="mt-3 max-w-xl text-sm text-ink-secondary">
-              Uzaqdan masaüstü (RDP, port 3389) — ransomware üçün ən çox istifadə
-              olunan giriş nöqtəsi. Azərbaycan qonşuları ilə müqayisədə internetə
-              açıq RDP host sayı.
+              {en
+                ? "Remote Desktop (RDP, port 3389) — the most-used entry point for ransomware. Internet-exposed RDP host count for Azerbaijan compared with its neighbours."
+                : "Uzaqdan masaüstü (RDP, port 3389) — ransomware üçün ən çox istifadə olunan giriş nöqtəsi. Azərbaycan qonşuları ilə müqayisədə internetə açıq RDP host sayı."}
             </p>
             <div className="mt-5 space-y-3.5">
               {regional.map((r) => {
@@ -303,7 +323,7 @@ export default async function ExposurePage() {
         {cities.length > 0 && (
           <section className="mt-14">
             <h2 className="font-mono text-xs uppercase tracking-[0.18em] text-ink-secondary">
-              Şəhərlər üzrə açıq host
+              {en ? "Exposed hosts by city" : "Şəhərlər üzrə açıq host"}
             </h2>
             <div className="mt-4 space-y-2">
               {cities.slice(0, 8).map((c) => (
@@ -330,7 +350,7 @@ export default async function ExposurePage() {
         <section className="mt-14 grid gap-10 sm:grid-cols-2">
           <div>
             <h2 className="font-mono text-xs uppercase tracking-[0.18em] text-ink-secondary">
-              Ən çox açıq operator
+              {en ? "Most-exposed operators" : "Ən çox açıq operator"}
             </h2>
             <ul className="mt-4 space-y-2">
               {snap.top_orgs.slice(0, 8).map((o) => (
@@ -345,7 +365,7 @@ export default async function ExposurePage() {
           </div>
           <div>
             <h2 className="font-mono text-xs uppercase tracking-[0.18em] text-ink-secondary">
-              Ən çox görünən məhsul
+              {en ? "Most-seen products" : "Ən çox görünən məhsul"}
             </h2>
             <ul className="mt-4 space-y-2">
               {snap.top_products.slice(0, 8).map((p) => (
@@ -363,11 +383,13 @@ export default async function ExposurePage() {
         {/* trend */}
         <section className="mt-14">
           <h2 className="font-mono text-xs uppercase tracking-[0.18em] text-ink-secondary">
-            Həftəlik trend — açıq host sayı
+            {en ? "Weekly trend — exposed host count" : "Həftəlik trend — açıq host sayı"}
           </h2>
           {trend.length < 2 ? (
             <p className="mt-4 text-sm text-ink-muted">
-              Trend həftələr keçdikcə formalaşır — hazırda {trend.length} snapshot.
+              {en
+                ? `The trend forms as weeks pass — currently ${trend.length} snapshot(s).`
+                : `Trend həftələr keçdikcə formalaşır — hazırda ${trend.length} snapshot.`}
             </p>
           ) : (
             <div className="mt-5 flex items-end gap-1.5 h-28">
@@ -390,9 +412,15 @@ export default async function ExposurePage() {
         </section>
 
         <p className="mt-14 pt-8 border-t border-hairline font-mono text-xs text-ink-muted leading-relaxed">
-          Mənbə: Shodan <span className="text-ink-secondary">/shodan/host/count</span> (country:AZ),
-          həftəlik. Aqreqat saylar — fərdi IP açıqlanmır. Academic API-də vuln
-          filtri olmadığı üçün bu, CVE yox, ekspozisiya mənzərəsidir.
+          {en ? (
+            <>Source: Shodan <span className="text-ink-secondary">/shodan/host/count</span> (country:AZ), weekly.
+            Aggregate counts — no individual IP is disclosed. The academic API has no vuln filter, so this is an
+            exposure picture, not a CVE view.</>
+          ) : (
+            <>Mənbə: Shodan <span className="text-ink-secondary">/shodan/host/count</span> (country:AZ),
+            həftəlik. Aqreqat saylar — fərdi IP açıqlanmır. Academic API-də vuln filtri olmadığı üçün bu, CVE yox,
+            ekspozisiya mənzərəsidir.</>
+          )}
         </p>
       </main>
       <Footer />

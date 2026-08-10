@@ -6,6 +6,7 @@ import { NewsIocFeed } from "@/components/NewsIocFeed";
 import { infraBoard, lookupThreatFox, type TfKind } from "@/lib/threatfox";
 import { getIocFeed, groupIocsByType } from "@/lib/iocfeed";
 import type { IocType } from "@/lib/ioc";
+import { getLocale } from "@/lib/i18n-server";
 
 const IOC_WINDOW = 150;
 
@@ -36,6 +37,7 @@ function defang(kind: string, v: string): string {
 }
 
 export default async function IocPage() {
+  const en = (await getLocale()) === "en";
   const [board, iocFeed] = await Promise.all([infraBoard(12), getIocFeed(IOC_WINDOW).catch(() => [])]);
   const example = board?.samples.find((s) => s.kind === "ip" || s.kind === "domain")?.ioc;
   const maxFam = Math.max(1, ...(board?.families.map((f) => f.count) ?? [1]));
@@ -58,15 +60,13 @@ export default async function IocPage() {
       <Header />
       <main className="flex-1 mx-auto w-full max-w-3xl px-4 py-14 sm:py-20">
         <p className="font-mono text-xs uppercase tracking-[0.2em] text-brand">
-          Canlı yoxlama · abuse.ch · CISA KEV · NVD
+          {en ? "Live check · abuse.ch · CISA KEV · NVD" : "Canlı yoxlama · abuse.ch · CISA KEV · NVD"}
         </p>
         <h1 className="mt-3 font-headline text-3xl sm:text-4xl text-ink-primary text-balance">
-          IOC və CVE yoxlama
+          {en ? "IOC and CVE lookup" : "IOC və CVE yoxlama"}
         </h1>
         <p className="mt-4 max-w-xl leading-relaxed text-ink-secondary">
-          Bir indikator yapışdırın — IP, domen, URL, fayl hash-i və ya CVE. IP/domen/URL/hash
-          üçün abuse.ch ThreatFox reputasiyası (arxasındakı zərərli proqram ailəsi ilə), CVE
-          üçün CISA KEV aktiv istismar statusu, FIRST EPSS ehtimalı və NVD təfərrüatı.
+          {en ? "Paste any indicator — an IP, domain, URL, file hash or CVE. For IP/domain/URL/hash you get abuse.ch ThreatFox reputation (with the malware family behind it); for a CVE, CISA KEV exploitation status, FIRST EPSS probability and NVD detail." : "Bir indikator yapışdırın — IP, domen, URL, fayl hash-i və ya CVE. IP/domen/URL/hash üçün abuse.ch ThreatFox reputasiyası (arxasındakı zərərli proqram ailəsi ilə), CVE üçün CISA KEV aktiv istismar statusu, FIRST EPSS ehtimalı və NVD təfərrüatı."}
         </p>
 
         <div className="mt-8">
@@ -87,7 +87,7 @@ export default async function IocPage() {
         {board && (
           <>
             <p className="mt-16 font-mono text-xs uppercase tracking-[0.2em] text-brand">
-              Canlı zərərli infrastruktur · abuse.ch
+              {en ? "Live malicious infrastructure · abuse.ch" : "Canlı zərərli infrastruktur · abuse.ch"}
             </p>
             <div className="mt-6 border-y border-hairline py-6">
               <div className="flex flex-wrap items-end gap-x-4 gap-y-2">
@@ -95,19 +95,20 @@ export default async function IocPage() {
                   {board.total.toLocaleString("en-US")}
                 </div>
                 <span className="pb-1 font-mono text-xs uppercase tracking-widest text-ink-muted">
-                  aktiv indikator{board.ageHours != null ? ` · ~${board.ageHours}s əvvəl yeniləndi` : ""}
+                  {en ? "active indicators" : "aktiv indikator"}{board.ageHours != null ? (en ? ` · updated ~${board.ageHours}h ago` : ` · ~${board.ageHours}s əvvəl yeniləndi`) : ""}
                 </span>
               </div>
               <p className="mt-2 max-w-xl text-sm leading-relaxed text-ink-secondary">
-                Hazırda dünya üzrə izlənilən aktiv təhdid infrastrukturu — C2 serverləri,
-                zərərli domenlər və yük hash-ləri. Yuxarıdakı yoxlama məhz bu siyahıya qarşı işləyir.
+                {en
+                  ? "Active threat infrastructure tracked worldwide right now — C2 servers, malicious domains and payload hashes. The lookup above runs against exactly this list."
+                  : "Hazırda dünya üzrə izlənilən aktiv təhdid infrastrukturu — C2 serverləri, zərərli domenlər və yük hash-ləri. Yuxarıdakı yoxlama məhz bu siyahıya qarşı işləyir."}
               </p>
             </div>
 
             {/* top malware families */}
             <section className="mt-10">
               <h2 className="font-mono text-xs uppercase tracking-[0.18em] text-accent-critical">
-                Ən aktiv zərərli proqram ailələri
+                {en ? "Most active malware families" : "Ən aktiv zərərli proqram ailələri"}
               </h2>
               <div className="mt-4 space-y-2.5">
                 {board.families.map((f) => (
@@ -133,7 +134,7 @@ export default async function IocPage() {
             {board.threatTypes.length > 0 && (
               <section className="mt-10">
                 <h2 className="font-mono text-xs uppercase tracking-[0.18em] text-ink-secondary">
-                  Təhdid növləri
+                  {en ? "Threat types" : "Təhdid növləri"}
                 </h2>
                 <div className="mt-4 flex flex-wrap gap-2">
                   {board.threatTypes.map((t) => (
@@ -152,10 +153,12 @@ export default async function IocPage() {
             {/* fresh C2 samples — defanged */}
             <section className="mt-10">
               <h2 className="font-mono text-xs uppercase tracking-[0.18em] text-accent-serious">
-                Ən son C2 indikatorları
+                {en ? "Latest C2 indicators" : "Ən son C2 indikatorları"}
               </h2>
               <p className="mt-2 text-[13px] text-ink-muted">
-                Defang edilib — kliklənə bilməz. Araşdırma üçün yuxarıdakı yoxlamaya yapışdırın.
+                {en
+                  ? "Defanged — not clickable. Paste into the lookup above to investigate."
+                  : "Defang edilib — kliklənə bilməz. Araşdırma üçün yuxarıdakı yoxlamaya yapışdırın."}
               </p>
               <div className="mt-4 border-y border-hairline">
                 {board.samples.map((s, i) => (
@@ -176,11 +179,19 @@ export default async function IocPage() {
         )}
 
         <p className="mt-14 pt-8 border-t border-hairline font-mono text-xs text-ink-muted leading-relaxed">
-          Mənbələr: abuse.ch <span className="text-ink-secondary">ThreatFox</span> (açarsız aktiv-indikator
-          eksportu), CISA <span className="text-ink-secondary">KEV</span>, FIRST{" "}
-          <span className="text-ink-secondary">EPSS</span>, NIST{" "}
-          <span className="text-ink-secondary">NVD</span>, geo üçün{" "}
-          <span className="text-ink-secondary">ipwho.is</span>. «Siyahıda deyil» «təhlükəsiz» demək deyil.
+          {en ? (
+            <>Sources: abuse.ch <span className="text-ink-secondary">ThreatFox</span> (keyless active-indicator
+            export), CISA <span className="text-ink-secondary">KEV</span>, FIRST{" "}
+            <span className="text-ink-secondary">EPSS</span>, NIST{" "}
+            <span className="text-ink-secondary">NVD</span>, geo via{" "}
+            <span className="text-ink-secondary">ipwho.is</span>. «Not listed» does not mean «safe».</>
+          ) : (
+            <>Mənbələr: abuse.ch <span className="text-ink-secondary">ThreatFox</span> (açarsız aktiv-indikator
+            eksportu), CISA <span className="text-ink-secondary">KEV</span>, FIRST{" "}
+            <span className="text-ink-secondary">EPSS</span>, NIST{" "}
+            <span className="text-ink-secondary">NVD</span>, geo üçün{" "}
+            <span className="text-ink-secondary">ipwho.is</span>. «Siyahıda deyil» «təhlükəsiz» demək deyil.</>
+          )}
         </p>
       </main>
       <Footer />
