@@ -2,16 +2,38 @@
 
 import { useState } from "react";
 import { getDict, type Locale } from "@/lib/i18n";
+import { breachActions, riskLabel, type Risk } from "@/lib/breachactions";
+
+const RISK_CHIP: Record<Risk, string> = {
+  critical: "border-accent-critical/40 bg-accent-critical/10 text-accent-critical",
+  high: "border-accent-warning/50 bg-accent-warning/10 text-accent-warning",
+  medium: "border-accent-warning/30 bg-surface text-accent-warning",
+  low: "border-hairline bg-surface text-ink-muted",
+};
 
 type Breach = {
   name: string; domain?: string; industry?: string; year?: string;
   verified: boolean; passwordRisk?: string; exposed: string[]; hasPassword: boolean;
 };
+type Infostealer = {
+  status: "ok" | "unavailable"; infected: boolean; count: number;
+  lastCompromised: string | null; corporateServices: number; userServices: number; source: string;
+} | null;
 type EmailResult = {
   kind: "email"; status: "ok" | "unavailable" | "invalid"; count: number;
   riskLabel: string | null; riskScore: number | null; passwordsExposed: boolean;
-  breaches: Breach[]; exposedData: string[]; pastesCount: number; hibp: boolean; source: string; fetched_at: string | null;
+  breaches: Breach[]; exposedData: string[]; pastesCount: number; hibp: boolean;
+  infostealer: Infostealer; source: string; fetched_at: string | null;
 };
+type EmailSecurity = {
+  status: "ok" | "unavailable"; mx: boolean;
+  spf: { present: boolean; policy: string | null }; dmarc: { present: boolean; policy: string | null };
+  source: string; fetched_at: string;
+} | null;
+type DomainInfostealer = {
+  status: "ok" | "unavailable"; found: boolean; employees: number; users: number; thirdParties: number;
+  total: number; lastEmployee: string | null; lastUser: string | null; families: string[]; source: string;
+} | null;
 type SubBlock = { status: "ok" | "unavailable"; count: number; sample: string[]; source: string; fetched_at: string };
 type ExposureBlock = {
   status: "ok" | "unavailable"; ip: string | null; found: boolean;
@@ -23,6 +45,7 @@ type WatchBlock = { product: string; az_exposed: number; as_of: string; source: 
 type DomainResult = {
   kind: "domain"; domain: string | null; status: "ok" | "invalid";
   subdomains: SubBlock | null; exposure: ExposureBlock | null; mentions: MentionBlock | null; watchlist: WatchBlock;
+  emailSecurity: EmailSecurity; infostealer: DomainInfostealer;
 };
 type ScanResult = EmailResult | DomainResult;
 type PwState = { state: "pwned" | "clean" | "unavailable"; count?: number } | null;
@@ -231,6 +254,44 @@ function Source({ children }: { children: React.ReactNode }) {
   );
 }
 
+function InfostealerBanner({ steal, t }: { steal: NonNullable<Infostealer>; t: ScanDict }) {
+  return (
+    <article className="rounded-md border border-accent-critical/50 bg-accent-critical/10">
+      <div className="flex items-center gap-3 border-b border-accent-critical/20 px-4 py-3">
+        <span className="grid size-8 shrink-0 place-items-center rounded-sm bg-surface text-accent-critical">☣</span>
+        <h3 className="font-headline text-base text-accent-critical">{t.stealerTitle}</h3>
+        <span className="ml-auto rounded-sm border border-accent-critical/40 px-2 py-0.5 font-mono text-[10.5px] uppercase tracking-widest text-accent-critical">{t.stealerBadge}</span>
+      </div>
+      <div className="px-4 py-4">
+        <p className="text-[13.5px] leading-relaxed text-ink-secondary">{t.stealerDesc}</p>
+        <div className="mt-2 font-mono text-[11px] text-ink-muted">
+          {t.stealerMeta(steal.lastCompromised ? fmtDate(steal.lastCompromised) : "—", steal.corporateServices + steal.userServices)}
+        </div>
+        <Source>Hudson Rock Cavalier</Source>
+      </div>
+    </article>
+  );
+}
+
+function ActionList({ actions, t, locale }: { actions: ReturnType<typeof breachActions>; t: ScanDict; locale: Locale }) {
+  return (
+    <div className="rounded-md border border-hairline bg-surface-raised/30 p-4">
+      <div className="font-mono text-[11px] uppercase tracking-[0.14em] text-ink-secondary">{t.actionsTitle}</div>
+      <p className="mt-1 text-[12px] text-ink-muted">{t.actionsNote}</p>
+      <ol className="mt-3 space-y-2.5">
+        {actions.map((a, i) => (
+          <li key={i} className="flex gap-2.5">
+            <span className={`mt-0.5 shrink-0 rounded-sm border px-1.5 py-0.5 font-mono text-[9.5px] uppercase tracking-wider ${RISK_CHIP[a.risk]}`}>
+              {riskLabel(a.risk, locale)}
+            </span>
+            <span className="text-[13.5px] leading-relaxed text-ink-secondary">{locale === "en" ? a.en : a.az}</span>
+          </li>
+        ))}
+      </ol>
+    </div>
+  );
+}
+
 function EmailView({ r, t, locale }: { r: EmailResult; t: ScanDict; locale: Locale }) {
   if (r.status === "invalid") {
     return (
@@ -241,27 +302,25 @@ function EmailView({ r, t, locale }: { r: EmailResult; t: ScanDict; locale: Loca
       </ResultCard>
     );
   }
-  if (r.status === "unavailable") {
-    return (
-      <ResultCard label={t.emailResult}>
-        <StateCard tone="muted" icon="◑" title={t.unavailTitle} badge="unavailable">
-          <p className="text-[13.5px] leading-relaxed text-ink-secondary">{t.unavailText}</p>
-        </StateCard>
-      </ResultCard>
-    );
-  }
-  if (r.count === 0) {
-    return (
-      <ResultCard label={t.emailResult}>
+  const steal = r.infostealer;
+  const infected = !!steal?.infected;
+  const actions = breachActions(r.exposedData, { passwordsExposed: r.passwordsExposed, infostealer: infected }, locale);
+
+  const verdict =
+    r.status === "unavailable" ? (
+      <StateCard tone="muted" icon="◑" title={t.unavailTitle} badge="unavailable">
+        <p className="text-[13.5px] leading-relaxed text-ink-secondary">{t.unavailText}</p>
+      </StateCard>
+    ) : r.count === 0 ? (
+      infected ? (
+        <div className="rounded-md border border-hairline bg-surface-raised/30 px-4 py-3 text-[13px] leading-relaxed text-ink-secondary">{t.stealerCleanNote}</div>
+      ) : (
         <StateCard tone="good" icon="✓" title={t.cleanTitle} badge={t.cleanBadge}>
           <p className="text-[13.5px] leading-relaxed text-ink-secondary">{t.cleanText}</p>
           <Source>XposedOrNot · {fmtDate(r.fetched_at)}</Source>
         </StateCard>
-      </ResultCard>
-    );
-  }
-  return (
-    <ResultCard label={t.emailResult}>
+      )
+    ) : (
       <StateCard tone="critical" icon="⚠" title={t.breachTitle} badge={t.foundBadge(r.count)}>
         <div className="flex flex-wrap items-end gap-x-4 gap-y-1">
           <div className="font-headline text-3xl text-accent-critical">{t.nBreach(r.count)}</div>
@@ -322,6 +381,15 @@ function EmailView({ r, t, locale }: { r: EmailResult; t: ScanDict; locale: Loca
 
         <Source>{r.hibp ? "HIBP + XposedOrNot + LeakCheck" : "XposedOrNot + LeakCheck"} · {fmtDate(r.fetched_at)}</Source>
       </StateCard>
+    );
+
+  return (
+    <ResultCard label={t.emailResult}>
+      <div className="space-y-4">
+        {infected && steal && <InfostealerBanner steal={steal} t={t} />}
+        {verdict}
+        {actions.length > 0 && <ActionList actions={actions} t={t} locale={locale} />}
+      </div>
     </ResultCard>
   );
 }
@@ -437,8 +505,90 @@ function DomainView({ r, t }: { r: DomainResult; t: ScanDict }) {
             <p className="text-[13px] leading-relaxed text-ink-secondary">{t.watchlistNoMatchDesc}</p>
           </SubCard>
         )}
+
+        {r.emailSecurity && (
+          <SubCard
+            icon="✉"
+            tone={emailSecStrong(r.emailSecurity) ? "good" : "warning"}
+            title={t.emailSecTitle}
+            badge={
+              r.emailSecurity.status !== "ok"
+                ? "unavailable"
+                : r.emailSecurity.dmarc.present
+                  ? `p=${r.emailSecurity.dmarc.policy ?? "?"}`
+                  : "no dmarc"
+            }
+            badgeTone={r.emailSecurity.status !== "ok" ? "muted" : emailSecStrong(r.emailSecurity) ? "good" : "warning"}
+            unavailable={r.emailSecurity.status !== "ok"}
+          >
+            {r.emailSecurity.status === "ok" ? (
+              <>
+                <div className="flex flex-wrap gap-1.5">
+                  <PostureChip label="MX" ok={r.emailSecurity.mx} />
+                  <PostureChip label="SPF" ok={r.emailSecurity.spf.present} note={r.emailSecurity.spf.policy} />
+                  <PostureChip
+                    label="DMARC"
+                    ok={r.emailSecurity.dmarc.policy === "quarantine" || r.emailSecurity.dmarc.policy === "reject"}
+                    note={r.emailSecurity.dmarc.policy}
+                  />
+                </div>
+                <p className="mt-2.5 text-[13px] leading-relaxed text-ink-secondary">
+                  {emailSecStrong(r.emailSecurity) ? t.emailSecStrong : t.emailSecWeak}
+                </p>
+                <Source><b className="text-ink-secondary">MX · SPF · DMARC</b></Source>
+              </>
+            ) : (
+              <p className="text-[13px] leading-relaxed text-ink-secondary">{t.emailSecUnavail}</p>
+            )}
+          </SubCard>
+        )}
+
+        {r.infostealer && (
+          <SubCard
+            icon="☣"
+            tone={r.infostealer.found ? "critical" : "good"}
+            title={t.stealerDomTitle}
+            badge={r.infostealer.status !== "ok" ? "unavailable" : r.infostealer.found ? t.timesBadge(r.infostealer.total) : "clean"}
+            badgeTone={r.infostealer.status !== "ok" ? "muted" : r.infostealer.found ? "critical" : "good"}
+            unavailable={r.infostealer.status !== "ok"}
+          >
+            {r.infostealer.status !== "ok" ? (
+              <p className="text-[13px] leading-relaxed text-ink-secondary">{t.intelUnavail}</p>
+            ) : r.infostealer.found ? (
+              <>
+                <ul className="space-y-1 font-mono text-[12px]">
+                  {r.infostealer.employees > 0 && <li className="text-accent-critical">▸ {t.stealerDomEmp(r.infostealer.employees)}</li>}
+                  {r.infostealer.users > 0 && <li className="text-ink-secondary">▸ {t.stealerDomUsr(r.infostealer.users)}</li>}
+                </ul>
+                <p className="mt-2 text-[13px] leading-relaxed text-ink-secondary">{t.stealerDomDesc}</p>
+                {r.infostealer.families.length > 0 && (
+                  <div className="mt-2 flex flex-wrap gap-1.5">
+                    {r.infostealer.families.map((f) => (
+                      <span key={f} className="rounded-sm border border-hairline bg-surface px-1.5 py-0.5 font-mono text-[10.5px] text-ink-muted">{f}</span>
+                    ))}
+                  </div>
+                )}
+                <Source><b className="text-ink-secondary">Hudson Rock</b></Source>
+              </>
+            ) : (
+              <p className="text-[13px] leading-relaxed text-ink-secondary">{t.stealerDomNone}</p>
+            )}
+          </SubCard>
+        )}
       </div>
     </ResultCard>
+  );
+}
+
+function emailSecStrong(es: NonNullable<EmailSecurity>): boolean {
+  return es.status === "ok" && es.spf.present && (es.dmarc.policy === "quarantine" || es.dmarc.policy === "reject");
+}
+
+function PostureChip({ label, ok, note }: { label: string; ok: boolean; note?: string | null }) {
+  return (
+    <span className={`rounded-sm border px-1.5 py-0.5 font-mono text-[11px] ${ok ? "border-accent-good/40 bg-accent-good/[0.06] text-accent-good" : "border-accent-warning/40 bg-accent-warning/10 text-accent-warning"}`}>
+      {ok ? "✓" : "✗"} {label}{note ? ` ${note}` : ""}
+    </span>
   );
 }
 

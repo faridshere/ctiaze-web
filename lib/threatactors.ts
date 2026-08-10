@@ -29,6 +29,7 @@ export type ThreatActor = {
   victim_count?: number | null;
   first_seen?: Date | string | null;
   last_active?: Date | string | null;
+  related_actors?: { name: string; _id: string }[];
   recent_activity: ActorRecentItem[];
   last_refreshed?: Date | string;
 };

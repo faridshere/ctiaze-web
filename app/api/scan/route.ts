@@ -18,6 +18,10 @@ const CT_SOURCE = "certificate transparency (certspotter + crt.sh)";
 const MENTIONS_SOURCE = "ctiaze items collection (title/summary/url, word-boundary match)";
 const WATCHLIST_SOURCE = "Shodan AZ exposure snapshot (cti.exposure weekly sweep)";
 const EXPOSURE_SOURCE = "Shodan InternetDB (keyless)";
+const HR_EMAIL_URL = "https://cavalier.hudsonrock.com/api/json/v2/osint-tools/search-by-email";
+const HR_DOMAIN_URL = "https://cavalier.hudsonrock.com/api/json/v2/osint-tools/search-by-domain";
+const HR_SOURCE = "Hudson Rock Cavalier (infostealer intel, free tier)";
+const EMAIL_SEC_SOURCE = "DNS (MX · SPF · DMARC)";
 const SUBDOMAIN_SAMPLE = 12;
 const MENTIONS_LIMIT = 10;
 const BREACH_LIMIT = 14;
@@ -77,9 +81,81 @@ function emailResult(status: string, extra: Record<string, unknown> = {}) {
     exposedData: [],
     pastesCount: 0,
     hibp: false,
+    infostealer: null,
     source: EMAIL_SOURCE,
     fetched_at: status === "invalid" ? null : nowIso(),
     ...extra,
+  };
+}
+
+// ---- Hudson Rock Cavalier (free, keyless infostealer intelligence) -----------
+// Infostealer infection = a machine fully compromised: EVERY saved credential,
+// cookie and token exfiltrated. A far sharper signal than a data-breach, so we
+// surface it prominently. We show only counts + dates for the queried target —
+// never the leaked passwords/logins Hudson Rock returns.
+type HrEmailStealer = { date_compromised?: string; total_corporate_services?: number; total_user_services?: number };
+type HrEmail = { stealers?: HrEmailStealer[]; total_corporate_services?: number; total_user_services?: number };
+type HrDomain = {
+  total?: number; employees?: number; users?: number; third_parties?: number;
+  last_employee_compromised?: string; last_user_compromised?: string;
+  stealerFamilies?: Record<string, number>;
+};
+
+// Hudson Rock returns the Unix epoch (1970-01-01) as its "no data" date sentinel.
+function realDate(iso: string | undefined | null): string | null {
+  if (!iso) return null;
+  const t = new Date(iso).getTime();
+  return Number.isNaN(t) || t <= 0 ? null : iso;
+}
+
+async function hudsonRockEmail(email: string) {
+  const fail = {
+    status: "unavailable", infected: false, count: 0, lastCompromised: null as string | null,
+    corporateServices: 0, userServices: 0, source: HR_SOURCE,
+  };
+  const d = await fetchJson<HrEmail>(`${HR_EMAIL_URL}?email=${encodeURIComponent(email)}`, 9000);
+  if (d === null) return fail;
+  const stealers = Array.isArray(d.stealers) ? d.stealers : [];
+  if (stealers.length === 0) return { ...fail, status: "ok" }; // answered → not infected
+  const dates = stealers.map((s) => realDate(s.date_compromised)).filter(Boolean).sort() as string[];
+  return {
+    status: "ok",
+    infected: true,
+    count: stealers.length,
+    lastCompromised: dates.length ? dates[dates.length - 1] : null,
+    corporateServices: d.total_corporate_services ?? Math.max(0, ...stealers.map((s) => s.total_corporate_services ?? 0)),
+    userServices: d.total_user_services ?? Math.max(0, ...stealers.map((s) => s.total_user_services ?? 0)),
+    source: HR_SOURCE,
+  };
+}
+
+async function hudsonRockDomain(domain: string) {
+  const fail = {
+    status: "unavailable", found: false, employees: 0, users: 0, thirdParties: 0, total: 0,
+    lastEmployee: null as string | null, lastUser: null as string | null, families: [] as string[], source: HR_SOURCE,
+  };
+  const d = await fetchJson<HrDomain>(`${HR_DOMAIN_URL}?domain=${encodeURIComponent(domain)}`, 9000);
+  if (d === null) return fail;
+  const families =
+    d.stealerFamilies && typeof d.stealerFamilies === "object"
+      ? Object.entries(d.stealerFamilies)
+          .filter(([k]) => k !== "total")
+          .sort((a, b) => (b[1] || 0) - (a[1] || 0))
+          .map(([k]) => k)
+          .slice(0, 4)
+      : [];
+  const total = d.total ?? 0;
+  return {
+    status: "ok",
+    found: total > 0,
+    employees: d.employees ?? 0,
+    users: d.users ?? 0,
+    thirdParties: d.third_parties ?? 0,
+    total,
+    lastEmployee: realDate(d.last_employee_compromised),
+    lastUser: realDate(d.last_user_compromised),
+    families,
+    source: HR_SOURCE,
   };
 }
 
@@ -179,13 +255,14 @@ async function scanEmail(email: string) {
   const normalized = normalizeEmail(email);
   if (!normalized) return emailResult("invalid");
 
-  const [data, lc, hibp] = await Promise.all([
+  const [data, lc, hibp, infostealer] = await Promise.all([
     fetchJson<XonAnalytics>(`${XON_ANALYTICS_URL}?email=${encodeURIComponent(normalized)}`, 9000),
     leakcheckRows(normalized),
     hibpRows(normalized),
+    hudsonRockEmail(normalized),
   ]);
   if (data === null && lc.rows.length === 0 && hibp.rows.length === 0 && !hibp.available) {
-    return scanEmailBasic(normalized);
+    return { ...(await scanEmailBasic(normalized)), infostealer };
   }
 
   const details = data?.ExposedBreaches?.breaches_details;
@@ -199,7 +276,7 @@ async function scanEmail(email: string) {
     const k = r.name.toLowerCase();
     if (k && !seen.has(k)) { seen.add(k); merged.push(r); }
   }
-  if (merged.length === 0) return emailResult("ok"); // sources answered, no breaches
+  if (merged.length === 0) return emailResult("ok", { infostealer }); // no breaches (infostealer may still hit)
 
   merged.sort(
     (a, b) =>
@@ -219,6 +296,7 @@ async function scanEmail(email: string) {
     exposedData,
     pastesCount,
     hibp: hibp.available,
+    infostealer,
   });
 }
 
@@ -418,18 +496,78 @@ async function scanWatchlist(domain: string) {
   };
 }
 
+// ---- Email-security posture (MX / SPF / DMARC) -------------------------------
+// A domain with no DMARC (or a p=none policy) is trivially spoofable — the exact
+// setup phishing crews abuse to impersonate a company. All keyless DNS lookups.
+async function dnsRace<T>(p: Promise<T>, ms = 6000): Promise<T | null> {
+  try {
+    return (await Promise.race([
+      p,
+      new Promise<null>((_, rej) => setTimeout(() => rej(new Error("timeout")), ms)),
+    ])) as T;
+  } catch {
+    return null;
+  }
+}
+
+function spfAll(txt: string): string | null {
+  const m = txt.match(/[~\-?+]all\b/);
+  return m ? m[0] : null;
+}
+function dmarcPolicy(txt: string): string | null {
+  const m = txt.match(/\bp\s*=\s*(none|quarantine|reject)\b/i);
+  return m ? m[1].toLowerCase() : null;
+}
+
+async function scanEmailSecurity(domain: string) {
+  const dns = await import("node:dns");
+  const [mx, txt, dmarcTxt] = await Promise.all([
+    dnsRace(dns.promises.resolveMx(domain)),
+    dnsRace(dns.promises.resolveTxt(domain)),
+    dnsRace(dns.promises.resolveTxt(`_dmarc.${domain}`)),
+  ]);
+  if (mx === null && txt === null && dmarcTxt === null) {
+    return {
+      status: "unavailable", mx: false,
+      spf: { present: false, policy: null as string | null },
+      dmarc: { present: false, policy: null as string | null },
+      source: EMAIL_SEC_SOURCE, fetched_at: nowIso(),
+    };
+  }
+  const flat = (recs: string[][] | null) => (recs ?? []).map((r) => r.join(""));
+  const spf = flat(txt).find((t) => /^v=spf1\b/i.test(t.trim()));
+  const dmarc = flat(dmarcTxt).find((t) => /^v=DMARC1\b/i.test(t.trim()));
+  return {
+    status: "ok",
+    mx: Array.isArray(mx) && mx.length > 0,
+    spf: { present: !!spf, policy: spf ? spfAll(spf) : null },
+    dmarc: { present: !!dmarc, policy: dmarc ? dmarcPolicy(dmarc) : null },
+    source: EMAIL_SEC_SOURCE,
+    fetched_at: nowIso(),
+  };
+}
+
 async function scanDomain(domain: string) {
   const normalized = await normalizeDomain(domain);
   if (!normalized) {
-    return { kind: "domain", domain: null, status: "invalid", subdomains: null, exposure: null, mentions: null, watchlist: null };
+    return {
+      kind: "domain", domain: null, status: "invalid",
+      subdomains: null, exposure: null, mentions: null, watchlist: null,
+      emailSecurity: null, infostealer: null,
+    };
   }
-  const [subdomains, exposure, mentions, watchlist] = await Promise.all([
+  const [subdomains, exposure, mentions, watchlist, emailSecurity, infostealer] = await Promise.all([
     scanSubdomains(normalized),
     scanExposure(normalized),
     scanMentions(normalized),
     scanWatchlist(normalized),
+    scanEmailSecurity(normalized),
+    hudsonRockDomain(normalized),
   ]);
-  return { kind: "domain", domain: normalized, status: "ok", subdomains, exposure, mentions, watchlist };
+  return {
+    kind: "domain", domain: normalized, status: "ok",
+    subdomains, exposure, mentions, watchlist, emailSecurity, infostealer,
+  };
 }
 
 export async function GET(req: Request) {

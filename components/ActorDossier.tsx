@@ -166,6 +166,13 @@ export function ActorDossier({ a, locale }: { a: ThreatActor; locale: Locale }) 
         {software.length > 0 && (
           <SoftChips items={software} label={(a.malware?.length ? t.malwareLabel : t.toolsLabel)} more={t.moreWord} />
         )}
+        {(a.related_actors?.length ?? 0) > 0 && (
+          <LabelledChips label={t.relatedLabel}>
+            {a.related_actors!.map((rel) => (
+              <span key={rel._id} className="rounded-sm border border-hairline bg-surface px-2 py-0.5 text-[12px] text-ink-secondary">{rel.name}</span>
+            ))}
+          </LabelledChips>
+        )}
       </div>
 
       {recent.length > 0 && (

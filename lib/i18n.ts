@@ -30,6 +30,12 @@ type Dict = {
     intelUnavail: string; watchlistTitle: string; watchlistSeen: (p: string, d: string) => string;
     watchlistDesc: string; watchlistNoMatch: string; watchlistNoMatchDesc: string;
     invalidDomainTitle: string; invalidDomainText: string; sources: string;
+    stealerTitle: string; stealerBadge: string; stealerDesc: string;
+    stealerMeta: (date: string, services: number) => string; stealerCleanNote: string;
+    actionsTitle: string; actionsNote: string;
+    emailSecTitle: string; emailSecStrong: string; emailSecWeak: string; emailSecUnavail: string;
+    stealerDomTitle: string; stealerDomDesc: string; stealerDomNone: string;
+    stealerDomEmp: (n: number) => string; stealerDomUsr: (n: number) => string;
   };
   actors: {
     eyebrow: string; h1: string; leadPre: string; leadMid: string; leadEnd: string;
@@ -45,6 +51,7 @@ type Dict = {
     observedCountries: string; observedSectors: string; victimsLabel: (n: number) => string;
     lastActiveLabel: string; confidenceLabel: string; confidenceBand: (n: number) => string;
     regionalTitle: string; regionalNote: string; moreWord: (n: number) => string;
+    relatedLabel: string;
   };
   feed: {
     emptyFeed: string; filterEmpty: string; grounded: string; source: string;
@@ -121,7 +128,23 @@ const az: Dict = {
     watchlistNoMatch: "uyğunluq yox",
     watchlistNoMatchDesc: "Bu domain izlənən kütləvi-istismar product-larından birini adlandırmır.",
     invalidDomainTitle: "Düzgün domain yaz", invalidDomainText: "Bu, düzgün domain deyil. Nümunə: example.az",
-    sources: "Mənbələr: XposedOrNot + LeakCheck (breach), HIBP Pwned Passwords (k-anonymity), certspotter + crt.sh, Shodan InternetDB, ctiaze coverage, və həftəlik Shodan AZ snapshot. Hamısı açarsız/pulsuz — e-poçt və parolun heç yerdə saxlanmır.",
+    sources: "Mənbələr: XposedOrNot + LeakCheck (breach), HIBP Pwned Passwords (k-anonymity), Hudson Rock (info-stealer), certspotter + crt.sh, MX/SPF/DMARC (DNS), Shodan InternetDB, ctiaze coverage, və həftəlik Shodan AZ snapshot. Hamısı açarsız/pulsuz — e-poçt və parolun heç yerdə saxlanmır.",
+    stealerTitle: "Cihaz info-stealer ilə yoluxub",
+    stealerBadge: "kritik",
+    stealerDesc: "Bu ünvan info-stealer ilə yoluxmuş bir kompüterlə bağlıdır. Bu, adi breach-dən daha ağırdır: brauzerdə saxlanan bütün parollar, cookie və token-lər oğurlanıb.",
+    stealerMeta: (date, services) => `Son yoluxma: ${date} · risk altında ${services.toLocaleString("en-US")} xidmət`,
+    stealerCleanNote: "Breach bazalarında görünmür, amma cihaz yoluxub — aşağıdakı addımlar hələ də vacibdir.",
+    actionsTitle: "Nə etməli",
+    actionsNote: "Sızan məlumat növünə görə prioritetləşdirilib — kritikdən başla.",
+    emailSecTitle: "E-poçt saxtalaşdırma qorunması",
+    emailSecStrong: "Bu domain e-poçt saxtalaşdırmasına (spoofing) qarşı qorunur.",
+    emailSecWeak: "DMARC yoxdur və ya zəifdir — bu domain fişinqdə saxtalaşdırıla bilər. p=reject-li DMARC əlavə et.",
+    emailSecUnavail: "DNS qeydləri oxunmadı.",
+    stealerDomTitle: "Info-stealer sızmaları",
+    stealerDomDesc: "Bu domenə aid kredensiallar info-stealer log-larında görünüb — yoluxmuş cihazlardan oğurlanıb.",
+    stealerDomNone: "Bu domen info-stealer log-larında görünmür.",
+    stealerDomEmp: (n) => `${n.toLocaleString("en-US")} işçi krediti`,
+    stealerDomUsr: (n) => `${n.toLocaleString("en-US")} istifadəçi/müştəri krediti`,
   },
   actors: {
     eyebrow: "APT-lər və crime qrupları",
@@ -163,6 +186,7 @@ const az: Dict = {
     regionalTitle: "Azərbaycan və Cənubi Qafqazı hədəf alanlar",
     regionalNote: "regional prioritet",
     moreWord: (n) => `+${n}`,
+    relatedLabel: "əlaqəli qruplar · MISP",
   },
   feed: {
     emptyFeed: "hələ heç bir dispaç dərc olunmayıb",
@@ -248,7 +272,23 @@ const en: Dict = {
     watchlistNoMatch: "no match",
     watchlistNoMatchDesc: "This domain doesn't name one of the tracked mass-exploit products.",
     invalidDomainTitle: "Enter a valid domain", invalidDomainText: "That isn't a valid domain. Example: example.com",
-    sources: "Sources: XposedOrNot + LeakCheck (breach), HIBP Pwned Passwords (k-anonymity), certspotter + crt.sh, Shodan InternetDB, ctiaze coverage, and the weekly Shodan AZ snapshot. All keyless/free — your email and password are never stored.",
+    sources: "Sources: XposedOrNot + LeakCheck (breach), HIBP Pwned Passwords (k-anonymity), Hudson Rock (infostealer), certspotter + crt.sh, MX/SPF/DMARC (DNS), Shodan InternetDB, ctiaze coverage, and the weekly Shodan AZ snapshot. All keyless/free — your email and password are never stored.",
+    stealerTitle: "Your device was infostealer-infected",
+    stealerBadge: "critical",
+    stealerDesc: "This address is tied to a computer infected by an info-stealer. That's more serious than a breach: every password, cookie and token saved in the browser was stolen.",
+    stealerMeta: (date, services) => `Last infection: ${date} · ${services.toLocaleString("en-US")} services at risk`,
+    stealerCleanNote: "Not in breach databases, but the device is infected — the steps below still matter.",
+    actionsTitle: "What to do",
+    actionsNote: "Prioritized by the type of data exposed — start with the critical items.",
+    emailSecTitle: "Email spoofing defense",
+    emailSecStrong: "This domain is protected against email spoofing.",
+    emailSecWeak: "No or weak DMARC — this domain can be spoofed in phishing. Add a DMARC record with p=reject.",
+    emailSecUnavail: "Couldn't read DNS records.",
+    stealerDomTitle: "Infostealer exposure",
+    stealerDomDesc: "Credentials for this domain appear in infostealer logs — stolen from infected devices.",
+    stealerDomNone: "This domain doesn't appear in infostealer logs.",
+    stealerDomEmp: (n) => `${n.toLocaleString("en-US")} employee creds`,
+    stealerDomUsr: (n) => `${n.toLocaleString("en-US")} user/customer creds`,
   },
   actors: {
     eyebrow: "APTs and crime groups",
@@ -290,6 +330,7 @@ const en: Dict = {
     regionalTitle: "Targeting Azerbaijan & the Caucasus",
     regionalNote: "regional priority",
     moreWord: (n) => `+${n}`,
+    relatedLabel: "related groups · MISP",
   },
   feed: {
     emptyFeed: "no dispatches published yet",
