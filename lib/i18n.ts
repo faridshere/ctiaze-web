@@ -41,6 +41,10 @@ type Dict = {
     recentLabel: string; sourceLabel: string; refWord: (n: number) => string; matchScore: string;
     recentActivity: (n: number) => string; sourcesLine: (t: string, a: number, az: number, d: string) => string;
     nameleum: string;
+    techniquesLabel: string; malwareLabel: string; toolsLabel: string;
+    observedCountries: string; observedSectors: string; victimsLabel: (n: number) => string;
+    lastActiveLabel: string; confidenceLabel: string; confidenceBand: (n: number) => string;
+    regionalTitle: string; regionalNote: string; moreWord: (n: number) => string;
   };
   feed: {
     emptyFeed: string; filterEmpty: string; grounded: string; source: string;
@@ -134,7 +138,7 @@ const az: Dict = {
     empty: (q) => `Heç bir aktor “${q}”-i açıq hədəf kimi bildirmir. Bildirməyən aktorlar burada görünmür — bu, məhsulun dürüstlük qaydasıdır, uydurulmuş əlaqə yoxdur.`,
     totalNote: (n, q) => `Cəmi ${n} aktor “${q}”-i açıq hədəf kimi bildirir. Bildirməyən aktorlar burada görünmür.`,
     leadingTitle: "Aparıcı təhdid aktorları",
-    leadingNote: "bizim item-lərdə ən aktiv",
+    leadingNote: "ATT&CK dərinliyi + aktivliyə görə",
     rosterEmpty: "Aktor rosteri hazırlanır — həftəlik ETL ilk dəfə işləyəndə burada olacaq.",
     originLabel: "mənşə (suspected)",
     sponsorSuffix: "dövlət sponsoru",
@@ -147,6 +151,18 @@ const az: Dict = {
     recentActivity: (n) => `recent activity: ${n}`,
     sourcesLine: (t, a, az, d) => `Mənbələr: MISP Galaxy + ransomware.live + MITRE ATT&CK, son fəaliyyət bizim item-lərlə ad-join. Roster ${t} aktor (${a} aktiv, ${az} Azərbaycanca)${d ? ` · yeniləndi ${d}` : ""}. Axtarış bütün rosteri əhatə edir.`,
     nameleum: "naməlum",
+    techniquesLabel: "texnikalar · ATT&CK",
+    malwareLabel: "malware",
+    toolsLabel: "alətlər",
+    observedCountries: "müşahidə olunan qurbanlar (ölkə)",
+    observedSectors: "müşahidə olunan sektorlar",
+    victimsLabel: (n) => `${n} qurban`,
+    lastActiveLabel: "son aktivlik",
+    confidenceLabel: "atribusiya etibarı",
+    confidenceBand: (n) => (n >= 75 ? "yüksək" : n >= 50 ? "orta" : "aşağı · suspected"),
+    regionalTitle: "Azərbaycan və Cənubi Qafqazı hədəf alanlar",
+    regionalNote: "regional prioritet",
+    moreWord: (n) => `+${n}`,
   },
   feed: {
     emptyFeed: "hələ heç bir dispaç dərc olunmayıb",
@@ -249,7 +265,7 @@ const en: Dict = {
     empty: (q) => `No actor openly states “${q}” as a target. Actors that don't state it don't appear here — that's the product's honesty rule, no invented links.`,
     totalNote: (n, q) => `${n} actors openly state “${q}” as a target. Actors that don't state it don't appear here.`,
     leadingTitle: "Leading threat actors",
-    leadingNote: "most active in our items",
+    leadingNote: "ranked by ATT&CK depth + activity",
     rosterEmpty: "The actor roster is being built — it'll appear here after the weekly ETL first runs.",
     originLabel: "origin (suspected)",
     sponsorSuffix: "state-sponsored",
@@ -262,6 +278,18 @@ const en: Dict = {
     recentActivity: (n) => `recent activity: ${n}`,
     sourcesLine: (t, a, az, d) => `Sources: MISP Galaxy + ransomware.live + MITRE ATT&CK, recent activity name-joined with our items. Roster ${t} actors (${a} active, ${az} in Azerbaijani)${d ? ` · updated ${d}` : ""}. Search covers the whole roster.`,
     nameleum: "unknown",
+    techniquesLabel: "techniques · ATT&CK",
+    malwareLabel: "malware",
+    toolsLabel: "tools",
+    observedCountries: "observed victims (by country)",
+    observedSectors: "observed sectors",
+    victimsLabel: (n) => `${n} victims`,
+    lastActiveLabel: "last active",
+    confidenceLabel: "attribution confidence",
+    confidenceBand: (n) => (n >= 75 ? "high" : n >= 50 ? "medium" : "low · suspected"),
+    regionalTitle: "Targeting Azerbaijan & the Caucasus",
+    regionalNote: "regional priority",
+    moreWord: (n) => `+${n}`,
   },
   feed: {
     emptyFeed: "no dispatches published yet",

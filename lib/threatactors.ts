@@ -4,6 +4,8 @@ import type { Locale } from "./i18n";
 // Read-only view of ctiaze-engine's threat_actors collection; search scoring
 // mirrors cti/actors.py so the site and CLI answer identically.
 export type ActorRecentItem = { title: string; url: string; date?: string | Date };
+export type Ttp = { id: string; name: string; tactic?: string | null };
+export type NamedRef = { id: string | null; name: string };
 
 export type ThreatActor = {
   _id: string;
@@ -19,6 +21,14 @@ export type ThreatActor = {
   refs: string[];
   mitre?: string | null;
   source: "misp-galaxy" | "ransomware.live" | "mitre-attack" | string;
+  sources?: string[];
+  attribution_confidence?: number | null;
+  techniques?: Ttp[];
+  malware?: NamedRef[];
+  tools?: NamedRef[];
+  victim_count?: number | null;
+  first_seen?: Date | string | null;
+  last_active?: Date | string | null;
   recent_activity: ActorRecentItem[];
   last_refreshed?: Date | string;
 };
@@ -71,22 +81,64 @@ const REGIONAL_WEIGHT: Record<string, number> = {
   armenia: 30, russia: 20, iran: 20,
 };
 
-function regionalWeight(a: ThreatActor): number {
+export function regionalWeight(a: ThreatActor): number {
   return Math.max(
     0,
     ...(a.targets_countries ?? []).map((c) => REGIONAL_WEIGHT[norm(c)] ?? 0)
   );
 }
 
-// Most-active actors first, regional targeting as tiebreak.
-export async function getTopActors(n = 12): Promise<ThreatActor[]> {
+// How well-documented an actor is: ATT&CK TTPs, a MITRE id, observed victims. A
+// thin name-only stub scores 0 and sinks; the named APTs and tracked ransomware
+// ops rise. This — not a 4%-populated recent_activity count — is the honest signal.
+function substance(a: ThreatActor): number {
+  return (
+    (a.techniques?.length ? 1 : 0) +
+    (a.mitre ? 1 : 0) +
+    ((a.victim_count ?? 0) > 0 ? 1 : 0) +
+    (a.targets_countries?.length ? 1 : 0)
+  );
+}
+
+// A recency/scale signal that works for both APTs (items in our feed) and crime
+// groups (observed leak-site victims).
+function activity(a: ThreatActor): number {
+  return Math.max(a.victim_count ?? 0, a.recent_activity?.length ?? 0);
+}
+
+function byName(a: ThreatActor, b: ThreatActor): number {
+  return (a.name || "").toLowerCase().localeCompare((b.name || "").toLowerCase());
+}
+
+// The APTs and crime groups stated to target Azerbaijan / the Caucasus — the whole
+// reason a local reader comes here rather than to MITRE. Regional weight first.
+export async function getRegionalActors(n = 6): Promise<ThreatActor[]> {
   const docs = await allActors();
-  return [...docs]
+  return docs
+    .filter((a) => regionalWeight(a) > 0)
     .sort(
       (a, b) =>
-        (b.recent_activity?.length ?? 0) - (a.recent_activity?.length ?? 0) ||
         regionalWeight(b) - regionalWeight(a) ||
-        (a.name || "").toLowerCase().localeCompare((b.name || "").toLowerCase())
+        activity(b) - activity(a) ||
+        substance(b) - substance(a) ||
+        byName(a, b)
+    )
+    .slice(0, n);
+}
+
+// The general "leading actors" grid — the best-documented, most-active actors
+// (richness first, so thin stubs never lead), with an optional exclude set so it
+// doesn't repeat the regional section shown above it.
+export async function getTopActors(n = 12, exclude?: Set<string>): Promise<ThreatActor[]> {
+  const docs = await allActors();
+  return [...docs]
+    .filter((a) => !exclude?.has(a._id))
+    .sort(
+      (a, b) =>
+        substance(b) - substance(a) ||
+        activity(b) - activity(a) ||
+        regionalWeight(b) - regionalWeight(a) ||
+        byName(a, b)
     )
     .slice(0, n);
 }

@@ -3,7 +3,7 @@ import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { ActorSearch } from "@/components/ActorSearch";
 import { ActorDossier } from "@/components/ActorDossier";
-import { getTopActors, getActorStats } from "@/lib/threatactors";
+import { getTopActors, getRegionalActors, getActorStats } from "@/lib/threatactors";
 import { getDict } from "@/lib/i18n";
 import { getLocale } from "@/lib/i18n-server";
 
@@ -25,7 +25,9 @@ function fmtDate(iso: string | null, locale: string): string {
 export default async function ActorsPage() {
   const locale = await getLocale();
   const t = getDict(locale).actors;
-  const [top, stats] = await Promise.all([getTopActors(24), getActorStats()]);
+  const [regional, stats] = await Promise.all([getRegionalActors(6), getActorStats()]);
+  // Leading grid excludes the regional actors shown above, so nothing repeats.
+  const top = await getTopActors(24, new Set(regional.map((a) => a._id)));
 
   return (
     <div className="ops flex min-h-screen flex-col">
@@ -42,6 +44,21 @@ export default async function ActorsPage() {
         <div className="mt-8 max-w-3xl">
           <ActorSearch locale={locale} />
         </div>
+
+        {regional.length > 0 && (
+          <>
+            <div className="mt-16 flex items-baseline gap-3">
+              <h2 className="font-headline text-xl text-brand">{t.regionalTitle}</h2>
+              <span className="h-px flex-1 bg-hairline" />
+              <span className="font-mono text-[11px] text-ink-muted">{t.regionalNote}</span>
+            </div>
+            <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {regional.map((a) => (
+                <ActorDossier key={a._id} a={a} locale={locale} />
+              ))}
+            </div>
+          </>
+        )}
 
         <div className="mt-16 flex items-baseline gap-3">
           <h2 className="font-headline text-xl text-ink-primary">{t.leadingTitle}</h2>
