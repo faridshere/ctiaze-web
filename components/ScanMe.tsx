@@ -11,6 +11,16 @@ type EmailResult = {
   fetched_at: string | null;
 };
 type SubBlock = { status: "ok" | "unavailable"; count: number; sample: string[]; source: string; fetched_at: string };
+type ExposureBlock = {
+  status: "ok" | "unavailable";
+  ip: string | null;
+  found: boolean;
+  ports: number[];
+  vulns: string[];
+  tags: string[];
+  source: string;
+  fetched_at: string;
+};
 type MentionStory = { title: string; url: string; source: string; published: string | null };
 type MentionBlock = { status: "ok" | "unavailable"; count: number; stories: MentionStory[]; source: string; fetched_at: string };
 type WatchBlock = { product: string; az_exposed: number; as_of: string; source: string; fetched_at: string } | null;
@@ -19,8 +29,18 @@ type DomainResult = {
   domain: string | null;
   status: "ok" | "invalid";
   subdomains: SubBlock | null;
+  exposure: ExposureBlock | null;
   mentions: MentionBlock | null;
   watchlist: WatchBlock;
+};
+
+// A handful of high-signal ports get a plain-language risk hint.
+const PORT_HINT: Record<number, string> = {
+  21: "FTP", 22: "SSH", 23: "Telnet — şifrəsiz", 25: "SMTP", 53: "DNS",
+  80: "HTTP", 110: "POP3", 143: "IMAP", 443: "HTTPS", 445: "SMB",
+  1433: "MSSQL", 3306: "MySQL", 3389: "RDP — ransomware girişi",
+  5432: "PostgreSQL", 5900: "VNC", 6379: "Redis", 8080: "HTTP-alt",
+  9200: "Elasticsearch", 27017: "MongoDB",
 };
 type ScanResult = EmailResult | DomainResult;
 
@@ -236,7 +256,7 @@ function DomainView({ r }: { r: DomainResult }) {
   }
   return (
     <ResultCard label={<>Domain attack surface · <span className="font-mono text-ink-secondary">{r.domain}</span></>}>
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-4 sm:grid-cols-2">
         {/* (a) subdomains */}
         <SubCard
           icon="◎"
@@ -251,23 +271,106 @@ function DomainView({ r }: { r: DomainResult }) {
               <div className="font-headline text-2xl text-ink-primary tabular-nums">{r.subdomains.count}</div>
               <div className="font-mono text-[11px] text-ink-muted">CT log-larında görünən ad</div>
               <ul className="mt-2.5 space-y-1">
-                {r.subdomains.sample.slice(0, 4).map((s) => (
+                {r.subdomains.sample.slice(0, 6).map((s) => (
                   <li key={s} className="truncate font-mono text-[12px] text-ink-secondary" title={s}>{s}</li>
                 ))}
-                {r.subdomains.count > 4 && (
-                  <li className="font-mono text-[12px] text-ink-muted">+ daha {r.subdomains.count - 4}</li>
+                {r.subdomains.count > 6 && (
+                  <li className="font-mono text-[12px] text-ink-muted">+ daha {r.subdomains.count - 6}</li>
                 )}
               </ul>
-              <Source><b className="text-ink-secondary">crt.sh</b> certificate transparency</Source>
+              <Source><b className="text-ink-secondary">certspotter + crt.sh</b> certificate transparency</Source>
             </>
           ) : (
             <p className="text-[13px] leading-relaxed text-ink-secondary">
-              crt.sh cavab vermədi — «0 subdomain» demirik, sadəcə indi yoxlaya bilmədik.
+              CT log-ları cavab vermədi — «0 subdomain» demirik, sadəcə indi yoxlaya bilmədik.
             </p>
           )}
         </SubCard>
 
-        {/* (b) our own coverage */}
+        {/* (b) live attack surface — Shodan InternetDB (keyless) */}
+        <SubCard
+          icon="▲"
+          tone={r.exposure?.status === "ok" && (r.exposure.vulns.length > 0) ? "critical" : "brand"}
+          title="Açıq servislər"
+          badge={
+            r.exposure?.status !== "ok"
+              ? "unavailable"
+              : !r.exposure.found
+              ? "görünmür"
+              : `${r.exposure.ports.length} port`
+          }
+          badgeTone={
+            r.exposure?.status !== "ok"
+              ? "muted"
+              : r.exposure.vulns.length > 0
+              ? "critical"
+              : r.exposure.found
+              ? "brand"
+              : "good"
+          }
+          unavailable={r.exposure?.status !== "ok"}
+        >
+          {r.exposure?.status === "ok" ? (
+            !r.exposure.found ? (
+              <p className="text-[13px] leading-relaxed text-ink-secondary">
+                Shodan bu host-da{r.exposure.ip ? <> (<span className="font-mono">{r.exposure.ip}</span>)</> : null} internetə
+                açıq servis görmür — yaxşı əlamətdir.
+              </p>
+            ) : (
+              <>
+                {r.exposure.vulns.length > 0 && (
+                  <div className="font-headline text-2xl text-accent-critical tabular-nums">
+                    {r.exposure.vulns.length} CVE
+                  </div>
+                )}
+                <div className="font-mono text-[11px] text-ink-muted">
+                  {r.exposure.ip} · açıq portlar
+                </div>
+                <div className="mt-2 flex flex-wrap gap-1.5">
+                  {r.exposure.ports.slice(0, 10).map((p) => (
+                    <span
+                      key={p}
+                      className="rounded-sm border border-hairline bg-surface px-1.5 py-0.5 font-mono text-[11px] tabular-nums text-ink-secondary"
+                      title={PORT_HINT[p] || ""}
+                    >
+                      {p}
+                    </span>
+                  ))}
+                  {r.exposure.ports.length > 10 && (
+                    <span className="font-mono text-[11px] text-ink-muted">+{r.exposure.ports.length - 10}</span>
+                  )}
+                </div>
+                {r.exposure.vulns.length > 0 && (
+                  <div className="mt-2.5 flex flex-wrap gap-1.5">
+                    {r.exposure.vulns.slice(0, 6).map((v) => (
+                      <a
+                        key={v}
+                        href={`https://nvd.nist.gov/vuln/detail/${v}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="rounded-sm border border-accent-critical/40 bg-accent-critical/10 px-1.5 py-0.5 font-mono text-[10.5px] text-accent-critical hover:bg-accent-critical/20"
+                      >
+                        {v}
+                      </a>
+                    ))}
+                    {r.exposure.vulns.length > 6 && (
+                      <span className="font-mono text-[11px] text-ink-muted">+{r.exposure.vulns.length - 6}</span>
+                    )}
+                  </div>
+                )}
+                <Source><b className="text-ink-secondary">Shodan InternetDB</b> · keyless</Source>
+              </>
+            )
+          ) : (
+            <p className="text-[13px] leading-relaxed text-ink-secondary">
+              {r.exposure?.ip === null
+                ? "Domain bir IP-yə həll olunmadı — açıq servisləri yoxlaya bilmədik."
+                : "Shodan cavab vermədi — bir azdan yenidən yoxla."}
+            </p>
+          )}
+        </SubCard>
+
+        {/* (c) our own coverage */}
         <SubCard
           icon="◍"
           tone="warning"
@@ -382,10 +485,10 @@ function SubCard({
   icon, tone, title, badge, badgeTone, unavailable, children,
 }: {
   icon: string;
-  tone: "brand" | "warning" | "critical" | "muted";
+  tone: "brand" | "warning" | "critical" | "good" | "muted";
   title: string;
   badge: string;
-  badgeTone: "brand" | "warning" | "critical" | "muted";
+  badgeTone: "brand" | "warning" | "critical" | "good" | "muted";
   unavailable?: boolean;
   children: React.ReactNode;
 }) {

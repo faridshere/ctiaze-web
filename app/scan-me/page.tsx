@@ -46,10 +46,11 @@ export default function ScanMePage() {
 
         <p className="mt-14 border-t border-hairline pt-8 font-mono text-xs leading-relaxed text-ink-muted">
           Mənbələr: <span className="text-ink-secondary">XposedOrNot</span> (keyless breach lookup),{" "}
-          <span className="text-ink-secondary">crt.sh</span> certificate transparency,{" "}
+          <span className="text-ink-secondary">certspotter + crt.sh</span> certificate transparency,{" "}
+          <span className="text-ink-secondary">Shodan InternetDB</span> (keyless — açıq portlar/CVE),{" "}
           <span className="text-ink-secondary">ctiaze</span> öz coverage-i, və həftəlik{" "}
-          <span className="text-ink-secondary">Shodan AZ</span> exposure snapshot. E-poçt ünvanın heç
-          yerdə saxlanmır.
+          <span className="text-ink-secondary">Shodan AZ</span> exposure snapshot. Hamısı açarsız/pulsuz —
+          e-poçt ünvanın heç yerdə saxlanmır.
         </p>
       </main>
       <Footer />

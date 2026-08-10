@@ -19,11 +19,14 @@ export const revalidate = 0; // dynamic
 const UA = "ctiaze.tech scan-me (+https://ctiaze.tech)";
 const XON_URL = "https://api.xposedornot.com/v1/check-email/";
 const CRTSH_URL = "https://crt.sh/";
+const CERTSPOTTER_URL = "https://api.certspotter.com/v1/issuances";
+const INTERNETDB_URL = "https://internetdb.shodan.io/";
 const EMAIL_SOURCE = "XposedOrNot (api.xposedornot.com/v1/check-email)";
-const CRTSH_SOURCE = "crt.sh certificate transparency";
+const CT_SOURCE = "certificate transparency (certspotter + crt.sh)";
 const MENTIONS_SOURCE = "ctiaze items collection (title/summary/url, word-boundary match)";
 const WATCHLIST_SOURCE = "Shodan AZ exposure snapshot (cti.exposure weekly sweep)";
-const SUBDOMAIN_SAMPLE = 10;
+const EXPOSURE_SOURCE = "Shodan InternetDB (keyless)";
+const SUBDOMAIN_SAMPLE = 12;
 const MENTIONS_LIMIT = 10;
 
 // Deliberately conservative validators — the gate between untrusted input and any
@@ -116,35 +119,97 @@ async function normalizeDomain(raw: string): Promise<string | null> {
   }
 }
 
-type CrtRow = { name_value?: string; common_name?: string };
+// Keep only names that are exactly the domain or a real subdomain of it, drop
+// wildcard prefixes. Shared by both CT sources.
+function keepUnder(domain: string, raw: string, into: Set<string>) {
+  const name = raw.trim().toLowerCase().replace(/^\*\./, "");
+  if (name && (name === domain || name.endsWith("." + domain))) into.add(name);
+}
 
-async function scanSubdomains(domain: string) {
+type CsRow = { dns_names?: string[] };
+// certSpotter — fast, keyless, reliable (crt.sh routinely times out on serverless).
+// Returns null on any failure so the caller can fall back rather than report "0".
+async function certspotterNames(domain: string): Promise<Set<string> | null> {
+  const data = await fetchJson<CsRow[]>(
+    `${CERTSPOTTER_URL}?domain=${encodeURIComponent(domain)}&include_subdomains=true&expand=dns_names`,
+    9000
+  );
+  if (!Array.isArray(data)) return null;
+  const names = new Set<string>();
+  for (const row of data) for (const n of row?.dns_names ?? []) keepUnder(domain, n, names);
+  return names;
+}
+
+type CrtRow = { name_value?: string; common_name?: string };
+// crt.sh — a secondary CT source; often slow, so short budget and best-effort.
+async function crtshNames(domain: string): Promise<Set<string> | null> {
   const data = await fetchJson<CrtRow[]>(
     `${CRTSH_URL}?q=${encodeURIComponent("%." + domain)}&output=json`,
-    12000
+    7000
   );
-  if (!Array.isArray(data)) {
-    return { status: "unavailable", count: 0, sample: [], source: CRTSH_SOURCE, fetched_at: nowIso() };
-  }
+  if (!Array.isArray(data)) return null;
   const names = new Set<string>();
   for (const row of data) {
     if (!row || typeof row !== "object") continue;
-    const cands: string[] = [];
-    if (typeof row.name_value === "string") cands.push(...row.name_value.split("\n"));
-    if (typeof row.common_name === "string") cands.push(row.common_name);
-    for (const cand of cands) {
-      const name = cand.trim().toLowerCase().replace(/^\*\./, "");
-      if (name && (name === domain || name.endsWith("." + domain))) names.add(name);
-    }
+    if (typeof row.name_value === "string") for (const n of row.name_value.split("\n")) keepUnder(domain, n, names);
+    if (typeof row.common_name === "string") keepUnder(domain, row.common_name, names);
   }
+  return names;
+}
+
+// Union both CT sources. `unavailable` ONLY when BOTH failed — a single working
+// source still gives an honest (possibly partial) surface, never a false "0".
+async function scanSubdomains(domain: string) {
+  const [cs, crt] = await Promise.all([certspotterNames(domain), crtshNames(domain)]);
+  if (cs === null && crt === null) {
+    return { status: "unavailable", count: 0, sample: [], source: CT_SOURCE, fetched_at: nowIso() };
+  }
+  const names = new Set<string>([...(cs ?? []), ...(crt ?? [])]);
   const ordered = [...names].sort();
   return {
     status: "ok",
     count: ordered.length,
     sample: ordered.slice(0, SUBDOMAIN_SAMPLE),
-    source: CRTSH_SOURCE,
+    source: CT_SOURCE,
     fetched_at: nowIso(),
   };
+}
+
+// (d) Live attack surface for the domain's main host, from Shodan's FREE keyless
+// InternetDB — open ports, known CVEs, tags. Zero query credits (never touches the
+// academic account's 100/mo budget). 404 = Shodan has no scan record → an honest
+// "no exposed services seen", not silence. Any transport failure → unavailable.
+type IdbRow = { ports?: number[]; vulns?: string[]; hostnames?: string[]; tags?: string[] };
+async function scanExposure(domain: string) {
+  let ip: string | null = null;
+  try {
+    const dns = await import("node:dns");
+    const addrs = await dns.promises.resolve4(domain);
+    ip = addrs.find((a) => /^\d{1,3}(\.\d{1,3}){3}$/.test(a)) ?? null;
+  } catch {
+    ip = null;
+  }
+  if (!ip) {
+    return { status: "unavailable", ip: null, found: false, ports: [], vulns: [], tags: [], source: EXPOSURE_SOURCE, fetched_at: nowIso() };
+  }
+  const idb = await fetchJson<IdbRow>(`${INTERNETDB_URL}${encodeURIComponent(ip)}`, 9000);
+  if (idb == null) {
+    // Distinguish "resolved, but Shodan has no record" (found:false, an honest
+    // clean-ish signal) from a transport failure — fetchJson returns null for
+    // both a 404 and an error, so re-probe status once to tell them apart.
+    const probe = await fetch(`${INTERNETDB_URL}${encodeURIComponent(ip)}`, {
+      headers: { "User-Agent": UA },
+      signal: AbortSignal.timeout(6000),
+    }).catch(() => null);
+    if (probe && probe.status === 404) {
+      return { status: "ok", ip, found: false, ports: [], vulns: [], tags: [], source: EXPOSURE_SOURCE, fetched_at: nowIso() };
+    }
+    return { status: "unavailable", ip, found: false, ports: [], vulns: [], tags: [], source: EXPOSURE_SOURCE, fetched_at: nowIso() };
+  }
+  const ports = Array.isArray(idb.ports) ? [...idb.ports].sort((a, b) => a - b) : [];
+  const vulns = Array.isArray(idb.vulns) ? idb.vulns.map((v) => v.toUpperCase()) : [];
+  const tags = Array.isArray(idb.tags) ? idb.tags : [];
+  return { status: "ok", ip, found: true, ports, vulns, tags, source: EXPOSURE_SOURCE, fetched_at: nowIso() };
 }
 
 const PUBLISHED_FILTER = {
@@ -244,14 +309,15 @@ async function scanWatchlist(domain: string) {
 async function scanDomain(domain: string) {
   const normalized = await normalizeDomain(domain);
   if (!normalized) {
-    return { kind: "domain", domain: null, status: "invalid", subdomains: null, mentions: null, watchlist: null };
+    return { kind: "domain", domain: null, status: "invalid", subdomains: null, exposure: null, mentions: null, watchlist: null };
   }
-  const [subdomains, mentions, watchlist] = await Promise.all([
+  const [subdomains, exposure, mentions, watchlist] = await Promise.all([
     scanSubdomains(normalized),
+    scanExposure(normalized),
     scanMentions(normalized),
     scanWatchlist(normalized),
   ]);
-  return { kind: "domain", domain: normalized, status: "ok", subdomains, mentions, watchlist };
+  return { kind: "domain", domain: normalized, status: "ok", subdomains, exposure, mentions, watchlist };
 }
 
 export async function GET(req: Request) {
