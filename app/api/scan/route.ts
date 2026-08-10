@@ -76,6 +76,7 @@ function emailResult(status: string, extra: Record<string, unknown> = {}) {
     breaches: [],
     exposedData: [],
     pastesCount: 0,
+    hibp: false,
     source: EMAIL_SOURCE,
     fetched_at: status === "invalid" ? null : nowIso(),
     ...extra,
@@ -107,6 +108,40 @@ function shapeBreaches(details: XonBreach[]): Breach[] {
       (b.year || "").localeCompare(a.year || "")
   );
   return rows;
+}
+
+// Have I Been Pwned — the authoritative breach source. The email search needs a
+// paid key, so it's OPTIONAL: when HIBP_API_KEY is set it unions in (and its rows
+// win on dedup); without a key we fall back to the free sources below. (HIBP's
+// free Pwned Passwords k-anonymity is used separately in /api/pwned.)
+type HibpBreach = { Name?: string; Title?: string; Domain?: string; BreachDate?: string; DataClasses?: string[]; IsVerified?: boolean };
+async function hibpRows(email: string): Promise<{ rows: Breach[]; available: boolean }> {
+  const key = (process.env.HIBP_API_KEY || "").trim();
+  if (!key) return { rows: [], available: false };
+  try {
+    const r = await fetch(
+      `https://haveibeenpwned.com/api/v3/breachedaccount/${encodeURIComponent(email)}?truncateResponse=false`,
+      { headers: { "hibp-api-key": key, "user-agent": "ctiaze.tech" }, signal: AbortSignal.timeout(9000) }
+    );
+    if (r.status === 404) return { rows: [], available: true }; // authoritative clean
+    if (!r.ok) return { rows: [], available: false }; // 401/403/429 → treat as unavailable
+    const data = (await r.json()) as HibpBreach[];
+    if (!Array.isArray(data)) return { rows: [], available: false };
+    const rows: Breach[] = data.map((b) => {
+      const exposed = Array.isArray(b.DataClasses) ? b.DataClasses : [];
+      return {
+        name: (b.Title || b.Name || "").trim(),
+        domain: b.Domain,
+        year: (b.BreachDate || "").slice(0, 4),
+        verified: b.IsVerified !== false,
+        exposed,
+        hasPassword: exposed.some((x) => /password/i.test(x)),
+      };
+    });
+    return { rows, available: true };
+  } catch {
+    return { rows: [], available: false };
+  }
 }
 
 type LeakcheckResp = { success?: boolean; found?: number; fields?: string[]; sources?: { name?: string; date?: string }[] };
@@ -144,24 +179,27 @@ async function scanEmail(email: string) {
   const normalized = normalizeEmail(email);
   if (!normalized) return emailResult("invalid");
 
-  const [data, lc] = await Promise.all([
+  const [data, lc, hibp] = await Promise.all([
     fetchJson<XonAnalytics>(`${XON_ANALYTICS_URL}?email=${encodeURIComponent(normalized)}`, 9000),
     leakcheckRows(normalized),
+    hibpRows(normalized),
   ]);
-  if (data === null && lc.rows.length === 0) return scanEmailBasic(normalized);
+  if (data === null && lc.rows.length === 0 && hibp.rows.length === 0 && !hibp.available) {
+    return scanEmailBasic(normalized);
+  }
 
   const details = data?.ExposedBreaches?.breaches_details;
   const xonRows = Array.isArray(details) ? shapeBreaches(details) : [];
 
-  // Union the two sources by breach name (case-insensitive); XposedOrNot rows win
-  // (they carry richer per-breach detail), LeakCheck adds any it doesn't have.
-  const seen = new Set(xonRows.map((r) => r.name.toLowerCase()));
-  const merged = [...xonRows];
-  for (const r of lc.rows) {
+  // Union the sources by breach name (case-insensitive), best-detail-first:
+  // HIBP (authoritative) → XposedOrNot (rich per-breach) → LeakCheck (breadth).
+  const seen = new Set<string>();
+  const merged: Breach[] = [];
+  for (const r of [...hibp.rows, ...xonRows, ...lc.rows]) {
     const k = r.name.toLowerCase();
     if (k && !seen.has(k)) { seen.add(k); merged.push(r); }
   }
-  if (merged.length === 0) return emailResult("ok"); // both answered, no breaches
+  if (merged.length === 0) return emailResult("ok"); // sources answered, no breaches
 
   merged.sort(
     (a, b) =>
@@ -180,6 +218,7 @@ async function scanEmail(email: string) {
     breaches: merged.slice(0, BREACH_LIMIT),
     exposedData,
     pastesCount,
+    hibp: hibp.available,
   });
 }
 

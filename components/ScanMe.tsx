@@ -10,7 +10,7 @@ type Breach = {
 type EmailResult = {
   kind: "email"; status: "ok" | "unavailable" | "invalid"; count: number;
   riskLabel: string | null; riskScore: number | null; passwordsExposed: boolean;
-  breaches: Breach[]; exposedData: string[]; pastesCount: number; source: string; fetched_at: string | null;
+  breaches: Breach[]; exposedData: string[]; pastesCount: number; hibp: boolean; source: string; fetched_at: string | null;
 };
 type SubBlock = { status: "ok" | "unavailable"; count: number; sample: string[]; source: string; fetched_at: string };
 type ExposureBlock = {
@@ -317,7 +317,7 @@ function EmailView({ r, t, locale }: { r: EmailResult; t: ScanDict; locale: Loca
           <p className="mt-3 font-mono text-[12px] text-ink-secondary">{t.pastesLine(r.pastesCount)}</p>
         )}
 
-        <Source>XposedOrNot + LeakCheck · {fmtDate(r.fetched_at)}</Source>
+        <Source>{r.hibp ? "HIBP + XposedOrNot + LeakCheck" : "XposedOrNot + LeakCheck"} · {fmtDate(r.fetched_at)}</Source>
       </StateCard>
     </ResultCard>
   );
