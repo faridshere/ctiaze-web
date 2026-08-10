@@ -1,10 +1,7 @@
 import { getDb } from "./db";
 
-// Mirrors one document in ctiaze-engine's `threat_actors` collection, written by
-// the weekly cti/actors.py ETL. Read-only here. The query helpers below replicate
-// actors.py's scoring EXACTLY (word-boundary matching, the same weights and
-// provenance reasons) so the site and the CLI answer identically — and honestly:
-// an actor is only ever returned for a dimension its source actually STATES.
+// Read-only view of ctiaze-engine's threat_actors collection; search scoring
+// mirrors cti/actors.py so the site and CLI answer identically.
 export type ActorRecentItem = { title: string; url: string; date?: string | Date };
 
 export type ThreatActor = {
@@ -24,8 +21,6 @@ export type ThreatActor = {
   last_refreshed?: Date | string;
 };
 
-// A search hit is an actor plus the provenance the query attached (never stored) —
-// one reason line per matched dimension, and a ranking weight.
 export type ActorHit = ThreatActor & {
   match_reasons: string[];
   match_score: number;
@@ -36,11 +31,9 @@ async function collection() {
   return db.collection<ThreatActor>("threat_actors");
 }
 
-// The full roster is small (~1k tiny docs) and refreshed weekly, so a single
-// cached read serves every search without re-hitting Mongo per query. TTL is a
-// safety valve, not a freshness requirement.
+// Roster is small and refreshed weekly — cache it so search doesn't re-hit Mongo.
 let rosterCache: { at: number; docs: ThreatActor[] } | null = null;
-const ROSTER_TTL_MS = 60 * 60_000; // 1h — the ETL runs weekly
+const ROSTER_TTL_MS = 60 * 60_000;
 
 async function allActors(): Promise<ThreatActor[]> {
   if (rosterCache && Date.now() - rosterCache.at < ROSTER_TTL_MS) return rosterCache.docs;
@@ -70,8 +63,7 @@ export async function getActorStats(): Promise<{
   };
 }
 
-// The Caucasus/Caspian audience @ctiaze serves — mirrors cti/actors.REGIONAL_WEIGHT
-// so the site's landing order matches the CLI's. Keyed by lowercased country name.
+// Regional weighting (mirrors cti/actors.REGIONAL_WEIGHT), keyed by lowercased country.
 const REGIONAL_WEIGHT: Record<string, number> = {
   azerbaijan: 100, turkey: 40, "türkiye": 40, georgia: 30,
   armenia: 30, russia: 20, iran: 20,
@@ -84,8 +76,7 @@ function regionalWeight(a: ThreatActor): number {
   );
 }
 
-// Site landing section — most-active actors first (by how many of our recent items
-// mention them), regional targeting as the tiebreak. Mirrors actors.top_actors().
+// Most-active actors first, regional targeting as tiebreak.
 export async function getTopActors(n = 12): Promise<ThreatActor[]> {
   const docs = await allActors();
   return [...docs]
@@ -98,13 +89,11 @@ export async function getTopActors(n = 12): Promise<ThreatActor[]> {
     .slice(0, n);
 }
 
-// ------------------------------------------------------------- query (honest match)
 function norm(s: string): string {
   return (s || "").trim().toLowerCase();
 }
 
-// Case-insensitive word-boundary match — the honest primitive. A naive substring
-// makes "us" match "Russia"; word boundaries don't. Mirrors actors._word_hit.
+// Word-boundary match, so "us" never matches "Russia".
 function wordHit(term: string, text: string): boolean {
   const t = norm(term);
   const x = norm(text);
@@ -147,11 +136,8 @@ function nameReasons(a: ThreatActor, term: string): { reasons: string[]; score: 
   return { reasons, score };
 }
 
-// The site's single-term search: run `term` across country, sector, and name/alias
-// at once and union the provenance — exactly what `python -m cti.actors --who`
-// does (search_any → actors_targeting on all three dimensions). Never fabricates a
-// link: an actor not stated to target the term, and never named/mentioned for it,
-// simply does not appear.
+// Single-term search across country, sector, and name/alias; unions the provenance.
+// Only returns actors the source actually states — no fabricated links.
 export async function searchActors(term: string, limit = 24): Promise<ActorHit[]> {
   const t = term.trim();
   if (!t) return [];
@@ -184,11 +170,6 @@ export async function searchActors(term: string, limit = 24): Promise<ActorHit[]
   return hits.slice(0, limit);
 }
 
-// ------------------------------------------------------------- display helpers
-// A handful of common APT origins get an Azerbaijani country name + flag; anything
-// else falls back to the ISO-2 code the source carried. Flag from ISO-2 regional
-// indicators (never guessed — only rendered when origin_country is a real 2-letter
-// code the ETL stored from MISP meta.country).
 const ORIGIN_AZ: Record<string, string> = {
   RU: "Rusiya", IR: "İran", KP: "Şimali Koreya", CN: "Çin", US: "ABŞ",
   GB: "Böyük Britaniya", IL: "İsrail", IN: "Hindistan", PK: "Pakistan",
@@ -213,7 +194,6 @@ export const ACTOR_TYPE_LABEL: Record<string, string> = {
   unknown: "naməlum",
 };
 
-// Initials for the dossier avatar — first letters of the first two name words.
 export function actorInitials(name: string): string {
   const parts = (name || "").trim().split(/\s+/).filter(Boolean);
   if (!parts.length) return "?";

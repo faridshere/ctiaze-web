@@ -3,12 +3,12 @@ import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { ScanMe } from "@/components/ScanMe";
 
-export const revalidate = 0; // the scan itself is live; the shell is static
+export const revalidate = 0;
 
 export const metadata: Metadata = {
   title: "Özünü yoxla — breach və domain exposure",
   description:
-    "E-poçt ünvanını və ya iş domain-ini yaz: hansı data breach-lərdə görünüb (XposedOrNot) və domain-in nə qədəri açıq internetdə görünür (crt.sh). False positive yoxdur — hər fakt mənbəsi ilə gəlir.",
+    "E-poçt ünvanını və ya iş domain-ini yaz: hansı data breach-lərdə görünüb (XposedOrNot) və domain-in nə qədəri açıq internetdə görünür (certspotter + Shodan). False positive yoxdur — hər fakt mənbəsi ilə gəlir.",
 };
 
 export default function ScanMePage() {
@@ -42,79 +42,16 @@ export default function ScanMePage() {
           <ScanMe />
         </div>
 
-        <DevContract />
-
         <p className="mt-14 border-t border-hairline pt-8 font-mono text-xs leading-relaxed text-ink-muted">
-          Mənbələr: <span className="text-ink-secondary">XposedOrNot</span> (keyless breach lookup),{" "}
-          <span className="text-ink-secondary">certspotter + crt.sh</span> certificate transparency,{" "}
-          <span className="text-ink-secondary">Shodan InternetDB</span> (keyless — açıq portlar/CVE),{" "}
-          <span className="text-ink-secondary">ctiaze</span> öz coverage-i, və həftəlik{" "}
-          <span className="text-ink-secondary">Shodan AZ</span> exposure snapshot. Hamısı açarsız/pulsuz —
-          e-poçt ünvanın heç yerdə saxlanmır.
+          Mənbələr: <span className="text-ink-secondary">XposedOrNot</span> (breach-analytics, keyless),{" "}
+          <span className="text-ink-secondary">certspotter + crt.sh</span>,{" "}
+          <span className="text-ink-secondary">Shodan InternetDB</span>,{" "}
+          <span className="text-ink-secondary">ctiaze</span> coverage, və həftəlik{" "}
+          <span className="text-ink-secondary">Shodan AZ</span> snapshot. Hamısı açarsız/pulsuz — e-poçt
+          ünvanın heç yerdə saxlanmır.
         </p>
       </main>
       <Footer />
     </div>
-  );
-}
-
-// The site is the front of the same cti/scanme.py contract — showing it builds
-// trust (this is what we ask, and this is the exact shape we render) and doubles
-// as integration docs for anyone reading via the API.
-function DevContract() {
-  const json = `// scan_email("namiq@example.az")  — "@" var, "://" yox → email
-{
-  "kind":       "email",
-  "status":     "ok",          // "ok" | "unavailable" | "invalid"
-  "breaches":   ["LinkedIn", "Dropbox", "Canva"],  // yalnız API təsdiqlədikləri; [] = təmiz
-  "count":      3,             // == breaches.length
-  "source":     "XposedOrNot (api.xposedornot.com/v1/check-email)",
-  "fetched_at": "2026-08-09T21:00:00Z"   // UTC ISO-8601, invalid olanda null
-}
-
-// scan_domain("example.az")  — "@" yox → domain
-{
-  "kind":   "domain",
-  "domain": "example.az",      // normalize olunmuş host, invalid olanda null
-  "status": "ok",              // "ok" | "invalid"
-  "subdomains": {              // (a) crt.sh certificate-transparency surface
-    "status": "ok",           // "ok" | "unavailable"
-    "count":  47,
-    "sample": ["dev-api.example.az", "mail.example.az"]   // ≤10, əlifba sırası
-  },
-  "mentions": {               // (b) bizim öz coverage-imiz bu domain-i xatırlayır
-    "status": "ok",           // "unavailable" => yoxlanacaq DB yoxdur
-    "count":  2,              // exact-domain, word-boundary match
-    "stories": [{ "title": "…", "url": "…", "source": "…", "published": "…" }]  // ≤10
-  },
-  "watchlist": {              // (c) OPTIONAL — yalnız domain bir watchlist product-u adlandıranda
-    "product":    "FortiGate",
-    "az_exposed": 340,
-    "as_of":      "04 avq"
-  }  // və ya null — dayanacaq heç nə olmayanda
-}`;
-  return (
-    <section className="mt-11">
-      <details className="group overflow-hidden rounded-md border border-hairline bg-surface-raised/40">
-        <summary className="flex cursor-pointer list-none items-center gap-3 px-4 py-3.5 font-semibold text-ink-primary [&::-webkit-details-marker]:hidden">
-          <span aria-hidden="true">{"</>"}</span>
-          Developer üçün · JSON contract
-          <span className="ml-auto rounded-full border border-hairline px-2.5 py-0.5 font-mono text-[11px] font-normal text-ink-secondary">
-            cti/scanme.py
-          </span>
-        </summary>
-        <div className="border-t border-hairline px-4 py-4">
-          <p className="text-[13.5px] leading-relaxed text-ink-secondary">
-            Bu səhifə <span className="font-mono">/api/scan?q=&lt;email-or-domain&gt;</span>-i oxuyur — o da{" "}
-            <span className="font-mono">python -m cti.scanme</span>-in JSON contract-ını izləyir. Hər fakt{" "}
-            <span className="font-mono">source</span> daşıyır; təsdiqlənməyən{" "}
-            <span className="font-mono">status: &quot;unavailable&quot;</span> olur.
-          </p>
-          <pre className="mt-3.5 overflow-x-auto rounded-sm border border-hairline bg-surface p-4 font-mono text-[12px] leading-relaxed text-ink-secondary">
-            {json}
-          </pre>
-        </div>
-      </details>
-    </section>
   );
 }

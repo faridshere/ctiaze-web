@@ -2,13 +2,7 @@ import { NextResponse } from "next/server";
 import { rateLimit, clientIp } from "@/lib/ratelimit";
 import { searchActors } from "@/lib/threatactors";
 
-// Threat-actor search — "who targets my country / sector / company?". Runs one
-// term across all three query dimensions (country, sector, name/alias + recent
-// activity) and returns each hit with the provenance the match produced. Reads
-// only the read-only `threat_actors` roster the weekly ETL wrote; no external
-// calls, so it's cheap and cannot leak the query anywhere.
-
-export const revalidate = 0; // dynamic; the lib caches the roster module-level
+export const revalidate = 0;
 
 export async function GET(req: Request) {
   if (!rateLimit(`actors:${clientIp(req)}`, 60, 60_000)) {
@@ -23,8 +17,6 @@ export async function GET(req: Request) {
 
   try {
     const hits = await searchActors(q, 24);
-    // Trim the payload: the search list shows identity + provenance + a couple of
-    // recent items; the full dossier lives in the landing grid.
     const results = hits.map((h) => ({
       id: h._id,
       name: h.name,

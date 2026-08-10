@@ -2,11 +2,25 @@
 
 import { useState } from "react";
 
+type Breach = {
+  name: string;
+  domain?: string;
+  industry?: string;
+  year?: string;
+  verified: boolean;
+  passwordRisk?: string;
+  exposed: string[];
+  hasPassword: boolean;
+};
 type EmailResult = {
   kind: "email";
   status: "ok" | "unavailable" | "invalid";
-  breaches: string[];
   count: number;
+  riskLabel: string | null;
+  riskScore: number | null;
+  passwordsExposed: boolean;
+  breaches: Breach[];
+  exposedData: string[];
   source: string;
   fetched_at: string | null;
 };
@@ -33,18 +47,30 @@ type DomainResult = {
   mentions: MentionBlock | null;
   watchlist: WatchBlock;
 };
-
-// A handful of high-signal ports get a plain-language risk hint.
-const PORT_HINT: Record<number, string> = {
-  21: "FTP", 22: "SSH", 23: "Telnet — şifrəsiz", 25: "SMTP", 53: "DNS",
-  80: "HTTP", 110: "POP3", 143: "IMAP", 443: "HTTPS", 445: "SMB",
-  1433: "MSSQL", 3306: "MySQL", 3389: "RDP — ransomware girişi",
-  5432: "PostgreSQL", 5900: "VNC", 6379: "Redis", 8080: "HTTP-alt",
-  9200: "Elasticsearch", 27017: "MongoDB",
-};
 type ScanResult = EmailResult | DomainResult;
 
 const EXAMPLES = ["namiq@example.az", "example.az"];
+
+const DATA_LABEL: Record<string, string> = {
+  passwords: "Parollar",
+  "email addresses": "E-poçt",
+  names: "Adlar",
+  usernames: "İstifadəçi adları",
+  "phone numbers": "Telefon",
+  "physical addresses": "Ünvanlar",
+  "dates of birth": "Doğum tarixi",
+  "ip addresses": "IP ünvanlar",
+  genders: "Cins",
+  "geographic locations": "Məkan",
+  "device information": "Cihaz məlumatı",
+  "auth tokens": "Auth token",
+  "security questions and answers": "Təhlükəsizlik sualları",
+  "credit cards": "Kart məlumatı",
+  "social media profiles": "Sosial media",
+};
+function dataLabel(s: string): string {
+  return DATA_LABEL[s.trim().toLowerCase()] ?? s;
+}
 
 export function ScanMe() {
   const [q, setQ] = useState("");
@@ -70,7 +96,6 @@ export function ScanMe() {
 
   return (
     <div>
-      {/* scanner console */}
       <div className="overflow-hidden rounded-md border border-hairline bg-surface-raised/40">
         <div className="flex items-center gap-2.5 border-b border-hairline bg-surface px-4 py-2.5">
           <span className="flex gap-1.5" aria-hidden="true">
@@ -134,7 +159,6 @@ export function ScanMe() {
       {error && <p className="mt-5 font-mono text-xs text-accent-critical">{error}</p>}
       {result && !loading && (result.kind === "email" ? <EmailView r={result} /> : <DomainView r={result} />)}
 
-      {/* the honesty rule, always visible — the product's core promise */}
       <div className="mt-6 rounded-md border border-hairline bg-surface-raised/30 px-4 py-3">
         <div className="flex items-center gap-2">
           <span className="text-ink-muted">◑</span>
@@ -143,8 +167,7 @@ export function ScanMe() {
         <p className="mt-1.5 text-[13px] leading-relaxed text-ink-secondary">
           Servis cavab vermədikdə sənə <b className="text-ink-primary">«təmizsən»</b> demirik — çünki
           bunu bilmirik. Bunun əvəzinə açıq şəkildə <span className="font-mono text-ink-muted">unavailable</span>{" "}
-          qaytarırıq. Səhv «breach yoxdur» susmaqdan pisdir. E-poçt ünvanın yalnız bir sorğu üçün
-          istifadə olunur — heç yerdə saxlanmır.
+          qaytarırıq. E-poçt ünvanın yalnız bir sorğu üçün istifadə olunur — heç yerdə saxlanmır.
         </p>
       </div>
     </div>
@@ -152,8 +175,7 @@ export function ScanMe() {
 }
 
 function fmtDate(iso: string | null): string {
-  if (!iso) return "—";
-  return iso.slice(0, 10);
+  return iso ? iso.slice(0, 10) : "—";
 }
 function Source({ children }: { children: React.ReactNode }) {
   return (
@@ -164,7 +186,6 @@ function Source({ children }: { children: React.ReactNode }) {
   );
 }
 
-// ------------------------------------------------------------------- email result
 function EmailView({ r }: { r: EmailResult }) {
   if (r.status === "invalid") {
     return (
@@ -182,30 +203,22 @@ function EmailView({ r }: { r: EmailResult }) {
       <ResultCard label="E-poçt nəticəsi">
         <StateCard tone="muted" icon="◑" title="Breach servisi əlçatan deyil" badge="unavailable">
           <p className="text-[13.5px] leading-relaxed text-ink-secondary">
-            XposedOrNot hazırda cavab vermir. Sənə «təmizsən» demirik — bunu bilmirik. Bir azdan
-            yenidən yoxla.
+            XposedOrNot hazırda cavab vermir. Sənə «təmizsən» demirik — bir azdan yenidən yoxla.
           </p>
-          <Source>
-            Mənbə: <b className="text-ink-secondary">XposedOrNot</b> · cavab alınmadı ·{" "}
-            <span>{fmtDate(r.fetched_at)}</span>
-          </Source>
         </StateCard>
       </ResultCard>
     );
   }
-  // ok
   if (r.count === 0) {
     return (
       <ResultCard label="E-poçt nəticəsi">
         <StateCard tone="good" icon="✓" title="Məlum breach-lərdə görünmür" badge="təmiz">
           <p className="text-[13.5px] leading-relaxed text-ink-secondary">
-            Bu ünvan XposedOrNot-un breach bazasında tapılmadı. Bu, siyahıya əsaslanan nəticədir —
-            «heç vaxt sızmayacaq» zəmanəti deyil. Yenə də hər servisdə güclü parol və{" "}
-            <span className="font-mono">2FA</span> saxla.
+            Bu ünvan XposedOrNot bazasında tapılmadı. Bu, siyahıya əsaslanan nəticədir — zəmanət
+            deyil. Yenə də güclü parol və <span className="font-mono">2FA</span> saxla.
           </p>
           <Source>
-            Mənbə: <b className="text-ink-secondary">XposedOrNot</b> ·{" "}
-            <span className="font-mono">api.xposedornot.com/v1/check-email</span> · {fmtDate(r.fetched_at)}
+            Mənbə: <b className="text-ink-secondary">XposedOrNot</b> · {fmtDate(r.fetched_at)}
           </Source>
         </StateCard>
       </ResultCard>
@@ -214,41 +227,86 @@ function EmailView({ r }: { r: EmailResult }) {
   return (
     <ResultCard label="E-poçt nəticəsi">
       <StateCard tone="critical" icon="⚠" title="Breach yoxlaması" badge={`tapıldı · ${r.count}`}>
-        <div className="font-headline text-3xl text-accent-critical">
-          {r.count} breach
-        </div>
-        <p className="mt-2 text-[13.5px] leading-relaxed text-ink-secondary">
-          Bu ünvan aşağıdakı təsdiqlənmiş data breach-lərdə görünüb. Bu servislərdəki parolu dəyiş
-          və <span className="font-mono">2FA</span> aktiv et.
-        </p>
-        <div className="mt-3.5 flex flex-wrap gap-2">
-          {r.breaches.map((b) => (
-            <span
-              key={b}
-              className="rounded-sm border border-accent-critical/40 bg-accent-critical/10 px-2.5 py-1 font-mono text-[12px] text-accent-critical"
-            >
-              {b}
+        <div className="flex flex-wrap items-end gap-x-4 gap-y-1">
+          <div className="font-headline text-3xl text-accent-critical">{r.count} breach</div>
+          {r.riskLabel && (
+            <span className="pb-1 font-mono text-xs uppercase tracking-widest text-accent-critical">
+              risk: {r.riskLabel}{r.riskScore != null ? ` · ${r.riskScore}/100` : ""}
             </span>
-          ))}
+          )}
         </div>
+
+        {r.passwordsExposed && (
+          <p className="mt-3 rounded-sm border border-accent-critical/40 bg-accent-critical/10 px-3 py-2 text-[13px] leading-relaxed text-accent-critical">
+            <b>Parolların sızıb.</b> Bu servislərdəki parolu dərhal dəyiş və hər yerdə{" "}
+            <span className="font-mono">2FA</span> aktiv et. Eyni parolu başqa yerdə işlətmisənsə, onu da dəyiş.
+          </p>
+        )}
+
+        {r.exposedData.length > 0 && (
+          <div className="mt-3.5">
+            <div className="font-mono text-[10px] uppercase tracking-[0.12em] text-ink-muted">Sızan məlumat növləri</div>
+            <div className="mt-1.5 flex flex-wrap gap-1.5">
+              {r.exposedData.slice(0, 12).map((d) => (
+                <span
+                  key={d}
+                  className={`rounded-sm border px-2 py-0.5 font-mono text-[11px] ${
+                    /password/i.test(d)
+                      ? "border-accent-critical/40 bg-accent-critical/10 text-accent-critical"
+                      : "border-hairline bg-surface text-ink-secondary"
+                  }`}
+                >
+                  {dataLabel(d)}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+
+        <div className="mt-4 space-y-2">
+          {r.breaches.map((b, i) => (
+            <div key={`${b.name}-${i}`} className="border-t border-hairline pt-2.5 first:border-t-0 first:pt-0">
+              <div className="flex flex-wrap items-baseline gap-x-2.5 gap-y-0.5">
+                <span className="text-[14px] font-semibold text-ink-primary">{b.name}</span>
+                {b.year && <span className="font-mono text-[11px] text-ink-muted">{b.year}</span>}
+                {b.hasPassword && (
+                  <span className="rounded-sm border border-accent-critical/40 px-1.5 py-0.5 font-mono text-[9.5px] uppercase tracking-wider text-accent-critical">
+                    parol
+                  </span>
+                )}
+                {b.verified && (
+                  <span className="font-mono text-[10px] uppercase tracking-wider text-ink-muted">✓ təsdiqlənib</span>
+                )}
+              </div>
+              {b.exposed.length > 0 && (
+                <div className="mt-1 font-mono text-[11px] text-ink-muted">
+                  {b.exposed.slice(0, 8).map(dataLabel).join(" · ")}
+                </div>
+              )}
+            </div>
+          ))}
+          {r.count > r.breaches.length && (
+            <div className="border-t border-hairline pt-2.5 font-mono text-[12px] text-ink-muted">
+              + daha {r.count - r.breaches.length} breach
+            </div>
+          )}
+        </div>
+
         <Source>
-          Mənbə: <b className="text-ink-secondary">XposedOrNot</b> ·{" "}
-          <span className="font-mono">api.xposedornot.com/v1/check-email</span> · {fmtDate(r.fetched_at)}
+          Mənbə: <b className="text-ink-secondary">XposedOrNot</b> breach-analytics · {fmtDate(r.fetched_at)}
         </Source>
       </StateCard>
     </ResultCard>
   );
 }
 
-// ------------------------------------------------------------------ domain result
 function DomainView({ r }: { r: DomainResult }) {
   if (r.status === "invalid" || !r.domain) {
     return (
       <ResultCard label="Domain nəticəsi">
         <StateCard tone="warning" icon="?" title="Düzgün domain yaz" badge="invalid">
           <p className="text-[13.5px] leading-relaxed text-ink-secondary">
-            Bu, düzgün domain deyil, ona görə heç bir sorğu göndərilmədi. Nümunə:{" "}
-            <span className="font-mono">example.az</span>
+            Bu, düzgün domain deyil. Nümunə: <span className="font-mono">example.az</span>
           </p>
         </StateCard>
       </ResultCard>
@@ -257,7 +315,6 @@ function DomainView({ r }: { r: DomainResult }) {
   return (
     <ResultCard label={<>Domain attack surface · <span className="font-mono text-ink-secondary">{r.domain}</span></>}>
       <div className="grid gap-4 sm:grid-cols-2">
-        {/* (a) subdomains */}
         <SubCard
           icon="◎"
           tone="brand"
@@ -287,26 +344,13 @@ function DomainView({ r }: { r: DomainResult }) {
           )}
         </SubCard>
 
-        {/* (b) live attack surface — Shodan InternetDB (keyless) */}
         <SubCard
           icon="▲"
-          tone={r.exposure?.status === "ok" && (r.exposure.vulns.length > 0) ? "critical" : "brand"}
+          tone={r.exposure?.status === "ok" && r.exposure.vulns.length > 0 ? "critical" : "brand"}
           title="Açıq servislər"
-          badge={
-            r.exposure?.status !== "ok"
-              ? "unavailable"
-              : !r.exposure.found
-              ? "görünmür"
-              : `${r.exposure.ports.length} port`
-          }
+          badge={r.exposure?.status !== "ok" ? "unavailable" : !r.exposure.found ? "görünmür" : `${r.exposure.ports.length} port`}
           badgeTone={
-            r.exposure?.status !== "ok"
-              ? "muted"
-              : r.exposure.vulns.length > 0
-              ? "critical"
-              : r.exposure.found
-              ? "brand"
-              : "good"
+            r.exposure?.status !== "ok" ? "muted" : r.exposure.vulns.length > 0 ? "critical" : r.exposure.found ? "brand" : "good"
           }
           unavailable={r.exposure?.status !== "ok"}
         >
@@ -319,20 +363,12 @@ function DomainView({ r }: { r: DomainResult }) {
             ) : (
               <>
                 {r.exposure.vulns.length > 0 && (
-                  <div className="font-headline text-2xl text-accent-critical tabular-nums">
-                    {r.exposure.vulns.length} CVE
-                  </div>
+                  <div className="font-headline text-2xl text-accent-critical tabular-nums">{r.exposure.vulns.length} CVE</div>
                 )}
-                <div className="font-mono text-[11px] text-ink-muted">
-                  {r.exposure.ip} · açıq portlar
-                </div>
+                <div className="font-mono text-[11px] text-ink-muted">{r.exposure.ip} · açıq portlar</div>
                 <div className="mt-2 flex flex-wrap gap-1.5">
                   {r.exposure.ports.slice(0, 10).map((p) => (
-                    <span
-                      key={p}
-                      className="rounded-sm border border-hairline bg-surface px-1.5 py-0.5 font-mono text-[11px] tabular-nums text-ink-secondary"
-                      title={PORT_HINT[p] || ""}
-                    >
+                    <span key={p} className="rounded-sm border border-hairline bg-surface px-1.5 py-0.5 font-mono text-[11px] tabular-nums text-ink-secondary">
                       {p}
                     </span>
                   ))}
@@ -370,7 +406,6 @@ function DomainView({ r }: { r: DomainResult }) {
           )}
         </SubCard>
 
-        {/* (c) our own coverage */}
         <SubCard
           icon="◍"
           tone="warning"
@@ -398,13 +433,10 @@ function DomainView({ r }: { r: DomainResult }) {
               <Source><b className="text-ink-secondary">ctiaze items</b> · exact-domain, word-boundary</Source>
             </>
           ) : (
-            <p className="text-[13px] leading-relaxed text-ink-secondary">
-              Baza hazırda əlçatan deyil — yoxlaya bilmədik.
-            </p>
+            <p className="text-[13px] leading-relaxed text-ink-secondary">Baza hazırda əlçatan deyil — yoxlaya bilmədik.</p>
           )}
         </SubCard>
 
-        {/* (c) watchlist — optional */}
         {r.watchlist ? (
           <SubCard icon="▲" tone="critical" title="Shodan watchlist" badge={r.watchlist.product} badgeTone="critical">
             <div className="font-headline text-2xl text-accent-critical tabular-nums">
@@ -421,8 +453,7 @@ function DomainView({ r }: { r: DomainResult }) {
         ) : (
           <SubCard icon="—" tone="muted" title="Watchlist" badge="uyğunluq yox" badgeTone="muted" unavailable>
             <p className="text-[13px] leading-relaxed text-ink-secondary">
-              Bu domain izlənən kütləvi-istismar product-larından birini adlandırmır — ona görə burada
-              dayanacaq bir şey yoxdur.
+              Bu domain izlənən kütləvi-istismar product-larından birini adlandırmır.
             </p>
           </SubCard>
         )}
@@ -431,7 +462,6 @@ function DomainView({ r }: { r: DomainResult }) {
   );
 }
 
-// ------------------------------------------------------------------- shared bits
 function ResultCard({ label, children }: { label: React.ReactNode; children: React.ReactNode }) {
   return (
     <section className="mt-6">

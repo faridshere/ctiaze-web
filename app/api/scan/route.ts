@@ -4,33 +4,23 @@ import { getDb } from "@/lib/db";
 import { getLatestSnapshot } from "@/lib/exposure";
 import { toStory, type StoryDoc } from "@/lib/types";
 
-// "Özünü yoxla" (Scan me) — the site half of ctiaze-engine's cti/scanme.py. A
-// visitor types their own email or work domain; we answer straight:
-//   • email  → breach exposure via XposedOrNot (free, keyless)
-//   • domain → crt.sh subdomain surface + our own coverage naming it + an optional
-//              AZ Shodan watchlist note.
-// ONE hard rule, identical to the backend: NO FALSE POSITIVES. Every fact names
-// its source; anything we can't positively confirm is `unavailable`, never guessed.
-// PRIVACY: the raw email is used for exactly ONE outbound lookup, then dropped —
-// never persisted, never logged, never echoed back.
-
-export const revalidate = 0; // dynamic
+export const revalidate = 0;
 
 const UA = "ctiaze.tech scan-me (+https://ctiaze.tech)";
-const XON_URL = "https://api.xposedornot.com/v1/check-email/";
+const XON_ANALYTICS_URL = "https://api.xposedornot.com/v1/breach-analytics";
+const XON_CHECK_URL = "https://api.xposedornot.com/v1/check-email/";
 const CRTSH_URL = "https://crt.sh/";
 const CERTSPOTTER_URL = "https://api.certspotter.com/v1/issuances";
 const INTERNETDB_URL = "https://internetdb.shodan.io/";
-const EMAIL_SOURCE = "XposedOrNot (api.xposedornot.com/v1/check-email)";
+const EMAIL_SOURCE = "XposedOrNot (breach-analytics)";
 const CT_SOURCE = "certificate transparency (certspotter + crt.sh)";
 const MENTIONS_SOURCE = "ctiaze items collection (title/summary/url, word-boundary match)";
 const WATCHLIST_SOURCE = "Shodan AZ exposure snapshot (cti.exposure weekly sweep)";
 const EXPOSURE_SOURCE = "Shodan InternetDB (keyless)";
 const SUBDOMAIN_SAMPLE = 12;
 const MENTIONS_LIMIT = 10;
+const BREACH_LIMIT = 14;
 
-// Deliberately conservative validators — the gate between untrusted input and any
-// network call. A dot-bearing local part / two-label public host is required.
 const EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
 const DOMAIN_RE = /^(?=.{1,253}$)(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,63}$/;
 
@@ -40,10 +30,7 @@ function nowIso(): string {
 
 async function fetchJson<T>(url: string, ms: number): Promise<T | null> {
   try {
-    const r = await fetch(url, {
-      headers: { "User-Agent": UA },
-      signal: AbortSignal.timeout(ms),
-    });
+    const r = await fetch(url, { headers: { "User-Agent": UA }, signal: AbortSignal.timeout(ms) });
     if (!r.ok) return null;
     return (await r.json()) as T;
   } catch {
@@ -51,84 +38,145 @@ async function fetchJson<T>(url: string, ms: number): Promise<T | null> {
   }
 }
 
-// ------------------------------------------------------------------- email breach
 function normalizeEmail(raw: string): string | null {
   const e = (raw || "").trim();
   if (!e || e.length > 254 || !EMAIL_RE.test(e)) return null;
   return e.toLowerCase();
 }
 
-// Map an XposedOrNot payload to breach names — confirmed names ONLY. "Not found"
-// is a clean OK with no breaches; ANY other error or unrecognized shape is
-// `unavailable` (fail closed). Mirrors scanme._parse_xon.
-function parseXon(data: unknown): { status: "ok" | "unavailable"; breaches: string[] } {
-  if (!data || typeof data !== "object") return { status: "unavailable", breaches: [] };
-  const obj = data as Record<string, unknown>;
-  if ("Error" in obj || "error" in obj) {
-    const err = String(obj.Error ?? obj.error ?? "").toLowerCase();
-    if (err.includes("not found")) return { status: "ok", breaches: [] };
-    return { status: "unavailable", breaches: [] };
-  }
-  const raw = obj.breaches;
-  if (raw == null) return { status: "unavailable", breaches: [] };
-  const groups = Array.isArray(raw) ? raw : [raw];
-  const names: string[] = [];
-  for (const grp of groups) {
-    const vals = Array.isArray(grp) ? grp : [grp];
-    for (const v of vals) {
-      const name = String(v).trim();
-      if (name && !names.includes(name)) names.push(name);
-    }
-  }
-  return { status: "ok", breaches: names };
+type XonBreach = {
+  breach?: string;
+  domain?: string;
+  industry?: string;
+  xposed_data?: string;
+  xposed_date?: string;
+  verified?: string;
+  password_risk?: string;
+};
+type XonAnalytics = {
+  BreachMetrics?: { risk?: { risk_label?: string; risk_score?: number }[] } | null;
+  ExposedBreaches?: { breaches_details?: XonBreach[] } | null;
+};
+
+function emailResult(status: string, extra: Record<string, unknown> = {}) {
+  return {
+    kind: "email",
+    status,
+    count: 0,
+    riskLabel: null,
+    riskScore: null,
+    passwordsExposed: false,
+    breaches: [],
+    exposedData: [],
+    source: EMAIL_SOURCE,
+    fetched_at: status === "invalid" ? null : nowIso(),
+    ...extra,
+  };
+}
+
+function shapeBreaches(details: XonBreach[]) {
+  const rows = details.map((b) => {
+    const exposed = (b.xposed_data || "")
+      .split(";")
+      .map((s) => s.trim())
+      .filter(Boolean);
+    return {
+      name: (b.breach || "").trim(),
+      domain: (b.domain || "").trim(),
+      industry: (b.industry || "").trim(),
+      year: (b.xposed_date || "").trim(),
+      verified: (b.verified || "").toLowerCase() === "yes",
+      passwordRisk: (b.password_risk || "").trim(),
+      exposed,
+      hasPassword: exposed.some((x) => /password/i.test(x)),
+    };
+  });
+  // most actionable first: password leaks, then verified, then newest
+  rows.sort(
+    (a, b) =>
+      Number(b.hasPassword) - Number(a.hasPassword) ||
+      Number(b.verified) - Number(a.verified) ||
+      (b.year || "").localeCompare(a.year || "")
+  );
+  return rows;
 }
 
 async function scanEmail(email: string) {
   const normalized = normalizeEmail(email);
-  if (!normalized) {
-    return { kind: "email", status: "invalid", breaches: [], count: 0, source: EMAIL_SOURCE, fetched_at: null };
+  if (!normalized) return emailResult("invalid");
+
+  const data = await fetchJson<XonAnalytics>(
+    `${XON_ANALYTICS_URL}?email=${encodeURIComponent(normalized)}`,
+    9000
+  );
+  if (data === null) return scanEmailBasic(normalized); // analytics down → basic fallback
+
+  const details = data.ExposedBreaches?.breaches_details;
+  if (!Array.isArray(details) || details.length === 0) {
+    return emailResult("ok"); // clean (200 with no breaches)
   }
-  // `normalized` is used ONLY on the next line — never stored, never logged.
-  const data = await fetchJson<unknown>(XON_URL + encodeURIComponent(normalized), 8000);
-  if (data == null) {
-    return { kind: "email", status: "unavailable", breaches: [], count: 0, source: EMAIL_SOURCE, fetched_at: nowIso() };
-  }
-  const { status, breaches } = parseXon(data);
-  return { kind: "email", status, breaches, count: breaches.length, source: EMAIL_SOURCE, fetched_at: nowIso() };
+  const rows = shapeBreaches(details);
+  const exposedData = [...new Set(rows.flatMap((r) => r.exposed))].sort();
+  const risk = data.BreachMetrics?.risk?.[0];
+  return emailResult("ok", {
+    count: rows.length,
+    riskLabel: risk?.risk_label ?? null,
+    riskScore: typeof risk?.risk_score === "number" ? risk.risk_score : null,
+    passwordsExposed: rows.some((r) => r.hasPassword),
+    breaches: rows.slice(0, BREACH_LIMIT),
+    exposedData,
+  });
 }
 
-// ------------------------------------------------------------ domain attack surface
+// Fallback if the rich endpoint is unreachable: the simple check-email call, which
+// cleanly separates a confirmed-clean ("Not found") from an error (fail closed).
+async function scanEmailBasic(normalized: string) {
+  const data = await fetchJson<Record<string, unknown>>(XON_CHECK_URL + encodeURIComponent(normalized), 8000);
+  if (data === null) return emailResult("unavailable");
+  if ("Error" in data || "error" in data) {
+    const err = String(data.Error ?? data.error ?? "").toLowerCase();
+    return err.includes("not found") ? emailResult("ok") : emailResult("unavailable");
+  }
+  const raw = data.breaches;
+  if (raw == null) return emailResult("unavailable");
+  const groups = Array.isArray(raw) ? raw : [raw];
+  const names: string[] = [];
+  for (const grp of groups) {
+    for (const v of Array.isArray(grp) ? grp : [grp]) {
+      const n = String(v).trim();
+      if (n && !names.includes(n)) names.push(n);
+    }
+  }
+  return emailResult("ok", {
+    count: names.length,
+    breaches: names.map((n) => ({ name: n, exposed: [], hasPassword: false, verified: false })),
+  });
+}
+
 async function normalizeDomain(raw: string): Promise<string | null> {
   let d = (raw || "").trim().toLowerCase();
   if (!d) return null;
-  d = d.replace(/^[a-z][a-z0-9+.\-]*:\/\//, ""); // scheme
-  d = d.split(/[/?#]/, 1)[0]; // path/query/fragment
-  d = d.split("@").pop() as string; // userinfo
-  d = d.split(":")[0]; // port
-  d = d.trim().replace(/\.+$/, ""); // trailing root dot
+  d = d.replace(/^[a-z][a-z0-9+.\-]*:\/\//, "");
+  d = d.split(/[/?#]/, 1)[0];
+  d = d.split("@").pop() as string;
+  d = d.split(":")[0];
+  d = d.trim().replace(/\.+$/, "");
   if (!d) return null;
   try {
-    // IDNA/punycode: a unicode host is encoded to the ASCII form the network
-    // actually resolves, so validation can't be smuggled past.
     const { domainToASCII } = await import("node:url");
     const ascii = domainToASCII(d).toLowerCase();
-    if (!ascii) return null;
-    return DOMAIN_RE.test(ascii) ? ascii : null;
+    return ascii && DOMAIN_RE.test(ascii) ? ascii : null;
   } catch {
     return null;
   }
 }
 
-// Keep only names that are exactly the domain or a real subdomain of it, drop
-// wildcard prefixes. Shared by both CT sources.
 function keepUnder(domain: string, raw: string, into: Set<string>) {
   const name = raw.trim().toLowerCase().replace(/^\*\./, "");
   if (name && (name === domain || name.endsWith("." + domain))) into.add(name);
 }
 
 type CsRow = { dns_names?: string[] };
-// certSpotter — fast, keyless, reliable (crt.sh routinely times out on serverless).
-// Returns null on any failure so the caller can fall back rather than report "0".
 async function certspotterNames(domain: string): Promise<Set<string> | null> {
   const data = await fetchJson<CsRow[]>(
     `${CERTSPOTTER_URL}?domain=${encodeURIComponent(domain)}&include_subdomains=true&expand=dns_names`,
@@ -141,12 +189,8 @@ async function certspotterNames(domain: string): Promise<Set<string> | null> {
 }
 
 type CrtRow = { name_value?: string; common_name?: string };
-// crt.sh — a secondary CT source; often slow, so short budget and best-effort.
 async function crtshNames(domain: string): Promise<Set<string> | null> {
-  const data = await fetchJson<CrtRow[]>(
-    `${CRTSH_URL}?q=${encodeURIComponent("%." + domain)}&output=json`,
-    7000
-  );
+  const data = await fetchJson<CrtRow[]>(`${CRTSH_URL}?q=${encodeURIComponent("%." + domain)}&output=json`, 7000);
   if (!Array.isArray(data)) return null;
   const names = new Set<string>();
   for (const row of data) {
@@ -157,28 +201,16 @@ async function crtshNames(domain: string): Promise<Set<string> | null> {
   return names;
 }
 
-// Union both CT sources. `unavailable` ONLY when BOTH failed — a single working
-// source still gives an honest (possibly partial) surface, never a false "0".
+// unavailable only when BOTH CT sources fail — never a false "0".
 async function scanSubdomains(domain: string) {
   const [cs, crt] = await Promise.all([certspotterNames(domain), crtshNames(domain)]);
   if (cs === null && crt === null) {
     return { status: "unavailable", count: 0, sample: [], source: CT_SOURCE, fetched_at: nowIso() };
   }
-  const names = new Set<string>([...(cs ?? []), ...(crt ?? [])]);
-  const ordered = [...names].sort();
-  return {
-    status: "ok",
-    count: ordered.length,
-    sample: ordered.slice(0, SUBDOMAIN_SAMPLE),
-    source: CT_SOURCE,
-    fetched_at: nowIso(),
-  };
+  const names = [...new Set<string>([...(cs ?? []), ...(crt ?? [])])].sort();
+  return { status: "ok", count: names.length, sample: names.slice(0, SUBDOMAIN_SAMPLE), source: CT_SOURCE, fetched_at: nowIso() };
 }
 
-// (d) Live attack surface for the domain's main host, from Shodan's FREE keyless
-// InternetDB — open ports, known CVEs, tags. Zero query credits (never touches the
-// academic account's 100/mo budget). 404 = Shodan has no scan record → an honest
-// "no exposed services seen", not silence. Any transport failure → unavailable.
 type IdbRow = { ports?: number[]; vulns?: string[]; hostnames?: string[]; tags?: string[] };
 async function scanExposure(domain: string) {
   let ip: string | null = null;
@@ -189,27 +221,27 @@ async function scanExposure(domain: string) {
   } catch {
     ip = null;
   }
-  if (!ip) {
-    return { status: "unavailable", ip: null, found: false, ports: [], vulns: [], tags: [], source: EXPOSURE_SOURCE, fetched_at: nowIso() };
-  }
+  const base = { ip, found: false, ports: [] as number[], vulns: [] as string[], tags: [] as string[], source: EXPOSURE_SOURCE, fetched_at: nowIso() };
+  if (!ip) return { status: "unavailable", ...base };
   const idb = await fetchJson<IdbRow>(`${INTERNETDB_URL}${encodeURIComponent(ip)}`, 9000);
   if (idb == null) {
-    // Distinguish "resolved, but Shodan has no record" (found:false, an honest
-    // clean-ish signal) from a transport failure — fetchJson returns null for
-    // both a 404 and an error, so re-probe status once to tell them apart.
     const probe = await fetch(`${INTERNETDB_URL}${encodeURIComponent(ip)}`, {
       headers: { "User-Agent": UA },
       signal: AbortSignal.timeout(6000),
     }).catch(() => null);
-    if (probe && probe.status === 404) {
-      return { status: "ok", ip, found: false, ports: [], vulns: [], tags: [], source: EXPOSURE_SOURCE, fetched_at: nowIso() };
-    }
-    return { status: "unavailable", ip, found: false, ports: [], vulns: [], tags: [], source: EXPOSURE_SOURCE, fetched_at: nowIso() };
+    if (probe && probe.status === 404) return { status: "ok", ...base }; // no scan record = honest clean
+    return { status: "unavailable", ...base };
   }
-  const ports = Array.isArray(idb.ports) ? [...idb.ports].sort((a, b) => a - b) : [];
-  const vulns = Array.isArray(idb.vulns) ? idb.vulns.map((v) => v.toUpperCase()) : [];
-  const tags = Array.isArray(idb.tags) ? idb.tags : [];
-  return { status: "ok", ip, found: true, ports, vulns, tags, source: EXPOSURE_SOURCE, fetched_at: nowIso() };
+  return {
+    status: "ok",
+    ip,
+    found: true,
+    ports: Array.isArray(idb.ports) ? [...idb.ports].sort((a, b) => a - b) : [],
+    vulns: Array.isArray(idb.vulns) ? idb.vulns.map((v) => v.toUpperCase()) : [],
+    tags: Array.isArray(idb.tags) ? idb.tags : [],
+    source: EXPOSURE_SOURCE,
+    fetched_at: nowIso(),
+  };
 }
 
 const PUBLISHED_FILTER = {
@@ -219,11 +251,13 @@ const PUBLISHED_FILTER = {
   az_stub: { $ne: true },
 } as const;
 
-// Our own published stories that name the EXACT domain (word-boundary, so
-// "example.com" never matches "sub.example.com" / "notexample.com" /
-// "example.company"). Mongo regex is a broad case-insensitive prefilter; the
-// exact-domain confirm runs in JS for identical semantics. Mirrors scanme._scan_mentions.
+function escapeRegex(s: string): string {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+// Exact-domain, word-boundary match confirmed in JS (Mongo regex is a prefilter).
 async function scanMentions(domain: string) {
+  const fail = { status: "unavailable", count: 0, stories: [], source: MENTIONS_SOURCE, fetched_at: nowIso() };
   try {
     const db = await getDb();
     const col = db.collection<StoryDoc>("items");
@@ -239,16 +273,10 @@ async function scanMentions(domain: string) {
       } as Record<string, unknown>)
       .limit(200)
       .toArray();
-    const boundary = new RegExp(
-      `(?<![\\w.\\-])${escapeRegex(domain)}(?![\\w\\-])(?!\\.[a-z0-9])`,
-      "i"
+    const boundary = new RegExp(`(?<![\\w.\\-])${escapeRegex(domain)}(?![\\w\\-])(?!\\.[a-z0-9])`, "i");
+    const hits = docs.filter((d) =>
+      boundary.test(["title", "summary", "url"].map((f) => String((d as Record<string, unknown>)[f] ?? "")).join(" "))
     );
-    const hits = docs.filter((d) => {
-      const hay = ["title", "summary", "url"]
-        .map((f) => String((d as Record<string, unknown>)[f] ?? ""))
-        .join(" ");
-      return boundary.test(hay);
-    });
     hits.sort((a, b) => pubTime(b) - pubTime(a));
     const stories = hits.slice(0, MENTIONS_LIMIT).map((d) => {
       const s = toStory(d);
@@ -256,7 +284,7 @@ async function scanMentions(domain: string) {
     });
     return { status: "ok", count: hits.length, stories, source: MENTIONS_SOURCE, fetched_at: nowIso() };
   } catch {
-    return { status: "unavailable", count: 0, stories: [], source: MENTIONS_SOURCE, fetched_at: nowIso() };
+    return fail;
   }
 }
 function pubTime(d: StoryDoc): number {
@@ -264,13 +292,7 @@ function pubTime(d: StoryDoc): number {
   const t = p ? new Date(p as string).getTime() : NaN;
   return Number.isNaN(t) ? 0 : t;
 }
-function escapeRegex(s: string): string {
-  return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-}
 
-// Curated product map — ports cti/footprint._PRODUCTS. (display, word-boundary
-// regex, snapshot-watchlist-name substring). Only ever attaches a figure that the
-// weekly snapshot actually measured.
 const WATCHLIST_PRODUCTS: { display: string; re: RegExp; snap: string }[] = [
   { display: "FortiGate", re: /\bfortigate\b|\bfortios\b/i, snap: "fortigate" },
   { display: "Exchange", re: /\bmicrosoft exchange\b|\bexchange server\b|\bowa\b|\boutlook web\b/i, snap: "microsoft exchange" },
@@ -283,17 +305,13 @@ const AZ_MON = ["yan", "fev", "mar", "apr", "may", "iyn", "iyl", "avq", "sen", "
 const SNAP_MAX_AGE_DAYS = 14;
 
 async function scanWatchlist(domain: string) {
-  // Only a domain string that unambiguously names one watchlist product qualifies —
-  // zero or ambiguous matches stay silent (honesty over a guess).
   const matches = WATCHLIST_PRODUCTS.filter((p) => p.re.test(domain));
   if (matches.length !== 1) return null;
   const snap = await getLatestSnapshot().catch(() => null);
   if (!snap) return null;
   const swept = new Date(snap.swept_at).getTime();
-  if (Number.isNaN(swept)) return null;
-  if (Date.now() - swept > SNAP_MAX_AGE_DAYS * 86400_000) return null; // stale → quiet
-  const wl = snap.watchlist ?? [];
-  const entry = wl.find((w) => w.name.toLowerCase().includes(matches[0].snap));
+  if (Number.isNaN(swept) || Date.now() - swept > SNAP_MAX_AGE_DAYS * 86400_000) return null;
+  const entry = (snap.watchlist ?? []).find((w) => w.name.toLowerCase().includes(matches[0].snap));
   const count = entry?.count ?? 0;
   if (count <= 0) return null;
   const dt = new Date(swept);
@@ -321,8 +339,6 @@ async function scanDomain(domain: string) {
 }
 
 export async function GET(req: Request) {
-  // Tighter cap than the other tools: each scan can trigger an external breach/CT
-  // lookup, so 12/min per IP is plenty for a human and blunts abuse.
   if (!rateLimit(`scan:${clientIp(req)}`, 12, 60_000)) {
     return NextResponse.json({ error: "Çox sorğu göndərdiniz — bir dəqiqə gözləyin" }, { status: 429 });
   }
@@ -332,6 +348,6 @@ export async function GET(req: Request) {
 
   const isEmail = target.includes("@") && !target.includes("://");
   const result = isEmail ? await scanEmail(target) : await scanDomain(target);
-  // The raw email is never echoed back — the caller already has it, and we hold none.
+  // the raw email is used only for the lookup above — never stored, logged, or echoed
   return NextResponse.json(result, { headers: { "Cache-Control": "private, no-store" } });
 }

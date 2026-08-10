@@ -6,10 +6,6 @@ import {
   type ThreatActor,
 } from "@/lib/threatactors";
 
-// One dossier card in the leading-actors grid: who they are, how they're
-// attributed (origin + sponsor as STATED), who the source says they target, and
-// what we've actually seen them do lately in our own items. Every claim is
-// traceable — the footer names the source and links its refs.
 const TYPE_CHIP: Record<string, string> = {
   "nation-state": "border-accent-critical/40 bg-accent-critical/10 text-accent-critical",
   crime: "border-accent-warning/40 bg-accent-warning/10 text-accent-warning",

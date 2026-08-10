@@ -21,8 +21,6 @@ type Hit = {
 };
 type SearchResponse = { query: string; count: number; results: Hit[] };
 
-// Chosen to hit the REAL MISP/ransomware.live taxonomy (not the design mock's
-// "banking" — MISP states "Financial services", so that term returns nothing).
 const EXAMPLES = ["financial", "energy", "Azerbaijan", "Lazarus"];
 
 const TYPE_CHIP: Record<string, string> = {
@@ -62,7 +60,6 @@ export function ActorSearch() {
 
   return (
     <div>
-      {/* search console */}
       <div className="overflow-hidden rounded-md border border-hairline bg-surface-raised/40">
         <div className="flex items-center gap-2.5 border-b border-hairline bg-surface px-4 py-2.5">
           <span className="flex gap-1.5" aria-hidden="true">
