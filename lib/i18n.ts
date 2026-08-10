@@ -43,6 +43,16 @@ type Dict = {
     recentActivity: (n: number) => string; sourcesLine: (t: string, a: number, az: number, d: string) => string;
     nameleum: string;
   };
+  feed: {
+    emptyFeed: string; filterEmpty: string; grounded: string; source: string;
+    moreSources: (n: number) => string; moreSourcesTitle: string;
+    railKev: (n: number) => string; railAz: (n: number) => string;
+    cveRegistry: string; archivePre: string; archiveSuf: string;
+    toolExposure: string; exposureHosts: (n: string) => string; exposureFallback: string;
+    toolIoc: string; iocTitle: string; toolKripto: string; kriptoTitle: string;
+    refreshing: string; newStories: (n: number) => string;
+    spektr: (n: number) => string; spektrFilter: string; dispatchWord: string;
+  };
 };
 
 const az: Dict = {
@@ -108,7 +118,7 @@ const az: Dict = {
     watchlistNoMatch: "uyğunluq yox",
     watchlistNoMatchDesc: "Bu domain izlənən kütləvi-istismar product-larından birini adlandırmır.",
     invalidDomainTitle: "Düzgün domain yaz", invalidDomainText: "Bu, düzgün domain deyil. Nümunə: example.az",
-    sources: "Mənbələr: XposedOrNot (breach-analytics), HIBP Pwned Passwords (k-anonymity), certspotter + crt.sh, Shodan InternetDB, ctiaze coverage, və həftəlik Shodan AZ snapshot. Hamısı açarsız/pulsuz — e-poçt və parolun heç yerdə saxlanmır.",
+    sources: "Mənbələr: XposedOrNot + LeakCheck (breach), HIBP Pwned Passwords (k-anonymity), certspotter + crt.sh, Shodan InternetDB, ctiaze coverage, və həftəlik Shodan AZ snapshot. Hamısı açarsız/pulsuz — e-poçt və parolun heç yerdə saxlanmır.",
   },
   actors: {
     eyebrow: "APT-lər və crime qrupları",
@@ -138,6 +148,25 @@ const az: Dict = {
     recentActivity: (n) => `recent activity: ${n}`,
     sourcesLine: (t, a, az, d) => `Mənbələr: MISP Galaxy + ransomware.live + MITRE ATT&CK, son fəaliyyət bizim item-lərlə ad-join. Roster ${t} aktor (${a} aktiv, ${az} Azərbaycanca)${d ? ` · yeniləndi ${d}` : ""}. Axtarış bütün rosteri əhatə edir.`,
     nameleum: "naməlum",
+  },
+  feed: {
+    emptyFeed: "hələ heç bir dispaç dərc olunmayıb",
+    filterEmpty: "bu filtrə uyğun dispaç yoxdur",
+    grounded: "əsaslandırılıb ✓",
+    source: "mənbə",
+    moreSources: (n) => `+${n} mənbə`,
+    moreSourcesTitle: "eyni hadisəni bildirən digər mənbələr",
+    railKev: (n) => `KEV · aktiv istismar ${n}`,
+    railAz: (n) => `AZ · regional ${n}`,
+    cveRegistry: "CVE reyestri →",
+    archivePre: "arxiv:", archiveSuf: "dispaç",
+    toolExposure: "Alət · Exposure",
+    exposureHosts: (n) => `Azərbaycanda ${n} açıq host`,
+    exposureFallback: "Hücum səthi mənzərəsi",
+    toolIoc: "Alət · IOC / CVE", iocTitle: "Göstərici və CVE yoxlaması",
+    toolKripto: "Alət · Kripto", kriptoTitle: "Kripto ünvan kəşfiyyatı",
+    refreshing: "yenilənir…", newStories: (n) => `${n} yeni xəbər · yenilə`,
+    spektr: (n) => `Son ${n} dispaç · spektr`, spektrFilter: "Kateqoriya spektri — süzgəc", dispatchWord: "dispaç",
   },
 };
 
@@ -204,7 +233,7 @@ const en: Dict = {
     watchlistNoMatch: "no match",
     watchlistNoMatchDesc: "This domain doesn't name one of the tracked mass-exploit products.",
     invalidDomainTitle: "Enter a valid domain", invalidDomainText: "That isn't a valid domain. Example: example.com",
-    sources: "Sources: XposedOrNot (breach-analytics), HIBP Pwned Passwords (k-anonymity), certspotter + crt.sh, Shodan InternetDB, ctiaze coverage, and the weekly Shodan AZ snapshot. All keyless/free — your email and password are never stored.",
+    sources: "Sources: XposedOrNot + LeakCheck (breach), HIBP Pwned Passwords (k-anonymity), certspotter + crt.sh, Shodan InternetDB, ctiaze coverage, and the weekly Shodan AZ snapshot. All keyless/free — your email and password are never stored.",
   },
   actors: {
     eyebrow: "APTs and crime groups",
@@ -234,6 +263,25 @@ const en: Dict = {
     recentActivity: (n) => `recent activity: ${n}`,
     sourcesLine: (t, a, az, d) => `Sources: MISP Galaxy + ransomware.live + MITRE ATT&CK, recent activity name-joined with our items. Roster ${t} actors (${a} active, ${az} in Azerbaijani)${d ? ` · updated ${d}` : ""}. Search covers the whole roster.`,
     nameleum: "unknown",
+  },
+  feed: {
+    emptyFeed: "no dispatches published yet",
+    filterEmpty: "no dispatches match this filter",
+    grounded: "grounded ✓",
+    source: "source",
+    moreSources: (n) => `+${n} sources`,
+    moreSourcesTitle: "other outlets reporting the same story",
+    railKev: (n) => `KEV · actively exploited ${n}`,
+    railAz: (n) => `AZ · regional ${n}`,
+    cveRegistry: "CVE registry →",
+    archivePre: "archive:", archiveSuf: "dispatches",
+    toolExposure: "Tool · Exposure",
+    exposureHosts: (n) => `${n} exposed hosts in Azerbaijan`,
+    exposureFallback: "Attack-surface picture",
+    toolIoc: "Tool · IOC / CVE", iocTitle: "Indicator and CVE lookup",
+    toolKripto: "Tool · Crypto", kriptoTitle: "Crypto address intel",
+    refreshing: "refreshing…", newStories: (n) => `${n} new stories · refresh`,
+    spektr: (n) => `Last ${n} dispatches · spectrum`, spektrFilter: "Category spectrum — filter", dispatchWord: "dispatches",
   },
 };
 

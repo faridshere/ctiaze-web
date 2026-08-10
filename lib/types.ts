@@ -13,6 +13,7 @@ export type StoryDoc = {
   ai_region?: boolean;
   az_title?: string;
   az_body?: string;
+  summary?: string;
   published_at?: Date | string;
   alt_sources?: { source?: string; url?: string; title?: string }[];
 };
@@ -23,6 +24,7 @@ export type Story = {
   titleAz: string;
   bodyAz: string;
   titleEn: string;
+  summaryEn: string;
   sourceUrl: string;
   category: string;
   score: number;
@@ -64,6 +66,7 @@ export function toStory(doc: StoryDoc): Story {
     titleAz: doc.az_title || doc.title,
     bodyAz: doc.az_body || "",
     titleEn: doc.title,
+    summaryEn: doc.summary || "",
     sourceUrl: doc.url,
     category: doc.ai_category || "other",
     score: doc.ai_score ?? 0,

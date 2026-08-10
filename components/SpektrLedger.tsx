@@ -6,6 +6,8 @@ import { LedgerRow } from "./LedgerRow";
 import { DateDivider } from "./DateDivider";
 import { formatDayDivider, bakuDayKey } from "@/lib/format";
 import { normalizeCategory } from "@/lib/taxonomy";
+import { useLocale } from "./locale";
+import { getDict } from "@/lib/i18n";
 import type { Story } from "@/lib/types";
 
 // The home ledger: SpektrStrip (filter) + the filtered, day-grouped feed. Filter
@@ -40,6 +42,7 @@ export function SpektrLedger({
   stories: Story[];
   rail?: React.ReactNode;
 }) {
+  const t = getDict(useLocale()).feed;
   const [active, setActive] = useState<SpektrActive>(EMPTY_ACTIVE);
 
   // Hydrate filter from the URL on mount (deep links like /?kat=vuln land
@@ -105,7 +108,7 @@ export function SpektrLedger({
         <div className="min-w-0">
           {filtered.length === 0 ? (
             <p className="py-16 font-mono text-[length:var(--t-meta)] text-ink-muted">
-              bu filtrə uyğun dispaç yoxdur
+              {t.filterEmpty}
             </p>
           ) : (
             groups.map((g) => (

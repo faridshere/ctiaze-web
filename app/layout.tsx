@@ -2,6 +2,8 @@ import type { Metadata, Viewport } from "next";
 import { IBM_Plex_Sans_Condensed, IBM_Plex_Sans, IBM_Plex_Mono } from "next/font/google";
 import { Analytics } from "@vercel/analytics/next";
 import { CommandPalette } from "@/components/CommandPalette";
+import { LocaleProvider } from "@/components/locale";
+import { getLocale } from "@/lib/i18n-server";
 import "./globals.css";
 
 // Növbə type system: the IBM Plex superfamily IS the identity — one voice, three
@@ -63,20 +65,23 @@ export const viewport: Viewport = {
   colorScheme: "dark",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const locale = await getLocale();
   return (
     <html
-      lang="az"
+      lang={locale}
       className={`${headline.variable} ${body.variable} ${mono.variable}`}
     >
       <body className="min-h-screen bg-surface text-ink-primary font-body antialiased">
-        <CommandPalette />
-        {children}
-        <Analytics />
+        <LocaleProvider value={locale}>
+          <CommandPalette />
+          {children}
+          <Analytics />
+        </LocaleProvider>
       </body>
     </html>
   );

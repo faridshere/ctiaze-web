@@ -49,7 +49,7 @@ export function Header() {
               </span>
               <LiveStatus />
             </span>
-            <LocaleToggle initial={locale} />
+            <LocaleToggle />
             <SearchTrigger />
           </div>
         </div>

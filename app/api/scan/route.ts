@@ -9,6 +9,7 @@ export const revalidate = 0;
 const UA = "ctiaze.tech scan-me (+https://ctiaze.tech)";
 const XON_ANALYTICS_URL = "https://api.xposedornot.com/v1/breach-analytics";
 const XON_CHECK_URL = "https://api.xposedornot.com/v1/check-email/";
+const LEAKCHECK_URL = "https://leakcheck.io/api/public";
 const CRTSH_URL = "https://crt.sh/";
 const CERTSPOTTER_URL = "https://api.certspotter.com/v1/issuances";
 const INTERNETDB_URL = "https://internetdb.shodan.io/";
@@ -53,6 +54,10 @@ type XonBreach = {
   verified?: string;
   password_risk?: string;
 };
+type Breach = {
+  name: string; domain?: string; industry?: string; year?: string;
+  verified: boolean; passwordRisk?: string; exposed: string[]; hasPassword: boolean;
+};
 type XonAnalytics = {
   BreachMetrics?: { risk?: { risk_label?: string; risk_score?: number }[] } | null;
   ExposedBreaches?: { breaches_details?: XonBreach[] } | null;
@@ -77,8 +82,8 @@ function emailResult(status: string, extra: Record<string, unknown> = {}) {
   };
 }
 
-function shapeBreaches(details: XonBreach[]) {
-  const rows = details.map((b) => {
+function shapeBreaches(details: XonBreach[]): Breach[] {
+  const rows: Breach[] = details.map((b) => {
     const exposed = (b.xposed_data || "")
       .split(";")
       .map((s) => s.trim())
@@ -104,30 +109,75 @@ function shapeBreaches(details: XonBreach[]) {
   return rows;
 }
 
+type LeakcheckResp = { success?: boolean; found?: number; fields?: string[]; sources?: { name?: string; date?: string }[] };
+
+// Second breach source (free/keyless), unioned with XposedOrNot for wider coverage.
+// Returns extra breach rows + the field types it saw. Fail-soft: [] on any error.
+async function leakcheckRows(email: string): Promise<{ rows: Breach[]; fields: string[] }> {
+  const d = await fetchJson<LeakcheckResp>(`${LEAKCHECK_URL}?check=${encodeURIComponent(email)}`, 8000);
+  if (!d || d.success !== true || !Array.isArray(d.sources)) return { rows: [], fields: [] };
+  const fields = Array.isArray(d.fields) ? d.fields : [];
+  const hasPw = fields.some((f) => /pass/i.test(f));
+  const rows: Breach[] = d.sources
+    .filter((s) => s?.name)
+    .map((s) => ({
+      name: String(s.name).trim(),
+      year: (s.date || "").slice(0, 4),
+      verified: false,
+      exposed: [],
+      hasPassword: hasPw,
+    }));
+  // LeakCheck reports field types once for the whole result; map them to readable
+  // exposed-data names so they join the aggregate chips.
+  const FIELD_LABEL: Record<string, string> = {
+    password: "Passwords", email: "Email addresses", username: "Usernames",
+    phone: "Phone numbers", address: "Physical addresses", dob: "Dates of birth",
+    ip: "IP addresses", name: "Names", first_name: "Names", last_name: "Names",
+    ssn: "Government IDs", zip: "Physical addresses", city: "Geographic locations",
+    country: "Geographic locations", gender: "Genders",
+  };
+  const mapped = [...new Set(fields.map((f) => FIELD_LABEL[f]).filter(Boolean))] as string[];
+  return { rows, fields: mapped };
+}
+
 async function scanEmail(email: string) {
   const normalized = normalizeEmail(email);
   if (!normalized) return emailResult("invalid");
 
-  const data = await fetchJson<XonAnalytics>(
-    `${XON_ANALYTICS_URL}?email=${encodeURIComponent(normalized)}`,
-    9000
-  );
-  if (data === null) return scanEmailBasic(normalized); // analytics down → basic fallback
+  const [data, lc] = await Promise.all([
+    fetchJson<XonAnalytics>(`${XON_ANALYTICS_URL}?email=${encodeURIComponent(normalized)}`, 9000),
+    leakcheckRows(normalized),
+  ]);
+  if (data === null && lc.rows.length === 0) return scanEmailBasic(normalized);
 
-  const details = data.ExposedBreaches?.breaches_details;
-  if (!Array.isArray(details) || details.length === 0) {
-    return emailResult("ok"); // clean (200 with no breaches)
+  const details = data?.ExposedBreaches?.breaches_details;
+  const xonRows = Array.isArray(details) ? shapeBreaches(details) : [];
+
+  // Union the two sources by breach name (case-insensitive); XposedOrNot rows win
+  // (they carry richer per-breach detail), LeakCheck adds any it doesn't have.
+  const seen = new Set(xonRows.map((r) => r.name.toLowerCase()));
+  const merged = [...xonRows];
+  for (const r of lc.rows) {
+    const k = r.name.toLowerCase();
+    if (k && !seen.has(k)) { seen.add(k); merged.push(r); }
   }
-  const rows = shapeBreaches(details);
-  const exposedData = [...new Set(rows.flatMap((r) => r.exposed))].sort();
-  const risk = data.BreachMetrics?.risk?.[0];
-  const pastesCount = data.PastesSummary?.cnt ?? data.ExposedPastes?.pastes_details?.length ?? 0;
+  if (merged.length === 0) return emailResult("ok"); // both answered, no breaches
+
+  merged.sort(
+    (a, b) =>
+      Number(b.hasPassword) - Number(a.hasPassword) ||
+      Number(b.verified) - Number(a.verified) ||
+      (b.year || "").localeCompare(a.year || "")
+  );
+  const exposedData = [...new Set([...merged.flatMap((r) => r.exposed), ...lc.fields])].sort();
+  const risk = data?.BreachMetrics?.risk?.[0];
+  const pastesCount = data?.PastesSummary?.cnt ?? data?.ExposedPastes?.pastes_details?.length ?? 0;
   return emailResult("ok", {
-    count: rows.length,
+    count: merged.length,
     riskLabel: risk?.risk_label ?? null,
     riskScore: typeof risk?.risk_score === "number" ? risk.risk_score : null,
-    passwordsExposed: rows.some((r) => r.hasPassword),
-    breaches: rows.slice(0, BREACH_LIMIT),
+    passwordsExposed: merged.some((r) => r.hasPassword),
+    breaches: merged.slice(0, BREACH_LIMIT),
     exposedData,
     pastesCount,
   });

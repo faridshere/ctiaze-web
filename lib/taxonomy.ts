@@ -31,17 +31,17 @@ export const CATEGORY_ORDER: Category[] = [
   "other",
 ];
 
-export const CATEGORY_META: Record<Category, { glyph: string; name: string; token: string }> = {
-  vuln: { glyph: "ZF", name: "zəiflik", token: "--cat-vuln" },
-  exploit: { glyph: "EK", name: "eksploit", token: "--cat-exploit" },
-  malware: { glyph: "ZP", name: "zərərli proqram", token: "--cat-malware" },
-  ransomware: { glyph: "FP", name: "fidyə proqramı", token: "--cat-ransomware" },
-  apt: { glyph: "APT", name: "APT / dövlət", token: "--cat-apt" },
-  breach: { glyph: "SZ", name: "sızma", token: "--cat-breach" },
-  research: { glyph: "TQ", name: "tədqiqat", token: "--cat-research" },
-  "supply-chain": { glyph: "TZ", name: "təchizat zənciri", token: "--cat-supply-chain" },
-  policy: { glyph: "SI", name: "siyasət", token: "--cat-policy" },
-  other: { glyph: "DG", name: "digər", token: "--cat-other" },
+export const CATEGORY_META: Record<Category, { glyph: string; name: string; nameEn: string; token: string }> = {
+  vuln: { glyph: "ZF", name: "zəiflik", nameEn: "vulnerability", token: "--cat-vuln" },
+  exploit: { glyph: "EK", name: "eksploit", nameEn: "exploit", token: "--cat-exploit" },
+  malware: { glyph: "ZP", name: "zərərli proqram", nameEn: "malware", token: "--cat-malware" },
+  ransomware: { glyph: "FP", name: "fidyə proqramı", nameEn: "ransomware", token: "--cat-ransomware" },
+  apt: { glyph: "APT", name: "APT / dövlət", nameEn: "APT / state", token: "--cat-apt" },
+  breach: { glyph: "SZ", name: "sızma", nameEn: "breach", token: "--cat-breach" },
+  research: { glyph: "TQ", name: "tədqiqat", nameEn: "research", token: "--cat-research" },
+  "supply-chain": { glyph: "TZ", name: "təchizat zənciri", nameEn: "supply chain", token: "--cat-supply-chain" },
+  policy: { glyph: "SI", name: "siyasət", nameEn: "policy", token: "--cat-policy" },
+  other: { glyph: "DG", name: "digər", nameEn: "other", token: "--cat-other" },
 };
 
 export function normalizeCategory(raw: string | undefined | null): Category {
@@ -55,6 +55,7 @@ export function catColor(cat: Category): string {
   return `var(${CATEGORY_META[cat].token})`;
 }
 
-export function categoryName(raw: string | undefined | null): string {
-  return CATEGORY_META[normalizeCategory(raw)].name;
+export function categoryName(raw: string | undefined | null, locale: "az" | "en" = "az"): string {
+  const meta = CATEGORY_META[normalizeCategory(raw)];
+  return locale === "en" ? meta.nameEn : meta.name;
 }

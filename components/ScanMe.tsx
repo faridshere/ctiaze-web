@@ -317,7 +317,7 @@ function EmailView({ r, t, locale }: { r: EmailResult; t: ScanDict; locale: Loca
           <p className="mt-3 font-mono text-[12px] text-ink-secondary">{t.pastesLine(r.pastesCount)}</p>
         )}
 
-        <Source>XposedOrNot breach-analytics · {fmtDate(r.fetched_at)}</Source>
+        <Source>XposedOrNot + LeakCheck · {fmtDate(r.fetched_at)}</Source>
       </StateCard>
     </ResultCard>
   );

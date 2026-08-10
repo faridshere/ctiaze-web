@@ -2,12 +2,15 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useLocale } from "./locale";
+import { getDict } from "@/lib/i18n";
 
 // Polls for newly published stories after the page has already loaded, and
 // backs its refresh button with real on-demand ISR revalidation rather than
 // a plain reload — clicking it marks the feed stale server-side *then* asks
 // the router for a fresh render, so the next paint is guaranteed current.
 export function LiveUpdateBanner({ initialCount }: { initialCount: number }) {
+  const t = getDict(useLocale()).feed;
   const router = useRouter();
   const [newCount, setNewCount] = useState(0);
   const [refreshing, setRefreshing] = useState(false);
@@ -57,7 +60,7 @@ export function LiveUpdateBanner({ initialCount }: { initialCount: number }) {
           className="w-full flex items-center justify-center gap-2 py-2 font-mono text-[11px] uppercase tracking-wider text-ink-secondary hover:text-ink-primary transition-colors disabled:opacity-60"
         >
           <span className="inline-flex size-1.5 rounded-full bg-accent-good" aria-hidden />
-          {refreshing ? "yenilənir…" : `${newCount} yeni xəbər · yenilə`}
+          {refreshing ? t.refreshing : t.newStories(newCount)}
         </button>
       </div>
     </div>

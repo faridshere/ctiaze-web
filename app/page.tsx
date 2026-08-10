@@ -5,10 +5,14 @@ import { SpektrLedger } from "@/components/SpektrLedger";
 import { DiqqetRail } from "@/components/DiqqetRail";
 import { getStories, getStats } from "@/lib/stories";
 import { getLatestSnapshot } from "@/lib/exposure";
+import { getDict } from "@/lib/i18n";
+import { getLocale } from "@/lib/i18n-server";
 
 export const revalidate = 180;
 
 export default async function HomePage() {
+  const locale = await getLocale();
+  const t = getDict(locale).feed;
   const [stories, stats, snapshot] = await Promise.all([
     getStories(60),
     getStats(),
@@ -25,7 +29,7 @@ export default async function HomePage() {
       <main className="mx-auto w-full max-w-[75rem] flex-1 px-[var(--sp-gutter)] pb-[var(--sp-section)]">
         {stories.length === 0 ? (
           <p className="py-24 text-center font-mono text-[length:var(--t-meta)] text-ink-muted">
-            hələ heç bir dispaç dərc olunmayıb
+            {t.emptyFeed}
           </p>
         ) : (
           <SpektrLedger

@@ -3,7 +3,9 @@
 import { useMemo } from "react";
 import Link from "next/link";
 import type { Story } from "@/lib/types";
-import { CATEGORY_ORDER, CATEGORY_META, catColor, normalizeCategory, type Category } from "@/lib/taxonomy";
+import { CATEGORY_ORDER, CATEGORY_META, catColor, categoryName, normalizeCategory, type Category } from "@/lib/taxonomy";
+import { useLocale } from "./locale";
+import { getDict } from "@/lib/i18n";
 
 // SPEKTR ZOLAĞI — the signature instrument. A category-distribution bar computed
 // entirely in-component from the stories actually rendered, so every number is a
@@ -58,6 +60,8 @@ export function SpektrStrip({
   caption?: string;
   shown?: number; // count after filtering, for the "n/total" readout
 }) {
+  const locale = useLocale();
+  const t = getDict(locale).feed;
   const { segments, total, kev, cve, az } = useCounts(stories);
   const anyFilter = active.cat !== null || active.kev || active.cve || active.az;
 
@@ -73,8 +77,8 @@ export function SpektrStrip({
               <Link
                 key={cat}
                 href={`/?kat=${cat}`}
-                title={`${CATEGORY_META[cat].name} · ${count}`}
-                aria-label={`${CATEGORY_META[cat].name}: ${count} dispaç`}
+                title={`${categoryName(cat, locale)} · ${count}`}
+                aria-label={`${categoryName(cat, locale)}: ${count} ${t.dispatchWord}`}
                 style={{
                   flexGrow: count,
                   flexBasis: 0,
@@ -105,7 +109,7 @@ export function SpektrStrip({
       {/* label row + burn-ticks */}
       <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1.5">
         <span className="font-mono text-[length:var(--t-micro)] uppercase tracking-[0.14em] text-ink-muted">
-          Son {total} dispaç · spektr
+          {t.spektr(total)}
         </span>
         <div className="flex items-center gap-1.5">
           {kev > 0 && (
@@ -138,7 +142,7 @@ export function SpektrStrip({
       {/* the bar — fixed 14px container so hover-grow never reflows */}
       <div
         role="toolbar"
-        aria-label="Kateqoriya spektri — süzgəc"
+        aria-label={t.spektrFilter}
         className="mt-2 flex h-3.5 w-full items-end gap-px"
       >
         {segments.map(({ cat, count }) => {
@@ -149,8 +153,8 @@ export function SpektrStrip({
               key={cat}
               type="button"
               aria-pressed={on}
-              title={`${CATEGORY_META[cat].name} · ${count}`}
-              aria-label={`${CATEGORY_META[cat].name}: ${count} dispaç`}
+              title={`${categoryName(cat, locale)} · ${count}`}
+              aria-label={`${categoryName(cat, locale)}: ${count} ${t.dispatchWord}`}
               onClick={() => toggleCat(cat)}
               style={{
                 flexGrow: count,
@@ -182,7 +186,7 @@ export function SpektrStrip({
                 type="button"
                 aria-pressed={on}
                 onClick={() => toggleCat(cat)}
-                title={CATEGORY_META[cat].name}
+                title={categoryName(cat, locale)}
                 className={`group inline-flex items-center gap-1 font-mono text-[length:var(--t-micro)] uppercase tracking-[0.06em] transition-opacity ${
                   active.cat !== null && !on ? "opacity-45 hover:opacity-100" : ""
                 }`}

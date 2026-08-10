@@ -1,26 +1,18 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { createContext, useContext } from "react";
 import type { Locale } from "@/lib/i18n";
 
-function readCookie(): Locale {
-  if (typeof document === "undefined") return "az";
-  const m = document.cookie.match(/(?:^|;\s*)locale=(az|en)/);
-  return m ? (m[1] as Locale) : "az";
+const LocaleContext = createContext<Locale>("az");
+
+export function LocaleProvider({ value, children }: { value: Locale; children: React.ReactNode }) {
+  return <LocaleContext.Provider value={value}>{children}</LocaleContext.Provider>;
 }
 
-// Client locale for chrome (Header/Footer). SSR renders 'az' (or an optional
-// server-provided initial), then syncs to the cookie on mount.
-export function useLocale(initial: Locale = "az"): Locale {
-  const [loc, setLoc] = useState<Locale>(initial);
-  useEffect(() => {
-    const ck = readCookie();
-    if (ck !== loc) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- one-time cookie sync on mount to correct the SSR default
-      setLoc(ck);
-    }
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
-  return loc;
+// Locale for any client component — provided server-side by the root layout, so
+// SSR and hydration agree (no flash).
+export function useLocale(): Locale {
+  return useContext(LocaleContext);
 }
 
 export function setLocale(next: Locale) {
@@ -28,8 +20,8 @@ export function setLocale(next: Locale) {
   window.location.reload();
 }
 
-export function LocaleToggle({ initial = "az" }: { initial?: Locale }) {
-  const loc = useLocale(initial);
+export function LocaleToggle() {
+  const loc = useLocale();
   const other: Locale = loc === "az" ? "en" : "az";
   return (
     <button
