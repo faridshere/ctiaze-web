@@ -103,16 +103,18 @@ export function NewsIocFeed({
                           </code>
                         </div>
                         <div className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 font-mono text-[length:var(--t-meta)]">
-                          {ioc.stories.slice(0, 3).map((s) => (
+                          {ioc.stories.slice(0, 3).map((s) => {
+                            const st = en ? s.titleEn || s.titleAz : s.titleAz;
+                            return (
                             <Link
                               key={s.slug}
                               href={`/xeber/${s.slug}`}
-                              title={s.titleAz}
+                              title={st}
                               className="text-ink-secondary transition-colors hover:text-brand"
                             >
-                              → {s.titleAz.length > 40 ? s.titleAz.slice(0, 40) + "…" : s.titleAz}
+                              → {st.length > 40 ? st.slice(0, 40) + "…" : st}
                             </Link>
-                          ))}
+                          );})}
                           <Link
                             href={`/ioc?q=${encodeURIComponent(ioc.value)}`}
                             className="uppercase tracking-wider text-brand hover:underline"

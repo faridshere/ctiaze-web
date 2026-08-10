@@ -24,7 +24,7 @@ function fmtDay(d: string | Date | undefined, locale: Locale): string {
 
 export function ActorDossier({ a, locale }: { a: ThreatActor; locale: Locale }) {
   const t = getDict(locale).actors;
-  const origin = originLabel(a);
+  const origin = originLabel(a, locale);
   const flag = flagEmoji(a.origin_country);
   const aliases = (a.aliases || []).filter((x) => x !== a.name).slice(0, 3);
   const countries = (a.targets_countries || []).slice(0, 4);

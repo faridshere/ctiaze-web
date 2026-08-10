@@ -33,8 +33,11 @@ const DATA_LABEL_AZ: Record<string, string> = {
   passwords: "Parollar", "email addresses": "E-poçt", names: "Adlar", usernames: "İstifadəçi adları",
   "phone numbers": "Telefon", "physical addresses": "Ünvanlar", "dates of birth": "Doğum tarixi",
   "ip addresses": "IP ünvanlar", genders: "Cins", "geographic locations": "Məkan",
-  "device information": "Cihaz məlumatı", "auth tokens": "Auth token", "credit cards": "Kart məlumatı",
+  "device information": "Cihaz məlumatı", "auth tokens": "Auth token", "auth token": "Auth token",
+  "credit cards": "Kart məlumatı", "credit card details": "Kart məlumatı",
   "social media profiles": "Sosial media", "security questions and answers": "Təhlükəsizlik sualları",
+  "account balances": "Hesab balansı", "financial transactions": "Maliyyə əməliyyatları",
+  "government ids": "Dövlət ID", "government issued ids": "Dövlət ID",
 };
 function dataLabel(s: string, locale: Locale): string {
   return locale === "az" ? DATA_LABEL_AZ[s.trim().toLowerCase()] ?? s : s;

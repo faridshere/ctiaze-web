@@ -229,7 +229,7 @@ function IocRow({ defanged, value }: { defanged: string; value: string }) {
       <code className="break-all font-mono text-[length:var(--t-meta)] text-ink-primary">{defanged}</code>
       <button
         onClick={copy}
-        aria-label="Kopyala"
+        aria-label={en ? "Copy" : "Kopyala"}
         className="shrink-0 font-mono text-[length:var(--t-micro)] uppercase tracking-wider text-ink-muted opacity-0 transition-opacity hover:text-brand group-hover:opacity-100"
       >
         {copied ? "✓" : (en ? "copy" : "kopyala")}

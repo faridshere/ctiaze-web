@@ -101,6 +101,7 @@ export async function getFeed(limit = 100): Promise<FeedItem[]> {
 export type SearchEntry = {
   slug: string;
   titleAz: string;
+  titleEn: string;
   category: string;
   cveIds: string[];
 };
@@ -126,6 +127,7 @@ export async function getSearchIndex(limit = 200): Promise<SearchEntry[]> {
     return {
       slug: story.slug,
       titleAz: story.titleAz,
+      titleEn: story.titleEn,
       category: story.category,
       cveIds: story.cveIds,
     };

@@ -12,7 +12,7 @@ export type IocRef = {
   type: IocType;
   value: string;
   defanged: string;
-  stories: { slug: string; titleAz: string; publishedAt: string }[];
+  stories: { slug: string; titleAz: string; titleEn: string; publishedAt: string }[];
 };
 
 export async function getIocFeed(limit = 150): Promise<IocRef[]> {
@@ -25,7 +25,7 @@ export async function getIocFeed(limit = 150): Promise<IocRef[]> {
       const cur =
         map.get(key) ?? { type: i.type, value: i.value, defanged: i.defanged, stories: [] };
       if (!cur.stories.some((x) => x.slug === s.slug)) {
-        cur.stories.push({ slug: s.slug, titleAz: s.titleAz, publishedAt: s.publishedAt });
+        cur.stories.push({ slug: s.slug, titleAz: s.titleAz, titleEn: s.titleEn, publishedAt: s.publishedAt });
       }
       map.set(key, cur);
     }

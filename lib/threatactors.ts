@@ -1,4 +1,5 @@
 import { getDb } from "./db";
+import type { Locale } from "./i18n";
 
 // Read-only view of ctiaze-engine's threat_actors collection; search scoring
 // mirrors cti/actors.py so the site and CLI answer identically.
@@ -176,6 +177,11 @@ const ORIGIN_AZ: Record<string, string> = {
   GB: "Böyük Britaniya", IL: "İsrail", IN: "Hindistan", PK: "Pakistan",
   VN: "Vyetnam", TR: "Türkiyə", UA: "Ukrayna", SY: "Suriya", LB: "Livan",
 };
+const ORIGIN_EN: Record<string, string> = {
+  RU: "Russia", IR: "Iran", KP: "North Korea", CN: "China", US: "USA",
+  GB: "United Kingdom", IL: "Israel", IN: "India", PK: "Pakistan",
+  VN: "Vietnam", TR: "Türkiye", UA: "Ukraine", SY: "Syria", LB: "Lebanon",
+};
 
 export function flagEmoji(iso2: string | null | undefined): string {
   if (!iso2 || !/^[A-Za-z]{2}$/.test(iso2)) return "";
@@ -183,17 +189,11 @@ export function flagEmoji(iso2: string | null | undefined): string {
   return String.fromCodePoint(...[...cc].map((ch) => 0x1f1e6 + ch.charCodeAt(0) - 65));
 }
 
-export function originLabel(a: ThreatActor): string | null {
+export function originLabel(a: ThreatActor, locale: Locale = "az"): string | null {
   const cc = a.origin_country;
-  const name = (cc && ORIGIN_AZ[cc.toUpperCase()]) || a.state_sponsor || (cc ? cc.toUpperCase() : null);
-  return name;
+  const map = locale === "en" ? ORIGIN_EN : ORIGIN_AZ;
+  return (cc && map[cc.toUpperCase()]) || a.state_sponsor || (cc ? cc.toUpperCase() : null);
 }
-
-export const ACTOR_TYPE_LABEL: Record<string, string> = {
-  "nation-state": "nation-state",
-  crime: "crime",
-  unknown: "naməlum",
-};
 
 export function actorInitials(name: string): string {
   const parts = (name || "").trim().split(/\s+/).filter(Boolean);

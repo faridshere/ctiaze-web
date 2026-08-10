@@ -1,5 +1,4 @@
 export type Locale = "az" | "en";
-export const DEFAULT_LOCALE: Locale = "az";
 
 export function normalizeLocale(v: string | undefined | null): Locale {
   return v === "en" ? "en" : "az";

@@ -44,12 +44,23 @@ export function bakuDayKey(iso: string): string {
   return `${get("year")}-${get("month")}-${get("day")}`;
 }
 
-// "31 İYUL · CÜMƏ" — the ledger date-divider label.
-export function formatDayDivider(iso: string): string {
+const EN_MONTHS_FULL = [
+  "JANUARY", "FEBRUARY", "MARCH", "APRIL", "MAY", "JUNE",
+  "JULY", "AUGUST", "SEPTEMBER", "OCTOBER", "NOVEMBER", "DECEMBER",
+];
+const EN_WEEKDAYS: Record<string, string> = {
+  Mon: "MONDAY", Tue: "TUESDAY", Wed: "WEDNESDAY",
+  Thu: "THURSDAY", Fri: "FRIDAY", Sat: "SATURDAY", Sun: "SUNDAY",
+};
+
+// "31 İYUL · CÜMƏ" (az) / "31 JULY · FRIDAY" (en) — the ledger date-divider label.
+export function formatDayDivider(iso: string, locale: "az" | "en" = "az"): string {
   const parts = new Intl.DateTimeFormat("en-GB", {
     timeZone: TIME_ZONE, day: "2-digit", month: "numeric", weekday: "short",
   }).formatToParts(new Date(iso));
   const get = (t: string) => parts.find((p) => p.type === t)?.value ?? "";
-  const month = AZ_MONTHS_FULL[parseInt(get("month"), 10) - 1] ?? "";
-  return `${get("day")} ${month} · ${AZ_WEEKDAYS[get("weekday")] ?? ""}`;
+  const mi = parseInt(get("month"), 10) - 1;
+  const month = (locale === "en" ? EN_MONTHS_FULL : AZ_MONTHS_FULL)[mi] ?? "";
+  const wd = (locale === "en" ? EN_WEEKDAYS : AZ_WEEKDAYS)[get("weekday")] ?? "";
+  return `${get("day")} ${month} · ${wd}`;
 }

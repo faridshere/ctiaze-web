@@ -42,7 +42,8 @@ export function SpektrLedger({
   stories: Story[];
   rail?: React.ReactNode;
 }) {
-  const t = getDict(useLocale()).feed;
+  const locale = useLocale();
+  const t = getDict(locale).feed;
   const [active, setActive] = useState<SpektrActive>(EMPTY_ACTIVE);
 
   // Hydrate filter from the URL on mount (deep links like /?kat=vuln land
@@ -81,13 +82,13 @@ export function SpektrLedger({
       const key = bakuDayKey(s.publishedAt);
       let g = out.find((x) => x.key === key);
       if (!g) {
-        g = { key, label: formatDayDivider(s.publishedAt), items: [] };
+        g = { key, label: formatDayDivider(s.publishedAt, locale), items: [] };
         out.push(g);
       }
       g.items.push(s);
     }
     return out;
-  }, [filtered]);
+  }, [filtered, locale]);
 
   let rowIndex = 0;
   return (

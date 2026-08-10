@@ -42,6 +42,23 @@ const PORT_HINT: Record<number, string> = {
   9200: "Elasticsearch — data sızması", 27017: "MongoDB — çox vaxt auth-suz",
   161: "SNMP", 502: "Modbus — ICS/SCADA", 102: "S7 — ICS/SCADA",
 };
+const PORT_HINT_EN: Record<number, string> = {
+  21: "FTP", 22: "SSH", 23: "Telnet — plaintext, risky", 25: "SMTP",
+  53: "DNS", 80: "HTTP", 110: "POP3", 143: "IMAP", 443: "HTTPS",
+  445: "SMB — lateral/ransomware", 1433: "MSSQL — DB exposed", 3306: "MySQL — DB exposed",
+  3389: "RDP — ransomware's #1 entry point", 5432: "PostgreSQL — DB exposed",
+  5900: "VNC — remote desktop", 6379: "Redis — often auth-less",
+  9200: "Elasticsearch — data leak", 27017: "MongoDB — often auth-less",
+  161: "SNMP", 502: "Modbus — ICS/SCADA", 102: "S7 — ICS/SCADA",
+};
+const THREAT_LABEL: Record<string, string> = {
+  botnet_cc: "Botnet C2", payload_delivery: "Zərərli yük çatdırılması",
+  payload: "Zərərli yük", malware_download: "Malware endirmə",
+};
+const THREAT_LABEL_EN: Record<string, string> = {
+  botnet_cc: "Botnet C2", payload_delivery: "Payload delivery",
+  payload: "Payload", malware_download: "Malware download",
+};
 
 const EXAMPLES = ["45.33.32.156", "scanme.nmap.org"];
 
@@ -194,7 +211,7 @@ function ResultView({ r }: { r: Result }) {
             <span className="font-semibold text-ink-primary">{r.reputation.malware}</span>
             {r.reputation.threatType && (
               <span className="rounded-sm border border-hairline px-1.5 py-0.5 font-mono text-[10px] uppercase tracking-widest text-accent-serious">
-                {r.reputation.threatType}
+                {(en ? THREAT_LABEL_EN : THREAT_LABEL)[r.reputation.threatType] || r.reputation.threatType}
               </span>
             )}
             <span className="ml-auto font-mono text-[11px] text-ink-muted tabular-nums">
@@ -229,15 +246,17 @@ function ResultView({ r }: { r: Result }) {
             {en ? "Open ports" : "Açıq portlar"} · {r.ports.length}
           </div>
           <div className="mt-2 flex flex-wrap gap-1.5">
-            {r.ports.map((p) => (
+            {r.ports.map((p) => {
+              const hint = (en ? PORT_HINT_EN : PORT_HINT)[p];
+              return (
               <span
                 key={p}
                 className="rounded-sm border border-hairline px-2 py-0.5 font-mono text-[11px] tabular-nums text-ink-secondary"
-                title={PORT_HINT[p] || ""}
+                title={hint || ""}
               >
-                {p}{PORT_HINT[p] ? <span className="text-ink-muted"> · {PORT_HINT[p]}</span> : null}
+                {p}{hint ? <span className="text-ink-muted"> · {hint}</span> : null}
               </span>
-            ))}
+            );})}
           </div>
         </div>
       )}

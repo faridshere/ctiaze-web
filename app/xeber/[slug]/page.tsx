@@ -37,8 +37,8 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { slug } = await params;
   const story = await getStoryBySlug(slug);
-  if (!story) return { title: "Tapılmadı" };
   const en = (await getLocale()) === "en";
+  if (!story) return { title: en ? "Not found" : "Tapılmadı" };
   const title = en ? story.titleEn : story.titleAz;
   const desc = (en ? story.summaryEn : story.bodyAz).slice(0, 160);
   return {

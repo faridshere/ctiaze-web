@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { SearchEntry } from "@/lib/stories";
 import { useLocale } from "./locale";
+import { categoryName } from "@/lib/taxonomy";
 
 export const PALETTE_OPEN_EVENT = "ctiaze:open-palette";
 
@@ -194,10 +195,10 @@ export function CommandPalette() {
               }`}
             >
               <div className="flex items-center gap-2 font-mono text-[10px] uppercase tracking-wider text-ink-muted">
-                <span>{entry.category}</span>
+                <span>{categoryName(entry.category, en ? "en" : "az")}</span>
                 {entry.cveIds[0] && <span>{entry.cveIds[0]}</span>}
               </div>
-              <p className="mt-1 text-sm text-ink-primary truncate">{entry.titleAz}</p>
+              <p className="mt-1 text-sm text-ink-primary truncate">{en ? entry.titleEn || entry.titleAz : entry.titleAz}</p>
             </button>
           ))}
         </div>

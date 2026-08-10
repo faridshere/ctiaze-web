@@ -46,7 +46,7 @@ export const CATEGORY_META: Record<Category, { glyph: string; name: string; name
 
 export function normalizeCategory(raw: string | undefined | null): Category {
   const c = (raw || "").toLowerCase().trim();
-  return (c in CATEGORY_META ? c : "other") as Category;
+  return (Object.prototype.hasOwnProperty.call(CATEGORY_META, c) ? c : "other") as Category;
 }
 
 // A CSS value for the category color — used inline because the category is a

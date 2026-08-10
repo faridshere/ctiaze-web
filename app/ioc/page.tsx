@@ -30,6 +30,10 @@ const THREAT_LABEL: Record<string, string> = {
   botnet_cc: "Botnet C2", payload_delivery: "Yük çatdırılması",
   payload: "Zərərli yük", malware_download: "Malware endirmə",
 };
+const THREAT_LABEL_EN: Record<string, string> = {
+  botnet_cc: "Botnet C2", payload_delivery: "Payload delivery",
+  payload: "Payload", malware_download: "Malware download",
+};
 
 function defang(kind: string, v: string): string {
   if (kind === "hash") return v;
@@ -143,7 +147,7 @@ export default async function IocPage() {
                       key={t.name}
                       className="rounded-sm border border-hairline px-2.5 py-1 font-mono text-[11px] text-ink-secondary"
                     >
-                      {THREAT_LABEL[t.name] || t.name}
+                      {(en ? THREAT_LABEL_EN : THREAT_LABEL)[t.name] || t.name}
                       <span className="ml-1.5 text-ink-muted tabular-nums">{t.count}</span>
                     </span>
                   ))}

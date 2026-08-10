@@ -8,6 +8,7 @@ import {
 } from "@/lib/exposure";
 import { ExposureLookup } from "@/components/ExposureLookup";
 import { getLocale } from "@/lib/i18n-server";
+import { AZ_MONTHS } from "@/lib/format";
 
 export const revalidate = 3600; // snapshot changes weekly; hourly ISR is ample
 
@@ -27,6 +28,29 @@ const CATEGORY_LABEL_EN: Record<string, string> = {
   database: "Databases",
   "ics-scada": "ICS / SCADA",
 };
+// The snapshot stores names/notes in Azerbaijani; these override to English for
+// the fixed, known sets (regional neighbours by ISO code, the SOC watchlist,
+// the main AZ cities). Unknown values fall back to the stored (AZ) string.
+const REGION_EN: Record<string, string> = {
+  AZ: "Azerbaijan", TR: "Turkey", IR: "Iran", RU: "Russia", GE: "Georgia", AM: "Armenia",
+};
+const CITY_EN: Record<string, string> = {
+  "Bakı": "Baku", "Sumqayıt": "Sumqayit", "Gəncə": "Ganja", "Naxçıvan": "Nakhchivan",
+  "Mingəçevir": "Mingachevir", "Şirvan": "Shirvan", "Xırdalan": "Khirdalan", "Şəki": "Shaki",
+};
+const WATCHLIST_EN: { match: string; name: string; note: string }[] = [
+  { match: "mikrotik", name: "MikroTik RouterOS", note: "Mass-exploited router OS (Winbox, botnets)" },
+  { match: "fortigate", name: "FortiGate SSL-VPN", note: "Persistent KEV, a ransomware entry point" },
+  { match: "exchange", name: "Microsoft Exchange", note: "ProxyShell / ProxyLogon — APT & ransomware target" },
+  { match: "owa", name: "Outlook Web (OWA)", note: "Credential harvesting / password-spray target" },
+  { match: "globalprotect", name: "Palo Alto GlobalProtect", note: "VPN portal — CVE-2024-3400 and other critical flaws" },
+  { match: "rdp", name: "RDP — screen exposed", note: "Desktops exposing their screen directly to the internet" },
+  { match: "esxi", name: "VMware ESXi", note: "Targeted by ESXiArgs ransomware campaigns" },
+];
+function watchlistEn(name: string) {
+  const l = name.toLowerCase();
+  return WATCHLIST_EN.find((w) => l.includes(w.match));
+}
 
 // remote-access + ICS read as the sharper risks; databases next.
 const CATEGORY_ACCENT: Record<string, string> = {
@@ -40,13 +64,13 @@ const CATEGORY_BAR: Record<string, string> = {
   database: "bg-accent-warning",
 };
 
-function fmtDate(iso: string): string {
-  return new Intl.DateTimeFormat("en-GB", {
-    timeZone: "Asia/Baku",
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-  }).format(new Date(iso));
+function fmtDate(iso: string, en = true): string {
+  const parts = new Intl.DateTimeFormat("en-GB", {
+    timeZone: "Asia/Baku", day: "2-digit", month: en ? "short" : "numeric", year: "numeric",
+  }).formatToParts(new Date(iso));
+  const get = (t: string) => parts.find((p) => p.type === t)?.value ?? "";
+  const month = en ? get("month") : (AZ_MONTHS[parseInt(get("month"), 10) - 1] ?? "");
+  return `${get("day")} ${month} ${get("year")}`;
 }
 
 function groupByCategory(services: RiskyService[]) {
@@ -158,7 +182,7 @@ export default async function ExposurePage() {
             )}
           </div>
           <div className="mt-2 font-mono text-xs uppercase tracking-widest text-ink-muted">
-            {en ? "exposed hosts" : "açıq host"} · {snap.country} · {fmtDate(new Date(snap.swept_at).toISOString())}
+            {en ? "exposed hosts" : "açıq host"} · {snap.country} · {fmtDate(new Date(snap.swept_at).toISOString(), en)}
           </div>
           {perCapita && (
             <div className="mt-1 font-mono text-[11px] text-ink-muted">
@@ -251,9 +275,9 @@ export default async function ExposurePage() {
                   className="flex items-start justify-between gap-4 border-t border-hairline py-3.5 first:border-t-0"
                 >
                   <div className="min-w-0">
-                    <div className="text-sm text-ink-primary">{w.name}</div>
+                    <div className="text-sm text-ink-primary">{en ? (watchlistEn(w.name)?.name || w.name) : w.name}</div>
                     <div className="mt-0.5 text-[13px] leading-snug text-ink-muted">
-                      {w.note}
+                      {en ? (watchlistEn(w.name)?.note || w.note) : w.note}
                     </div>
                   </div>
                   <div className="shrink-0 whitespace-nowrap pt-0.5 text-right">
@@ -292,7 +316,7 @@ export default async function ExposurePage() {
                           isAz ? "text-brand font-medium" : "text-ink-secondary"
                         }`}
                       >
-                        {r.name}
+                        {en ? (REGION_EN[r.code] || r.name) : r.name}
                       </div>
                       <div className="flex-1 h-2 rounded-sm bg-surface-raised overflow-hidden">
                         <div
@@ -329,7 +353,7 @@ export default async function ExposurePage() {
               {cities.slice(0, 8).map((c) => (
                 <div key={c.city} className="flex items-center gap-3">
                   <div className="w-28 shrink-0 text-sm text-ink-secondary truncate">
-                    {c.city}
+                    {en ? (CITY_EN[c.city] || c.city) : c.city}
                   </div>
                   <div className="flex-1 h-1.5 rounded-sm bg-surface-raised overflow-hidden">
                     <div
@@ -399,11 +423,11 @@ export default async function ExposurePage() {
                     <div
                       className="w-full max-w-6 rounded-sm bg-accent-good/70"
                       style={{ height: `${Math.max(3, (t.total / trendMax) * 100)}%` }}
-                      title={`${fmtDate(t.swept_at)}: ${t.total.toLocaleString("en-US")}`}
+                      title={`${fmtDate(t.swept_at, en)}: ${t.total.toLocaleString("en-US")}`}
                     />
                   </div>
                   <span className="font-mono text-[9px] text-ink-muted">
-                    {fmtDate(t.swept_at).slice(0, 6)}
+                    {fmtDate(t.swept_at, en).slice(0, 6)}
                   </span>
                 </div>
               ))}
