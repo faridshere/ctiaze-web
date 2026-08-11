@@ -11,6 +11,17 @@ updates:
     groups:
       npm-minor-patch:
         update-types: ["minor", "patch"]
+    ignore:
+      # Major bumps the Next 16 toolchain doesn't support yet (audit "hold" list):
+      # TypeScript 7 is the native-compiler rewrite; ESLint 10's ecosystem lags.
+      # These majors fail the build — let minor/patch through, hold the majors until
+      # Next's toolchain validates them (then bump deliberately, not by drift).
+      - dependency-name: "typescript"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "eslint"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "eslint-config-next"
+        update-types: ["version-update:semver-major"]
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
