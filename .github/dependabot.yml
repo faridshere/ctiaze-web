@@ -1,0 +1,18 @@
+# Low-noise weekly dependency updates, grouped so minor/patch bumps arrive as one
+# PR (Next/React security patches land on the newest minor first — this keeps the
+# patch window tight without constant churn). github-actions kept fresh too.
+version: 2
+updates:
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+    groups:
+      npm-minor-patch:
+        update-types: ["minor", "patch"]
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
