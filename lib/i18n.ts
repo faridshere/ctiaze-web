@@ -65,6 +65,10 @@ type Dict = {
     refreshing: string; newStories: (n: number) => string;
     spektr: (n: number) => string; spektrFilter: string; dispatchWord: string;
   };
+  stack: {
+    title: string; setupPrompt: string; setupCta: string; edit: string; done: string;
+    matchLine: (n: number, m: number) => string; none: string; hint: string;
+  };
 };
 
 const az: Dict = {
@@ -212,6 +216,16 @@ const az: Dict = {
     refreshing: "yenilənir…", newStories: (n) => `${n} yeni xəbər · yenilə`,
     spektr: (n) => `Son ${n} dispaç · spektr`, spektrFilter: "Kateqoriya spektri — süzgəc", dispatchWord: "dispaç",
   },
+  stack: {
+    title: "Mənim stekim",
+    setupPrompt: "İşlətdiyin məhsulları seç — hər səhər «bu gün mənə aid nə var?» sualına cavab alacaqsan.",
+    setupCta: "Stek qur",
+    edit: "dəyiş",
+    done: "hazır",
+    matchLine: (n, m) => `${m} dispaçdan ${n}-i sənin stekinə aiddir`,
+    none: "Bu gün lentdə sənin stekinə aid heç nə yoxdur.",
+    hint: "Yerli saxlanır — hesab yoxdur, heç yerə göndərilmir.",
+  },
 };
 
 const en: Dict = {
@@ -358,6 +372,16 @@ const en: Dict = {
     toolKripto: "Tool · Crypto", kriptoTitle: "Crypto address intel",
     refreshing: "refreshing…", newStories: (n) => `${n} new stories · refresh`,
     spektr: (n) => `Last ${n} dispatches · spectrum`, spektrFilter: "Category spectrum — filter", dispatchWord: "dispatches",
+  },
+  stack: {
+    title: "My stack",
+    setupPrompt: "Pick the products you run — then every morning you'll see what today's feed means for you.",
+    setupCta: "Set up",
+    edit: "edit",
+    done: "done",
+    matchLine: (n, m) => `${n} of ${m} dispatches touch your stack`,
+    none: "Nothing in today's feed touches your stack.",
+    hint: "Stored locally — no account, never sent anywhere.",
   },
 };
 

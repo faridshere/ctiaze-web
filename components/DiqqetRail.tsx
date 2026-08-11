@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { StoryLink } from "./StoryLink";
+import { StackWatch } from "./StackWatch";
 import { formatStoryDate } from "@/lib/format";
 import { useLocale } from "./locale";
 import { getDict } from "@/lib/i18n";
@@ -12,11 +13,13 @@ import type { Story } from "@/lib/types";
 // miss" — actively-exploited (KEV) and locally-relevant (AZ). Each section renders
 // ONLY when it has content, then the tool instruments. All content is real.
 export function DiqqetRail({
+  stories,
   kevStories,
   azStories,
   azHosts,
   archive,
 }: {
+  stories: Story[];
   kevStories: Story[];
   azStories: Story[];
   azHosts: number;
@@ -26,6 +29,7 @@ export function DiqqetRail({
   const t = getDict(locale).feed;
   return (
     <div className="flex flex-col gap-7 border-t border-hairline pt-6 min-[1100px]:border-t-0 min-[1100px]:pt-0">
+      <StackWatch stories={stories} />
       {kevStories.length > 0 && (
         <RailList caption={t.railKev(kevStories.length)} tone="text-accent-critical" stories={kevStories} locale={locale} />
       )}

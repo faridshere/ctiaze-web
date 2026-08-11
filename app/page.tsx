@@ -62,6 +62,7 @@ export default async function HomePage() {
             stories={stories}
             rail={
               <DiqqetRail
+                stories={stories}
                 kevStories={kevStories}
                 azStories={azStories}
                 azHosts={azHosts}
