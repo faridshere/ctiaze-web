@@ -63,7 +63,7 @@ export default async function StoryPage({ params }: { params: Promise<Params> })
     cveBadges(story.cveIds).catch(() => new Map()),
   ]);
 
-  const { time, date } = formatStoryDate(story.publishedAt);
+  const { time, date } = formatStoryDate(story.publishedAt, en ? "en" : "az");
   const host = outletHost(story.sourceUrl);
   const code = outletCode(story.sourceUrl);
 

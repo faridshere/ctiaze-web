@@ -52,6 +52,8 @@ type Dict = {
     lastActiveLabel: string; confidenceLabel: string; confidenceBand: (n: number) => string;
     regionalTitle: string; regionalNote: string; moreWord: (n: number) => string;
     relatedLabel: string;
+    searchExamples: string[];
+    rName: string; rAlias: string; rTargets: string; rSector: string; rRecent: string;
   };
   feed: {
     emptyFeed: string; filterEmpty: string; grounded: string; source: string;
@@ -187,6 +189,9 @@ const az: Dict = {
     regionalNote: "regional prioritet",
     moreWord: (n) => `+${n}`,
     relatedLabel: "əlaqəli qruplar · MISP",
+    searchExamples: ["Azərbaycan", "maliyyə", "energetika", "Lazarus"],
+    rName: "ad uyğunluğu", rAlias: "alias", rTargets: "hədəf",
+    rSector: "hədəf sektor", rRecent: "son fəaliyyət",
   },
   feed: {
     emptyFeed: "hələ heç bir dispaç dərc olunmayıb",
@@ -331,6 +336,9 @@ const en: Dict = {
     regionalNote: "regional priority",
     moreWord: (n) => `+${n}`,
     relatedLabel: "related groups · MISP",
+    searchExamples: ["Azerbaijan", "financial", "energy", "Lazarus"],
+    rName: "name match", rAlias: "alias", rTargets: "targets",
+    rSector: "targets sector", rRecent: "recent activity",
   },
   feed: {
     emptyFeed: "no dispatches published yet",

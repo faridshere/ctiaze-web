@@ -191,22 +191,46 @@ function nameReasons(a: ThreatActor, term: string): { reasons: string[]; score: 
   return { reasons, score };
 }
 
+// Targeting data is stored in English (ISO2_COUNTRY names + MISP/ransomware.live
+// sectors), so an AZ-locale analyst typing "Azərbaycan"/"maliyyə"/"energetika"
+// would match nothing. Map the common AZ country + sector nouns to their English
+// equivalent so the flagship "Azərbaycanı kim hədəfləyir?" question works when
+// actually asked in Azerbaijani. (Names/aliases are language-neutral — matched as-is.)
+const AZ_QUERY_EN: Record<string, string> = {
+  "azərbaycan": "azerbaijan", "azerbaycan": "azerbaijan", "türkiyə": "turkey",
+  "turkiye": "turkey", "gürcüstan": "georgia", "gurcustan": "georgia",
+  "ermənistan": "armenia", "ermenistan": "armenia", "rusiya": "russia",
+  "iran": "iran", "çin": "china", "cin": "china", "ukrayna": "ukraine",
+  "abş": "united states", "abs": "united states", "almaniya": "germany",
+  "fransa": "france", "israil": "israel", "polşa": "poland", "hindistan": "india",
+  "pakistan": "pakistan", "qazaxıstan": "kazakhstan", "özbəkistan": "uzbekistan",
+  // sectors (matched against "Financial Services", "Energy & Utilities", etc.)
+  "maliyyə": "financial", "bank": "financial", "banklar": "financial",
+  "enerji": "energy", "energetika": "energy", "neft": "energy", "qaz": "energy",
+  "hökumət": "government", "dövlət": "government", "səhiyyə": "healthcare",
+  "təhsil": "education", "telekom": "telecommunications",
+  "telekommunikasiya": "telecommunications", "müdafiə": "defense",
+  "hərbi": "military", "ordu": "military", "istehsalat": "manufacturing",
+  "nəqliyyat": "transportation", "texnologiya": "technology",
+};
+
 // Single-term search across country, sector, and name/alias; unions the provenance.
 // Only returns actors the source actually states — no fabricated links.
 export async function searchActors(term: string, limit = 24): Promise<ActorHit[]> {
   const t = term.trim();
   if (!t) return [];
+  const en = AZ_QUERY_EN[norm(t)];   // English equivalent of an AZ country/sector term
   const docs = await allActors();
   const hits: ActorHit[] = [];
   for (const a of docs) {
     const reasons: string[] = [];
     let score = 0;
-    const cr = countryReason(a, t);
+    const cr = countryReason(a, t) || (en ? countryReason(a, en) : null);
     if (cr) {
       reasons.push(cr);
       score += 40;
     }
-    const sr = sectorReason(a, t);
+    const sr = sectorReason(a, t) || (en ? sectorReason(a, en) : null);
     if (sr) {
       reasons.push(sr);
       score += 30;

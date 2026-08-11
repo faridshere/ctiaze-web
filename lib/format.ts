@@ -7,7 +7,12 @@ export const AZ_MONTHS = [
 // the visitor's local timezone — avoids hydration mismatches entirely.
 const TIME_ZONE = "Asia/Baku";
 
-export function formatStoryDate(iso: string): { time: string; date: string } {
+const EN_MONTHS = [
+  "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+  "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
+];
+
+export function formatStoryDate(iso: string, locale: "az" | "en" = "az"): { time: string; date: string } {
   const d = new Date(iso);
   const parts = new Intl.DateTimeFormat("en-GB", {
     timeZone: TIME_ZONE,
@@ -18,7 +23,7 @@ export function formatStoryDate(iso: string): { time: string; date: string } {
     month: "numeric",
   }).formatToParts(d);
   const get = (t: string) => parts.find((p) => p.type === t)?.value ?? "";
-  const month = AZ_MONTHS[parseInt(get("month"), 10) - 1] ?? "";
+  const month = (locale === "en" ? EN_MONTHS : AZ_MONTHS)[parseInt(get("month"), 10) - 1] ?? "";
   return {
     time: `${get("hour")}:${get("minute")}`,
     date: `${get("day")} ${month}`,

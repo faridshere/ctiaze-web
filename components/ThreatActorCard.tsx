@@ -9,6 +9,11 @@ const TYPE_LABEL_EN: Record<string, string> = {
   cybercrime: "Financial crime", hacktivist: "Hacktivist",
 };
 
+// The curated country is stored in Azerbaijani; render it in English for EN readers.
+const COUNTRY_EN: Record<string, string> = {
+  "Rusiya": "Russia", "Çin": "China", "İran": "Iran", "Şimali Koreya": "North Korea",
+};
+
 // Rendered inside a dark .ops section on the story page. One card per detected
 // group: who they are, how they're attributed, and what they're known for.
 export function ThreatActorCard({ actors }: { actors: Actor[] }) {
@@ -36,7 +41,7 @@ export function ThreatActorCard({ actors }: { actors: Actor[] }) {
                 </span>
                 {a.country && (
                   <span className="font-mono text-[11px] text-ink-muted">
-                    {a.country}
+                    {en ? COUNTRY_EN[a.country] ?? a.country : a.country}
                   </span>
                 )}
               </div>

@@ -13,8 +13,6 @@ type Hit = {
 };
 type SearchResponse = { query: string; count: number; results: Hit[] };
 
-const EXAMPLES = ["financial", "energy", "Azerbaijan", "Lazarus"];
-
 const TYPE_CHIP: Record<string, string> = {
   "nation-state": "border-accent-critical/40 bg-accent-critical/10 text-accent-critical",
   crime: "border-accent-warning/40 bg-accent-warning/10 text-accent-warning",
@@ -86,7 +84,7 @@ export function ActorSearch({ locale }: { locale: Locale }) {
         </form>
         <div className="flex flex-wrap items-center gap-2 px-4 pb-4 font-mono text-[11px] text-ink-muted">
           <span>{t.examples}</span>
-          {EXAMPLES.map((ex) => (
+          {t.searchExamples.map((ex) => (
             <button
               key={ex}
               type="button"
@@ -136,6 +134,18 @@ export function ActorSearch({ locale }: { locale: Locale }) {
 
 type ActorsDict = ReturnType<typeof getDict>["actors"];
 
+// searchActors returns English provenance prose; localize the known prefixes so
+// the reason chips don't leak English into the AZ locale (the matched value —
+// country/sector/alias — stays as stored). Falls through unchanged if unrecognized.
+function localizeReason(r: string, t: ActorsDict): string {
+  if (r === "name match") return t.rName;
+  if (r.startsWith("alias match: ")) return `${t.rAlias}: ${r.slice(13)}`;
+  if (r.startsWith("targets sector: ")) return `${t.rSector}: ${r.slice(16)}`;
+  if (r.startsWith("targets: ")) return `${t.rTargets}: ${r.slice(9)}`;
+  if (r.startsWith("recent activity mentions ")) return `${t.rRecent}: ${r.slice(25)}`;
+  return r;
+}
+
 function HitRow({ h, maxScore, t, typeLabel, locale }: { h: Hit; maxScore: number; t: ActorsDict; typeLabel: (tp: string) => string; locale: Locale }) {
   const desc = locale === "en" ? h.description_en || h.description_az : h.description_az || h.description_en;
   return (
@@ -154,7 +164,7 @@ function HitRow({ h, maxScore, t, typeLabel, locale }: { h: Hit; maxScore: numbe
         <div className="mt-2.5 flex flex-wrap gap-1.5">
           {h.match_reasons.map((r) => (
             <span key={r} className={`rounded-full border px-2 py-0.5 font-mono text-[11px] ${r.startsWith("recent activity") ? "border-hairline bg-surface text-ink-muted" : "border-brand/30 bg-brand-wash text-brand"}`}>
-              {r}
+              {localizeReason(r, t)}
             </span>
           ))}
           {h.recentCount > 0 && (

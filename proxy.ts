@@ -15,6 +15,12 @@ export function proxy(req: NextRequest) {
   return res;
 }
 
+// Skip machine/cacheable surfaces: locale is meaningless there, and a Set-Cookie
+// on them defeats Vercel's edge cache for cookieless clients (feed pollers, crawlers,
+// AI agents) — exactly the audience feed.json/llms.txt/rss target — punching their
+// s-maxage headers straight through to origin/Mongo on every hit.
 export const config = {
-  matcher: ["/((?!_next/static|_next/image|favicon.ico|robots.txt|sitemap.xml).*)"],
+  matcher: [
+    "/((?!_next/static|_next/image|favicon.ico|robots.txt|sitemap.xml|api/|feed.json|rss.xml|llms.txt|opengraph-image|icon.svg).*)",
+  ],
 };

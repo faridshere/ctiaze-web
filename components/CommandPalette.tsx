@@ -96,6 +96,7 @@ export function CommandPalette() {
       .filter(
         (entry) =>
           entry.titleAz.toLowerCase().includes(q) ||
+          (entry.titleEn?.toLowerCase().includes(q) ?? false) ||
           entry.category.toLowerCase().includes(q) ||
           entry.cveIds.some((cve) => cve.toLowerCase().includes(q))
       )
