@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
 import { getDict, type Locale } from "@/lib/i18n";
 
@@ -152,7 +153,7 @@ function HitRow({ h, maxScore, t, typeLabel, locale }: { h: Hit; maxScore: numbe
     <article className="grid grid-cols-1 gap-3 rounded-md border border-hairline bg-surface-raised/40 p-4 sm:grid-cols-[1fr_auto] sm:items-center">
       <div className="min-w-0">
         <div className="flex flex-wrap items-center gap-2">
-          <span className="font-headline text-base font-semibold text-ink-primary">{h.name}</span>
+          <Link href={`/actors/${h.id}`} className="font-headline text-base font-semibold text-ink-primary transition-colors hover:text-brand">{h.name}</Link>
           <span className={`rounded-full border px-2 py-0.5 font-mono text-[10px] uppercase tracking-wider ${TYPE_CHIP[h.type] ?? TYPE_CHIP.unknown}`}>
             {typeLabel(h.type)}
           </span>

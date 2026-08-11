@@ -56,6 +56,22 @@ async function allActors(): Promise<ThreatActor[]> {
   return docs;
 }
 
+// One dossier by its stable slug (_id) — powers the crawlable /actors/[slug] page.
+export async function getActorById(id: string): Promise<ThreatActor | null> {
+  const docs = await allActors();
+  return docs.find((a) => a._id === id) ?? null;
+}
+
+// Every actor slug, for the sitemap. Substantive actors first (a thin name-only
+// stub is low-value to crawl), capped so the sitemap stays a sensible size.
+export async function getActorIds(limit = 800): Promise<string[]> {
+  const docs = await allActors();
+  return [...docs]
+    .sort((a, b) => substance(b) - substance(a) || activity(b) - activity(a) || byName(a, b))
+    .slice(0, limit)
+    .map((a) => a._id);
+}
+
 export async function getActorStats(): Promise<{
   total: number;
   active: number;

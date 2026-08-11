@@ -1,3 +1,4 @@
+import Link from "next/link";
 import {
   actorInitials,
   flagEmoji,
@@ -87,7 +88,7 @@ function SoftChips({ items, label, more }: { items: NamedRef[]; label: string; m
   );
 }
 
-export function ActorDossier({ a, locale }: { a: ThreatActor; locale: Locale }) {
+export function ActorDossier({ a, locale, standalone }: { a: ThreatActor; locale: Locale; standalone?: boolean }) {
   const t = getDict(locale).actors;
   const origin = originLabel(a, locale);
   const flag = flagEmoji(a.origin_country);
@@ -111,7 +112,11 @@ export function ActorDossier({ a, locale }: { a: ThreatActor; locale: Locale }) 
           {actorInitials(a.name)}
         </span>
         <div className="min-w-0">
-          <div className="font-headline text-lg font-semibold leading-tight text-ink-primary">{a.name}</div>
+          <h3 className="font-headline text-lg font-semibold leading-tight text-ink-primary">
+            {standalone ? a.name : (
+              <Link href={`/actors/${a._id}`} className="transition-colors hover:text-brand">{a.name}</Link>
+            )}
+          </h3>
           {aliases.length > 0 && (
             <div className="mt-1.5 flex flex-wrap gap-1.5">
               {aliases.map((al) => (
