@@ -45,7 +45,7 @@ function slugify(id: string, titleAz: string): string {
     .slice(0, 60);
   // id already carries a stable hash/cve — prefix it so the slug is always
   // unique and stable even if two titles collide or a title is empty.
-  const shortId = id.replace(/^(cve:|url:)/, "").slice(0, 12);
+  const shortId = id.replace(/^(cve:|url:|digest:|spike:)/, "").slice(0, 12);
   return `${shortId}-${base}`.replace(/-+$/, "");
 }
 

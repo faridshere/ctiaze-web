@@ -40,7 +40,7 @@ export async function getStoryBySlug(slug: string): Promise<Story | null> {
   const col = await items();
   const filter: Filter<StoryDoc> = {
     ...PUBLISHED_FILTER,
-    _id: { $regex: `^(cve:|url:)${escaped}` },
+    _id: { $regex: `^(cve:|url:|digest:|spike:)${escaped}` },
   };
   const doc = await col.findOne(filter);
   return doc ? toStory(doc) : null;
