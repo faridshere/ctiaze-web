@@ -1,3 +1,4 @@
+import { cache } from "react";
 import type { Filter } from "mongodb";
 import { getDb } from "./db";
 import { toStory, type Story, type StoryDoc } from "./types";
@@ -18,7 +19,11 @@ async function items() {
   return db.collection<StoryDoc>("items");
 }
 
-export async function getStories(limit = 60): Promise<Story[]> {
+// cache() dedupes within a single request: several pages call getStories twice per
+// render (e.g. /cve runs getCveIndex(150) which itself calls getStories(150), plus
+// getStories(150) directly; the story page runs getStoryBySlug in generateMetadata
+// AND the body). Same args → one Mongo query, halving reads on the heaviest pages.
+export const getStories = cache(async (limit = 60): Promise<Story[]> => {
   const col = await items();
   const docs = await col
     .find(PUBLISHED_FILTER)
@@ -26,9 +31,9 @@ export async function getStories(limit = 60): Promise<Story[]> {
     .limit(limit)
     .toArray();
   return docs.map(toStory);
-}
+});
 
-export async function getStoryBySlug(slug: string): Promise<Story | null> {
+export const getStoryBySlug = cache(async (slug: string): Promise<Story | null> => {
   // slugify() builds the slug as `${id.slice(0,12)}-${titleSlug}` where id has its
   // cve:/url: prefix stripped. CVE ids contain hyphens (e.g. "CVE-2026-484"), so the
   // stable prefix is the FIRST 12 CHARACTERS of the slug — not the first hyphen
@@ -44,7 +49,7 @@ export async function getStoryBySlug(slug: string): Promise<Story | null> {
   };
   const doc = await col.findOne(filter);
   return doc ? toStory(doc) : null;
-}
+});
 
 export async function getStats() {
   const col = await items();
