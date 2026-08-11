@@ -20,7 +20,7 @@ export default async function KriptoPage() {
   return (
     <div className="ops min-h-screen flex flex-col">
       <Header />
-      <main className="flex-1 mx-auto w-full max-w-3xl px-4 py-14 sm:py-20">
+      <main id="main" className="flex-1 mx-auto w-full max-w-3xl px-4 py-14 sm:py-20">
         <p className="font-mono text-xs uppercase tracking-[0.2em] text-brand">
           {en ? "On-chain intel · Blockchair" : "On-chain kəşfiyyat · Blockchair"}
         </p>

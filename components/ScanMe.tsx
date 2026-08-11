@@ -174,11 +174,11 @@ export function ScanMe({ locale }: { locale: Locale }) {
       </div>
 
       {loading && (
-        <p className="mt-5 font-mono text-xs text-ink-secondary">
+        <p role="status" className="mt-5 font-mono text-xs text-ink-secondary">
           <span className="text-accent-good">●</span> {c.loadingScan}
         </p>
       )}
-      {error && <p className="mt-5 font-mono text-xs text-accent-critical">{error}</p>}
+      {error && <p role="alert" className="mt-5 font-mono text-xs text-accent-critical">{error}</p>}
       {result && !loading && (result.kind === "email" ? <EmailView r={result} t={t} locale={locale} /> : <DomainView r={result} t={t} />)}
 
       {/* password self-check (k-anonymity) */}

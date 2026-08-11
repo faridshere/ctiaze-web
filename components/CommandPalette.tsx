@@ -23,7 +23,10 @@ export function CommandPalette() {
 
   const loadedRef = useRef(false);
   const inputRef = useRef<HTMLInputElement>(null);
+  const closeRef = useRef<HTMLButtonElement>(null);
   const previouslyFocused = useRef<HTMLElement | null>(null);
+  const LISTBOX_ID = "cmdk-listbox";
+  const optId = (i: number) => `cmdk-opt-${i}`;
 
   const close = useCallback(() => {
     setOpen(false);
@@ -103,10 +106,26 @@ export function CommandPalette() {
       .slice(0, 20);
   }, [index, query]);
 
+  // Keep the arrow-selected option scrolled into view (it can slip out of the
+  // max-h list — an SR/keyboard user would otherwise lose the highlight).
+  useEffect(() => {
+    if (!open) return;
+    document.getElementById(optId(activeIndex))?.scrollIntoView({ block: "nearest" });
+  }, [activeIndex, open]);
+
   function onKeyDown(e: React.KeyboardEvent) {
     if (e.key === "Escape") {
       e.preventDefault();
       close();
+      return;
+    }
+    // Focus trap: options are activedescendant-navigated (tabIndex -1), so the only
+    // Tab stops are the input and the close button — cycle between them, never out.
+    if (e.key === "Tab") {
+      const first = inputRef.current, last = closeRef.current;
+      if (!first || !last) return;
+      if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+      else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
       return;
     }
     if (e.key === "ArrowDown") {
@@ -159,8 +178,14 @@ export function CommandPalette() {
             placeholder={en ? "Search news, category or CVE…" : "Xəbər, kateqoriya və ya CVE axtar…"}
             className="flex-1 bg-transparent font-mono text-sm text-ink-primary placeholder:text-ink-muted outline-none"
             aria-label={en ? "Search" : "Axtarış"}
+            role="combobox"
+            aria-expanded
+            aria-controls={LISTBOX_ID}
+            aria-autocomplete="list"
+            aria-activedescendant={results[activeIndex] ? optId(activeIndex) : undefined}
           />
           <button
+            ref={closeRef}
             onClick={close}
             aria-label={en ? "Close" : "Bağla"}
             className="font-mono text-[10px] uppercase tracking-wider text-ink-muted hover:text-ink-primary transition-colors"
@@ -169,23 +194,27 @@ export function CommandPalette() {
           </button>
         </div>
 
-        <div className="max-h-[50vh] overflow-y-auto">
+        <div className="max-h-[50vh] overflow-y-auto" role="listbox" id={LISTBOX_ID} aria-label={en ? "Search results" : "Axtarış nəticələri"}>
           {loadError && (
-            <p className="px-4 py-6 text-center font-mono text-xs text-ink-muted">
+            <p role="alert" className="px-4 py-6 text-center font-mono text-xs text-ink-muted">
               {en ? "search failed to load — try again" : "axtarış yüklənmədi — yenidən cəhd edin"}
             </p>
           )}
           {!loadError && index === null && (
-            <p className="px-4 py-6 text-center font-mono text-xs text-ink-muted">{en ? "loading…" : "yüklənir…"}</p>
+            <p role="status" className="px-4 py-6 text-center font-mono text-xs text-ink-muted">{en ? "loading…" : "yüklənir…"}</p>
           )}
           {!loadError && index !== null && results.length === 0 && (
-            <p className="px-4 py-6 text-center font-mono text-xs text-ink-muted">
+            <p role="status" className="px-4 py-6 text-center font-mono text-xs text-ink-muted">
               {en ? "no results" : "nəticə tapılmadı"}
             </p>
           )}
           {results.map((entry, i) => (
             <button
               key={entry.slug}
+              id={optId(i)}
+              role="option"
+              aria-selected={i === activeIndex}
+              tabIndex={-1}
               onMouseEnter={() => setActiveIndex(i)}
               onClick={() => {
                 close();

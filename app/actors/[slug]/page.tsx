@@ -55,7 +55,7 @@ export default async function ActorPage({ params }: { params: Promise<{ slug: st
   return (
     <div className="ops flex min-h-screen flex-col">
       <Header />
-      <main className="mx-auto w-full max-w-3xl flex-1 px-4 py-14 sm:py-20">
+      <main id="main" className="mx-auto w-full max-w-3xl flex-1 px-4 py-14 sm:py-20">
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
         <nav className="font-mono text-[11px] uppercase tracking-[0.14em] text-ink-muted">
           <Link href="/actors" className="hover:text-brand">{en ? "Threat actors" : "Təhdid aktorları"}</Link>

@@ -59,7 +59,7 @@ export default async function CvePage() {
   return (
     <div className="flex min-h-screen flex-col">
       <Header />
-      <main className="mx-auto w-full max-w-[52rem] flex-1 px-[var(--sp-gutter)] py-[var(--sp-section)]">
+      <main id="main" className="mx-auto w-full max-w-[52rem] flex-1 px-[var(--sp-gutter)] py-[var(--sp-section)]">
         <h1 className="font-headline text-[length:var(--t-h2)] font-semibold tracking-[-0.01em] text-ink-primary">
           {en ? "CVE registry" : "CVE reyestri"}
         </h1>

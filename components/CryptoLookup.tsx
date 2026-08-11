@@ -115,11 +115,11 @@ export function CryptoLookup() {
       </p>
 
       {loading && (
-        <p className="mt-5 font-mono text-xs text-ink-secondary">
+        <p role="status" className="mt-5 font-mono text-xs text-ink-secondary">
           <span className="text-accent-good">●</span> {en ? "checking…" : "yoxlanılır…"}
         </p>
       )}
-      {error && <p className="mt-5 font-mono text-xs text-accent-critical">{error}</p>}
+      {error && <p role="alert" className="mt-5 font-mono text-xs text-accent-critical">{error}</p>}
       {result && !loading && <ResultView r={result} />}
     </div>
   );

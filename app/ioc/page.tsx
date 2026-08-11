@@ -62,7 +62,7 @@ export default async function IocPage() {
   return (
     <div className="ops min-h-screen flex flex-col">
       <Header />
-      <main className="flex-1 mx-auto w-full max-w-3xl px-4 py-14 sm:py-20">
+      <main id="main" className="flex-1 mx-auto w-full max-w-3xl px-4 py-14 sm:py-20">
         <p className="font-mono text-xs uppercase tracking-[0.2em] text-brand">
           {en ? "Live check · abuse.ch · CISA KEV · NVD" : "Canlı yoxlama · abuse.ch · CISA KEV · NVD"}
         </p>

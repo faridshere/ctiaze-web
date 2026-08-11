@@ -39,7 +39,7 @@ export default async function AboutPage() {
   return (
     <div className="min-h-screen flex flex-col">
       <Header />
-      <main className="flex-1 mx-auto w-full max-w-2xl px-4 py-14 sm:py-20">
+      <main id="main" className="flex-1 mx-auto w-full max-w-2xl px-4 py-14 sm:py-20">
         <h1 className="font-headline text-3xl sm:text-4xl text-ink-primary">
           {en ? "About" : "Haqqında"}
         </h1>

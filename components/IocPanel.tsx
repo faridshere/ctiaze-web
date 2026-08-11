@@ -230,7 +230,9 @@ function IocRow({ defanged, value }: { defanged: string; value: string }) {
       <button
         onClick={copy}
         aria-label={en ? "Copy" : "Kopyala"}
-        className="shrink-0 font-mono text-[length:var(--t-micro)] uppercase tracking-wider text-ink-muted opacity-0 transition-opacity hover:text-brand group-hover:opacity-100"
+        // Visible on hover, keyboard focus, AND on touch (no hover) — otherwise the
+        // copy control is unreachable for keyboard/phone users during an incident.
+        className="shrink-0 font-mono text-[length:var(--t-micro)] uppercase tracking-wider text-ink-muted opacity-0 transition-opacity hover:text-brand group-hover:opacity-100 focus-visible:opacity-100 [@media(pointer:coarse)]:opacity-100"
       >
         {copied ? "✓" : (en ? "copy" : "kopyala")}
       </button>

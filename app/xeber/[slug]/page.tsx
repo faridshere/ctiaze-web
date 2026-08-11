@@ -148,7 +148,7 @@ export default async function StoryPage({ params }: { params: Promise<Params> })
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
       <Header />
-      <main className="mx-auto w-full max-w-[42rem] flex-1 px-[var(--sp-gutter)] py-[var(--sp-section)]">
+      <main id="main" className="mx-auto w-full max-w-[42rem] flex-1 px-[var(--sp-gutter)] py-[var(--sp-section)]">
         <Link
           href="/"
           className="font-mono text-[length:var(--t-micro)] uppercase tracking-[0.14em] text-ink-muted transition-colors hover:text-ink-primary"

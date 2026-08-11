@@ -99,11 +99,11 @@ export function ActorSearch({ locale }: { locale: Locale }) {
       </div>
 
       {loading && (
-        <p className="mt-5 font-mono text-xs text-ink-secondary">
+        <p role="status" className="mt-5 font-mono text-xs text-ink-secondary">
           <span className="text-accent-good">●</span> {t.searching}
         </p>
       )}
-      {error && <p className="mt-5 font-mono text-xs text-accent-critical">{error}</p>}
+      {error && <p role="alert" className="mt-5 font-mono text-xs text-accent-critical">{error}</p>}
 
       {data && !loading && (
         <div className="mt-6">

@@ -52,7 +52,10 @@ export default async function HomePage() {
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(orgLd) }} />
       <Header />
       <LiveUpdateBanner initialCount={stats.total} />
-      <main className="mx-auto w-full max-w-[75rem] flex-1 px-[var(--sp-gutter)] pb-[var(--sp-section)]">
+      <main id="main" className="mx-auto w-full max-w-[75rem] flex-1 px-[var(--sp-gutter)] pb-[var(--sp-section)]">
+        <h1 className="sr-only">
+          {en ? "ctiaze — automated Azerbaijani cyber-threat-intelligence" : "ctiaze — Azərbaycan kiber-təhlükə kəşfiyyatı"}
+        </h1>
         {stories.length === 0 ? (
           <p className="py-24 text-center font-mono text-[length:var(--t-meta)] text-ink-muted">
             {t.emptyFeed}

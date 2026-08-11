@@ -77,6 +77,12 @@ export default async function RootLayout({
       className={`${headline.variable} ${body.variable} ${mono.variable}`}
     >
       <body className="min-h-screen bg-surface text-ink-primary font-body antialiased">
+        <a
+          href="#main"
+          className="sr-only focus:not-sr-only focus:absolute focus:left-3 focus:top-3 focus:z-[100] focus:rounded-sm focus:bg-brand focus:px-3 focus:py-2 focus:font-mono focus:text-xs focus:font-semibold focus:text-[#07110e]"
+        >
+          {locale === "en" ? "Skip to content" : "Əsas məzmuna keç"}
+        </a>
         <LocaleProvider value={locale}>
           <CommandPalette />
           {children}

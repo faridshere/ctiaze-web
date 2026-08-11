@@ -32,7 +32,7 @@ export default async function ActorsPage() {
   return (
     <div className="ops flex min-h-screen flex-col">
       <Header />
-      <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-14 sm:py-20">
+      <main id="main" className="mx-auto w-full max-w-5xl flex-1 px-4 py-14 sm:py-20">
         <p className="font-mono text-xs uppercase tracking-[0.2em] text-brand">{t.eyebrow}</p>
         <h1 className="mt-3 max-w-2xl text-balance font-headline text-3xl text-ink-primary sm:text-4xl">{t.h1}</h1>
         <p className="mt-4 max-w-2xl leading-relaxed text-ink-secondary">
