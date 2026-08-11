@@ -4,9 +4,17 @@ import { NextResponse, type NextRequest } from "next/server";
 // English. Missing/unknown country stays Azerbaijani (this is an AZ-first product).
 // Only sets the cookie when absent, so the header toggle always wins afterwards.
 export function proxy(req: NextRequest) {
-  if (req.cookies.get("locale")) return NextResponse.next();
+  // ?dil=az|en forces the locale for THIS request (overriding cookie/geo). This is
+  // what makes the site crawlable in both languages: a cookieless crawler from a US
+  // IP would otherwise always get the English render, so the Azerbaijani content
+  // (the unique, rankable long-tail) never enters the index. hreflang points Google
+  // at ?dil=az / ?dil=en, and each serves a fixed language. Humans clicking such a
+  // link switch + persist too.
+  const dil = req.nextUrl.searchParams.get("dil");
+  const forced = dil === "az" || dil === "en" ? dil : null;
+  if (!forced && req.cookies.get("locale")) return NextResponse.next();
   const country = (req.headers.get("x-vercel-ip-country") || "").toUpperCase();
-  const locale = country && country !== "AZ" ? "en" : "az";
+  const locale = forced || (country && country !== "AZ" ? "en" : "az");
   // Set it on the REQUEST too so this very first render already sees the right
   // locale (otherwise a non-AZ visitor's first paint is Azerbaijani until reload).
   req.cookies.set("locale", locale);

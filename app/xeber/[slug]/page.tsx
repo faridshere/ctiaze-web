@@ -41,10 +41,14 @@ export async function generateMetadata({
   if (!story) return { title: en ? "Not found" : "Tapılmadı" };
   const title = en ? story.titleEn : story.titleAz;
   const desc = (en ? story.summaryEn : story.bodyAz).slice(0, 160);
+  const url = `https://ctiaze.tech/xeber/${story.slug}`;
   return {
     title,
     description: desc,
-    openGraph: { title, description: desc, type: "article", publishedTime: story.publishedAt },
+    // Crawlable in both languages so the Azerbaijani per-CVE long-tail gets indexed
+    // (Googlebot is cookieless → would otherwise only ever see the English render).
+    alternates: { canonical: url, languages: { az: `${url}?dil=az`, en: `${url}?dil=en`, "x-default": url } },
+    openGraph: { title, description: desc, url, type: "article", publishedTime: story.publishedAt },
   };
 }
 
@@ -114,16 +118,19 @@ export default async function StoryPage({ params }: { params: Promise<Params> })
   }));
   const hasIntel = extracted.length > 0 || actors.length > 0 || familyIocs.length > 0;
 
+  const storyUrl = `https://ctiaze.tech/xeber/${story.slug}`;
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "NewsArticle",
     headline: dTitle,
+    url: storyUrl,
+    image: [`${storyUrl}/opengraph-image`],
     datePublished: story.publishedAt,
     dateModified: story.publishedAt,
     inLanguage: loc,
     author: { "@type": "Organization", name: "Hackxana" },
     publisher: { "@type": "Organization", name: "ctiaze" },
-    mainEntityOfPage: `https://ctiaze.tech/xeber/${story.slug}`,
+    mainEntityOfPage: storyUrl,
     ...(story.bodyAz ? { description: story.bodyAz.slice(0, 200) } : {}),
     ...(story.cveIds.length
       ? { about: story.cveIds.map((c) => ({ "@type": "Thing", name: c })) }
