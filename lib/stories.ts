@@ -76,6 +76,8 @@ export type FeedItem = {
   id: string;
   title_az: string;
   title_en: string;
+  summary_az: string;   // so an AI agent has text to quote/ground on, not just a title
+  summary_en: string;
   url: string; // stable permalink on ctiaze.tech
   source_url: string;
   category: string;
@@ -92,6 +94,8 @@ export async function getFeed(limit = 100): Promise<FeedItem[]> {
     id: s.id,
     title_az: s.titleAz,
     title_en: s.titleEn,
+    summary_az: s.bodyAz.slice(0, 300),
+    summary_en: s.summaryEn.slice(0, 300),
     url: `${SITE}/xeber/${s.slug}`,
     source_url: s.sourceUrl,
     category: s.category,
