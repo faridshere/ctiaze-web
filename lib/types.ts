@@ -16,6 +16,12 @@ export type StoryDoc = {
   summary?: string;
   published_at?: Date | string;
   alt_sources?: { source?: string; url?: string; title?: string }[];
+  // Pipeline-stamped triage signals the Telegram post shows but the site dropped.
+  cvss?: number;
+  epss?: number;             // FIRST.org exploit probability 0..1
+  sev_rank?: number;         // 0..4
+  kind?: string;             // e.g. "exposure_spike" (deterministic, never model-set)
+  az_exposure?: { product?: string; count?: number; as_of?: string };
 };
 
 export type Story = {
@@ -34,6 +40,11 @@ export type Story = {
   cveIds: string[];
   publishedAt: string; // ISO
   altSources: string[]; // URLs of other outlets that ran the same story (deduped)
+  cvss: number | null;
+  epss: number | null;
+  sevRank: number;
+  kind: string | null;
+  azExposure: { product: string; count: number; asOf: string } | null;
 };
 
 function slugify(id: string, titleAz: string): string {
@@ -76,5 +87,17 @@ export function toStory(doc: StoryDoc): Story {
     cveIds: doc.cve_ids ?? [],
     publishedAt,
     altSources: altSources.slice(0, 6),
+    cvss: typeof doc.cvss === "number" && doc.cvss > 0 ? doc.cvss : null,
+    epss: typeof doc.epss === "number" && doc.epss > 0 ? doc.epss : null,
+    sevRank: typeof doc.sev_rank === "number" ? doc.sev_rank : 0,
+    kind: doc.kind ?? null,
+    azExposure:
+      doc.az_exposure && doc.az_exposure.product && (doc.az_exposure.count ?? 0) > 0
+        ? {
+            product: String(doc.az_exposure.product),
+            count: Number(doc.az_exposure.count),
+            asOf: String(doc.az_exposure.as_of ?? ""),
+          }
+        : null,
   };
 }

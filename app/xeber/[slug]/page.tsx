@@ -9,6 +9,7 @@ import { SpektrStrip } from "@/components/SpektrStrip";
 import { ThreatActorCard } from "@/components/ThreatActorCard";
 import { IocPanel } from "@/components/IocPanel";
 import { formatStoryDate } from "@/lib/format";
+import { urgencyHeader, exposureLine, storyActions } from "@/lib/storysignal";
 import { getStoryBySlug, getStories } from "@/lib/stories";
 import { extractIocs, type IocType } from "@/lib/ioc";
 import { detectActors, specificPivots } from "@/lib/actors";
@@ -68,6 +69,9 @@ export default async function StoryPage({ params }: { params: Promise<Params> })
   ]);
 
   const { time, date } = formatStoryDate(story.publishedAt, en ? "en" : "az");
+  const urgency = urgencyHeader(story, loc);
+  const exposure = exposureLine(story, loc);
+  const actions = storyActions(story, loc);
   const host = outletHost(story.sourceUrl);
   const code = outletCode(story.sourceUrl);
 
@@ -176,6 +180,41 @@ export default async function StoryPage({ params }: { params: Promise<Params> })
         <h1 className="mt-4 font-headline text-[length:var(--t-display)] font-semibold leading-[1.05] tracking-[-0.01em] text-ink-primary">
           {dTitle}
         </h1>
+
+        {/* Web parity with the Telegram post: deterministic urgency + exposure +
+            "what to do", all pure functions of pipeline-stamped fields. */}
+        {urgency && (
+          <div
+            role="status"
+            className={`mt-5 flex items-center gap-2 rounded-md border px-3.5 py-2.5 ${urgency.tone === "critical" ? "border-accent-critical/40 bg-accent-critical/10" : "border-accent-warning/40 bg-accent-warning/10"}`}
+          >
+            <span aria-hidden="true">{urgency.tone === "critical" ? "🔴" : "🟠"}</span>
+            <span className={`font-mono text-[13px] font-semibold ${urgency.tone === "critical" ? "text-accent-critical" : "text-accent-warning"}`}>
+              {urgency.text}
+            </span>
+          </div>
+        )}
+        {exposure && (
+          <div className="mt-3 flex items-center gap-2 rounded-md border border-brand/30 bg-brand-wash px-3.5 py-2.5 font-mono text-[12.5px] leading-snug text-brand">
+            <span aria-hidden="true">🛰️</span>
+            <span>{exposure}</span>
+          </div>
+        )}
+        {actions.length > 0 && (
+          <div className="mt-3 rounded-md border border-hairline bg-surface-raised/40 px-4 py-3">
+            <div className="font-mono text-[10px] uppercase tracking-[0.14em] text-ink-muted">
+              {en ? "What to do" : "Nə etməli"}
+            </div>
+            <ul className="mt-2 space-y-1.5">
+              {actions.map((a, i) => (
+                <li key={i} className="flex gap-2 text-[13px] leading-relaxed text-ink-secondary">
+                  <span className="mt-1.5 size-1.5 shrink-0 rounded-full bg-brand" aria-hidden="true" />
+                  <span>{a}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
 
         {/* mini-Spektr — situates this briefing in the live threat spectrum */}
         {recent.length > 0 && (
