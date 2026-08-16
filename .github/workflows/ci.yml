@@ -4,7 +4,8 @@ name: ci
 # `tsc --noEmit` never ran on push, so a type error in a rarely-built path or the
 # known i18n foot-gun (lib/i18n.ts must never import next/headers) could land
 # silently. `next build` stays out of CI on purpose — it needs the read-only Mongo
-# env and Vercel already runs it on deploy; lint + typecheck are the missing gate.
+# env and Vercel already runs it on deploy; lint + typecheck + the node --test unit
+# suite (pure scan/permalink logic, no network) are the gate.
 on:
   push:
     branches: [main]
@@ -24,3 +25,4 @@ jobs:
       - run: npm ci
       - run: npx tsc --noEmit
       - run: npx eslint .
+      - run: npm test
