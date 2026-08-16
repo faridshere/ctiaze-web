@@ -3,6 +3,12 @@ import { rateLimit, clientIp } from "@/lib/ratelimit";
 import { getDb } from "@/lib/db";
 import { getLatestSnapshot } from "@/lib/exposure";
 import { toStory, type StoryDoc } from "@/lib/types";
+import { classifyAddress } from "@/lib/addressclass";
+
+// Explicit function budget: the exposure branch can chain a DNS resolve + a 9s
+// InternetDB fetch + a 6s 404-probe, so cap the whole request well above that
+// rather than inheriting the platform default (which could 504 mid-scan).
+export const maxDuration = 30;
 
 export const revalidate = 0;
 
@@ -82,6 +88,7 @@ function emailResult(status: string, extra: Record<string, unknown> = {}) {
     pastesCount: 0,
     hibp: false,
     infostealer: null,
+    addressClass: null,
     source: EMAIL_SOURCE,
     fetched_at: status === "invalid" ? null : nowIso(),
     ...extra,
@@ -114,8 +121,11 @@ async function hudsonRockEmail(email: string) {
     corporateServices: 0, userServices: 0, source: HR_SOURCE,
   };
   const d = await fetchJson<HrEmail>(`${HR_EMAIL_URL}?email=${encodeURIComponent(email)}`, 9000);
-  if (d === null) return fail;
-  const stealers = Array.isArray(d.stealers) ? d.stealers : [];
+  // Only a well-shaped answer (a stealers array) is authoritative. A 200 body without
+  // it — a notice/error payload or a schema change — must NOT fail open to "clean";
+  // report unavailable instead (the no-false-claims rule cuts both ways).
+  if (d === null || !Array.isArray(d.stealers)) return fail;
+  const stealers = d.stealers;
   if (stealers.length === 0) return { ...fail, status: "ok" }; // answered → not infected
   const dates = stealers.map((s) => realDate(s.date_compromised)).filter(Boolean).sort() as string[];
   return {
@@ -135,7 +145,9 @@ async function hudsonRockDomain(domain: string) {
     lastEmployee: null as string | null, lastUser: null as string | null, families: [] as string[], source: HR_SOURCE,
   };
   const d = await fetchJson<HrDomain>(`${HR_DOMAIN_URL}?domain=${encodeURIComponent(domain)}`, 9000);
-  if (d === null) return fail;
+  // Require the expected numeric `total` before claiming a clean domain — a 200 body
+  // missing it is an unknown state, not a "0 infections" result (see hudsonRockEmail).
+  if (d === null || typeof d.total !== "number") return fail;
   const families =
     d.stealerFamilies && typeof d.stealerFamilies === "object"
       ? Object.entries(d.stealerFamilies)
@@ -144,7 +156,7 @@ async function hudsonRockDomain(domain: string) {
           .map(([k]) => k)
           .slice(0, 4)
       : [];
-  const total = d.total ?? 0;
+  const total = d.total;
   return {
     status: "ok",
     found: total > 0,
@@ -223,10 +235,11 @@ async function hibpRows(email: string): Promise<{ rows: Breach[]; available: boo
 type LeakcheckResp = { success?: boolean; found?: number; fields?: string[]; sources?: { name?: string; date?: string }[] };
 
 // Second breach source (free/keyless), unioned with XposedOrNot for wider coverage.
-// Returns extra breach rows + the field types it saw. Fail-soft: [] on any error.
-async function leakcheckRows(email: string): Promise<{ rows: Breach[]; fields: string[] }> {
+// Returns extra breach rows + the field types it saw + a RESULT-WIDE hasPassword.
+// Fail-soft: empty on any error.
+async function leakcheckRows(email: string): Promise<{ rows: Breach[]; fields: string[]; hasPassword: boolean }> {
   const d = await fetchJson<LeakcheckResp>(`${LEAKCHECK_URL}?check=${encodeURIComponent(email)}`, 8000);
-  if (!d || d.success !== true || !Array.isArray(d.sources)) return { rows: [], fields: [] };
+  if (!d || d.success !== true || !Array.isArray(d.sources)) return { rows: [], fields: [], hasPassword: false };
   const fields = Array.isArray(d.fields) ? d.fields : [];
   const hasPw = fields.some((f) => /pass/i.test(f));
   const rows: Breach[] = d.sources
@@ -236,7 +249,11 @@ async function leakcheckRows(email: string): Promise<{ rows: Breach[]; fields: s
       year: (s.date || "").slice(0, 4),
       verified: false,
       exposed: [],
-      hasPassword: hasPw,
+      // LeakCheck reports field types ONCE for the whole result, never per breach.
+      // Stamping hasPassword per row would render a red "PASSWORD" chip on every
+      // LeakCheck breach — a per-breach claim the source never made. Keep the flag
+      // false here; the honest aggregate is returned separately and OR'd in below.
+      hasPassword: false,
     }));
   // LeakCheck reports field types once for the whole result; map them to readable
   // exposed-data names so they join the aggregate chips.
@@ -248,12 +265,18 @@ async function leakcheckRows(email: string): Promise<{ rows: Breach[]; fields: s
     country: "Geographic locations", gender: "Genders",
   };
   const mapped = [...new Set(fields.map((f) => FIELD_LABEL[f]).filter(Boolean))] as string[];
-  return { rows, fields: mapped };
+  return { rows, fields: mapped, hasPassword: hasPw };
 }
 
 async function scanEmail(email: string) {
   const normalized = normalizeEmail(email);
   if (!normalized) return emailResult("invalid");
+
+  // Whose exposure is this? A placeholder (test@example.com), a shared role mailbox
+  // (info@) or a disposable address returns breaches that belong to everyone who
+  // used it, not the person scanning — the UI uses this to reframe the result
+  // honestly instead of headlining "YOUR passwords leaked".
+  const addressClass = classifyAddress(normalized);
 
   const [data, lc, hibp, infostealer] = await Promise.all([
     fetchJson<XonAnalytics>(`${XON_ANALYTICS_URL}?email=${encodeURIComponent(normalized)}`, 9000),
@@ -262,7 +285,7 @@ async function scanEmail(email: string) {
     hudsonRockEmail(normalized),
   ]);
   if (data === null && lc.rows.length === 0 && hibp.rows.length === 0 && !hibp.available) {
-    return { ...(await scanEmailBasic(normalized)), infostealer };
+    return { ...(await scanEmailBasic(normalized)), infostealer, addressClass };
   }
 
   const details = data?.ExposedBreaches?.breaches_details;
@@ -276,7 +299,7 @@ async function scanEmail(email: string) {
     const k = r.name.toLowerCase();
     if (k && !seen.has(k)) { seen.add(k); merged.push(r); }
   }
-  if (merged.length === 0) return emailResult("ok", { infostealer }); // no breaches (infostealer may still hit)
+  if (merged.length === 0) return emailResult("ok", { infostealer, addressClass }); // no breaches (infostealer may still hit)
 
   merged.sort(
     (a, b) =>
@@ -291,12 +314,16 @@ async function scanEmail(email: string) {
     count: merged.length,
     riskLabel: risk?.risk_label ?? null,
     riskScore: typeof risk?.risk_score === "number" ? risk.risk_score : null,
-    passwordsExposed: merged.some((r) => r.hasPassword),
+    // Aggregate signal: any row that individually leaked a password OR LeakCheck's
+    // result-wide password flag. Honest at the summary level without fabricating a
+    // per-breach claim (LeakCheck rows carry hasPassword:false — see leakcheckRows).
+    passwordsExposed: merged.some((r) => r.hasPassword) || lc.hasPassword,
     breaches: merged.slice(0, BREACH_LIMIT),
     exposedData,
     pastesCount,
     hibp: hibp.available,
     infostealer,
+    addressClass,
   });
 }
 
@@ -349,50 +376,77 @@ function keepUnder(domain: string, raw: string, into: Set<string>) {
 }
 
 type CsRow = { dns_names?: string[] };
-async function certspotterNames(domain: string): Promise<Set<string> | null> {
-  const data = await fetchJson<CsRow[]>(
-    `${CERTSPOTTER_URL}?domain=${encodeURIComponent(domain)}&include_subdomains=true&expand=dns_names`,
-    9000
-  );
-  if (!Array.isArray(data)) return null;
-  const names = new Set<string>();
-  for (const row of data) for (const n of row?.dns_names ?? []) keepUnder(domain, n, names);
-  return names;
+// "not_supported" ≠ null: certspotter permanently refuses to enumerate a public
+// registry (a Public-Suffix-List domain like gov.az), which is an honest "can't",
+// not a transient outage. null is a real/transient failure.
+async function certspotterNames(domain: string): Promise<Set<string> | "not_supported" | null> {
+  try {
+    const r = await fetch(
+      `${CERTSPOTTER_URL}?domain=${encodeURIComponent(domain)}&include_subdomains=true&expand=dns_names`,
+      { headers: { "User-Agent": UA }, signal: AbortSignal.timeout(9000) }
+    );
+    if (r.status === 403) {
+      const body = await r.text().catch(() => "");
+      if (/not_allowed_by_plan|not beneath an eTLD/i.test(body)) return "not_supported";
+      return null;
+    }
+    if (!r.ok) return null;
+    const data = (await r.json()) as CsRow[];
+    if (!Array.isArray(data)) return null;
+    const names = new Set<string>();
+    for (const row of data) for (const n of row?.dns_names ?? []) keepUnder(domain, n, names);
+    return names;
+  } catch {
+    return null;
+  }
 }
 
 type CrtRow = { name_value?: string; common_name?: string };
 async function crtshNames(domain: string): Promise<Set<string> | null> {
-  const data = await fetchJson<CrtRow[]>(`${CRTSH_URL}?q=${encodeURIComponent("%." + domain)}&output=json`, 7000);
-  if (!Array.isArray(data)) return null;
-  const names = new Set<string>();
-  for (const row of data) {
-    if (!row || typeof row !== "object") continue;
-    if (typeof row.name_value === "string") for (const n of row.name_value.split("\n")) keepUnder(domain, n, names);
-    if (typeof row.common_name === "string") keepUnder(domain, row.common_name, names);
+  // crt.sh is comprehensive but flaky — frequent 502s/timeouts on larger zones. One
+  // retry rescues the momentary 502s (they return fast); it runs inside a Promise.all
+  // alongside the ~15s exposure branch, so two bounded attempts stay within budget.
+  for (let attempt = 0; attempt < 2; attempt++) {
+    const data = await fetchJson<CrtRow[]>(
+      `${CRTSH_URL}?q=${encodeURIComponent("%." + domain)}&output=json`,
+      attempt === 0 ? 10000 : 6000
+    );
+    if (!Array.isArray(data)) continue;
+    const names = new Set<string>();
+    for (const row of data) {
+      if (!row || typeof row !== "object") continue;
+      if (typeof row.name_value === "string") for (const n of row.name_value.split("\n")) keepUnder(domain, n, names);
+      if (typeof row.common_name === "string") keepUnder(domain, row.common_name, names);
+    }
+    return names;
   }
-  return names;
+  return null;
 }
 
-// unavailable only when BOTH CT sources fail — never a false "0".
+// "ok" (real data), "not_supported" (public-registry domain that can't be enumerated),
+// or "unavailable" (both sources transiently failed) — never a false "0".
 async function scanSubdomains(domain: string) {
   const [cs, crt] = await Promise.all([certspotterNames(domain), crtshNames(domain)]);
-  if (cs === null && crt === null) {
-    return { status: "unavailable", count: 0, sample: [], source: CT_SOURCE, fetched_at: nowIso() };
+  const csNames = cs instanceof Set ? cs : null;
+  if (csNames === null && crt === null) {
+    // Distinguish "can't enumerate this kind of domain" from "sources are down" so
+    // the UI doesn't imply a retry would help a gov.az-class public-suffix domain.
+    const status = cs === "not_supported" ? "not_supported" : "unavailable";
+    return { status, count: 0, sample: [], source: CT_SOURCE, fetched_at: nowIso() };
   }
-  const names = [...new Set<string>([...(cs ?? []), ...(crt ?? [])])].sort();
+  const names = [...new Set<string>([...(csNames ?? []), ...(crt ?? [])])].sort();
   return { status: "ok", count: names.length, sample: names.slice(0, SUBDOMAIN_SAMPLE), source: CT_SOURCE, fetched_at: nowIso() };
 }
 
 type IdbRow = { ports?: number[]; vulns?: string[]; hostnames?: string[]; tags?: string[] };
 async function scanExposure(domain: string) {
   let ip: string | null = null;
-  try {
-    const dns = await import("node:dns");
-    const addrs = await dns.promises.resolve4(domain);
-    ip = addrs.find((a) => /^\d{1,3}(\.\d{1,3}){3}$/.test(a)) ?? null;
-  } catch {
-    ip = null;
-  }
+  const dns = await import("node:dns");
+  // Bound the resolve like every other lookup — c-ares' default (~5s × retries ×
+  // servers) can hang this branch for 15-20s against a black-holing resolver, and
+  // scanDomain awaits Promise.all, so one slow branch stalls the whole request.
+  const addrs = await dnsRace(dns.promises.resolve4(domain), 4000);
+  ip = (addrs ?? []).find((a) => /^\d{1,3}(\.\d{1,3}){3}$/.test(a)) ?? null;
   const base = { ip, found: false, ports: [] as number[], vulns: [] as string[], tags: [] as string[], source: EXPOSURE_SOURCE, fetched_at: nowIso() };
   if (!ip) return { status: "unavailable", ...base };
   const idb = await fetchJson<IdbRow>(`${INTERNETDB_URL}${encodeURIComponent(ip)}`, 9000);
@@ -519,29 +573,94 @@ function dmarcPolicy(txt: string): string | null {
   return m ? m[1].toLowerCase() : null;
 }
 
+// A DNS lookup outcome that keeps absence and failure distinct — the difference
+// between "this domain verifiably has no DMARC" and "we couldn't check". Only the
+// former may be shown to a user as a security weakness (the honesty rule).
+type RecStatus = "ok" | "absent" | "unknown";
+type DnsOutcome<T> = { status: "ok"; value: T } | { status: "absent" } | { status: "unknown" };
+
+async function dnsResolve<T>(p: Promise<T>, ms = 6000): Promise<DnsOutcome<T>> {
+  try {
+    const value = (await Promise.race([
+      p,
+      new Promise<never>((_, rej) => setTimeout(() => rej(new Error("timeout")), ms)),
+    ])) as T;
+    return { status: "ok", value };
+  } catch (e) {
+    const code = (e as { code?: string })?.code;
+    // ENOTFOUND (no such name) / ENODATA (name exists, no record of this type) are
+    // authoritative absence. SERVFAIL, refused, and our own timeout (no .code) are
+    // unknown — never reported to the user as "the record is missing".
+    if (code === "ENOTFOUND" || code === "ENODATA") return { status: "absent" };
+    return { status: "unknown" };
+  }
+}
+
+// Spoofability grade (A–F) derived purely from the SPF/DMARC state we positively
+// know. Turns the raw records into one actionable letter for an IT admin, and
+// surfaces the two silent weaknesses: SPF with no ~all/-all qualifier, and DMARC
+// p=none. Returns null when either record is unknown — never guess a grade.
+function spoofGrade(
+  spf: { policy: string | null; status: RecStatus },
+  dmarc: { policy: string | null; status: RecStatus },
+): { grade: "A" | "B" | "C" | "D" | "F"; spoofable: boolean } | null {
+  if (spf.status === "unknown" || dmarc.status === "unknown") return null;
+  const dp = dmarc.status === "ok" ? dmarc.policy : null; // reject | quarantine | none | null(absent)
+  const spfEnforced = spf.status === "ok" && (spf.policy === "-all" || spf.policy === "~all");
+  let grade: "A" | "B" | "C" | "D" | "F";
+  if (dp === "reject") grade = spfEnforced ? "A" : "B";
+  else if (dp === "quarantine") grade = "C";
+  else grade = spfEnforced ? "D" : "F"; // no DMARC enforcement (none/absent)
+  // Without a quarantine/reject DMARC policy, from-header spoofing is trivial.
+  const spoofable = dp !== "reject" && dp !== "quarantine";
+  return { grade, spoofable };
+}
+
 async function scanEmailSecurity(domain: string) {
   const dns = await import("node:dns");
-  const [mx, txt, dmarcTxt] = await Promise.all([
-    dnsRace(dns.promises.resolveMx(domain)),
-    dnsRace(dns.promises.resolveTxt(domain)),
-    dnsRace(dns.promises.resolveTxt(`_dmarc.${domain}`)),
+  const [mxO, txtO, dmarcO] = await Promise.all([
+    dnsResolve(dns.promises.resolveMx(domain)),
+    dnsResolve(dns.promises.resolveTxt(domain)),
+    dnsResolve(dns.promises.resolveTxt(`_dmarc.${domain}`)),
   ]);
-  if (mx === null && txt === null && dmarcTxt === null) {
-    return {
-      status: "unavailable", mx: false,
-      spf: { present: false, policy: null as string | null },
-      dmarc: { present: false, policy: null as string | null },
-      source: EMAIL_SEC_SOURCE, fetched_at: nowIso(),
-    };
+  const flat = (recs: string[][]) => recs.map((r) => r.join(""));
+
+  // MX
+  const mxPresent = mxO.status === "ok" && Array.isArray(mxO.value) && mxO.value.length > 0;
+  const mxStatus: RecStatus = mxO.status === "unknown" ? "unknown" : mxPresent ? "ok" : "absent";
+
+  // SPF lives in the apex TXT: a resolved TXT set lets us confirm present OR absent;
+  // an unknown TXT lookup makes SPF status unknown (must not claim "missing").
+  let spfRec: string | undefined;
+  let spfStatus: RecStatus;
+  if (txtO.status === "ok") {
+    spfRec = flat(txtO.value).find((t) => /^v=spf1\b/i.test(t.trim()));
+    spfStatus = spfRec ? "ok" : "absent";
+  } else {
+    spfStatus = txtO.status === "absent" ? "absent" : "unknown";
   }
-  const flat = (recs: string[][] | null) => (recs ?? []).map((r) => r.join(""));
-  const spf = flat(txt).find((t) => /^v=spf1\b/i.test(t.trim()));
-  const dmarc = flat(dmarcTxt).find((t) => /^v=DMARC1\b/i.test(t.trim()));
+
+  // DMARC at _dmarc.<domain>.
+  let dmarcRec: string | undefined;
+  let dmarcStatus: RecStatus;
+  if (dmarcO.status === "ok") {
+    dmarcRec = flat(dmarcO.value).find((t) => /^v=DMARC1\b/i.test(t.trim()));
+    dmarcStatus = dmarcRec ? "ok" : "absent";
+  } else {
+    dmarcStatus = dmarcO.status === "absent" ? "absent" : "unknown";
+  }
+
+  const spf = { present: !!spfRec, policy: spfRec ? spfAll(spfRec) : null, status: spfStatus };
+  const dmarc = { present: !!dmarcRec, policy: dmarcRec ? dmarcPolicy(dmarcRec) : null, status: dmarcStatus };
+
+  // Whole card is unavailable only when every lookup failed unknown.
+  const allUnknown = mxStatus === "unknown" && spfStatus === "unknown" && dmarcStatus === "unknown";
   return {
-    status: "ok",
-    mx: Array.isArray(mx) && mx.length > 0,
-    spf: { present: !!spf, policy: spf ? spfAll(spf) : null },
-    dmarc: { present: !!dmarc, policy: dmarc ? dmarcPolicy(dmarc) : null },
+    status: allUnknown ? "unavailable" : "ok",
+    mx: { present: mxPresent, status: mxStatus },
+    spf,
+    dmarc,
+    grade: spoofGrade(spf, dmarc),
     source: EMAIL_SEC_SOURCE,
     fetched_at: nowIso(),
   };

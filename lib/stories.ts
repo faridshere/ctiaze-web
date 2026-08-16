@@ -2,6 +2,7 @@ import { cache } from "react";
 import type { Filter } from "mongodb";
 import { getDb } from "./db";
 import { toStory, type Story, type StoryDoc } from "./types";
+import { storyIdKey } from "./slug";
 
 // Only fully-published, non-retracted, real (non-stub) stories are ever shown —
 // mirrors the exact gate the pipeline itself uses before anything reaches
@@ -34,11 +35,10 @@ export const getStories = cache(async (limit = 60): Promise<Story[]> => {
 });
 
 export const getStoryBySlug = cache(async (slug: string): Promise<Story | null> => {
-  // slugify() builds the slug as `${id.slice(0,12)}-${titleSlug}` where id has its
-  // cve:/url: prefix stripped. CVE ids contain hyphens (e.g. "CVE-2026-484"), so the
-  // stable prefix is the FIRST 12 CHARACTERS of the slug — not the first hyphen
-  // segment (that returned just "CVE" and collapsed every CVE page onto one story).
-  const shortId = slug.slice(0, 12);
+  // storyIdKey() recovers the stable _id key slugify() embedded (first 12 chars of
+  // the prefix-stripped id, minus any trailing join hyphen). See lib/slug.ts — the
+  // trailing-hyphen strip is what keeps digest permalinks (11-char ids) resolving.
+  const shortId = storyIdKey(slug);
   if (!shortId) return null;
   // escape regex metacharacters so the prefix match stays literal
   const escaped = shortId.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");

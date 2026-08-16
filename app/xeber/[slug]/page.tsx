@@ -8,7 +8,7 @@ import { FlagChips } from "@/components/FlagChips";
 import { SpektrStrip } from "@/components/SpektrStrip";
 import { ThreatActorCard } from "@/components/ThreatActorCard";
 import { IocPanel } from "@/components/IocPanel";
-import { formatStoryDate } from "@/lib/format";
+import { formatStoryDate, jsonLdSafe } from "@/lib/format";
 import { urgencyHeader, exposureLine, storyActions } from "@/lib/storysignal";
 import { getStoryBySlug, getStories } from "@/lib/stories";
 import { extractIocs, type IocType } from "@/lib/ioc";
@@ -33,23 +33,36 @@ function tfKindOf(t: IocType): TfKind | null {
 
 export async function generateMetadata({
   params,
+  searchParams,
 }: {
   params: Promise<Params>;
+  searchParams: Promise<{ dil?: string }>;
 }): Promise<Metadata> {
   const { slug } = await params;
   const story = await getStoryBySlug(slug);
+  // A missing slug is a real 404, not a 200 soft-404: returning a "Not found" title
+  // lets the streamed shell commit a 200 (crawlers then treat every stale sitemap/RSS
+  // link as a live page). notFound() here yields a genuine 404 status. getStoryBySlug
+  // is cache()-wrapped, so the page body's identical call adds no extra Mongo read.
+  if (!story) notFound();
   const en = (await getLocale()) === "en";
-  if (!story) return { title: en ? "Not found" : "Tapılmadı" };
   const title = en ? story.titleEn : story.titleAz;
   const desc = (en ? story.summaryEn : story.bodyAz).slice(0, 160);
   const url = `https://ctiaze.tech/xeber/${story.slug}`;
+  // Each ?dil= variant must be SELF-canonical, or Google dedupes the alternate into
+  // the bare URL's canonical and ignores the hreflang cluster — so the Azerbaijani
+  // long-tail never gets its own indexable URL. Bare URL keeps the bare canonical +
+  // x-default; a forced ?dil=az|en canonicalizes to itself. Junk ?dil values fall
+  // back to the bare canonical so they can't mint duplicates.
+  const dil = (await searchParams)?.dil;
+  const canonical = dil === "az" ? `${url}?dil=az` : dil === "en" ? `${url}?dil=en` : url;
   return {
     title,
     description: desc,
     // Crawlable in both languages so the Azerbaijani per-CVE long-tail gets indexed
     // (Googlebot is cookieless → would otherwise only ever see the English render).
-    alternates: { canonical: url, languages: { az: `${url}?dil=az`, en: `${url}?dil=en`, "x-default": url } },
-    openGraph: { title, description: desc, url, type: "article", publishedTime: story.publishedAt },
+    alternates: { canonical, languages: { az: `${url}?dil=az`, en: `${url}?dil=en`, "x-default": url } },
+    openGraph: { title, description: desc, url: canonical, type: "article", publishedTime: story.publishedAt },
   };
 }
 
@@ -145,7 +158,7 @@ export default async function StoryPage({ params }: { params: Promise<Params> })
     <div className="flex min-h-screen flex-col">
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        dangerouslySetInnerHTML={{ __html: jsonLdSafe(jsonLd) }}
       />
       <Header />
       <main id="main" className="mx-auto w-full max-w-[42rem] flex-1 px-[var(--sp-gutter)] py-[var(--sp-section)]">

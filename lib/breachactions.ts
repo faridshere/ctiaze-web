@@ -14,10 +14,13 @@ export function riskLabel(risk: Risk, locale: Locale): string {
   return (locale === "en" ? en : az)[risk];
 }
 
-export type ActionItem = { risk: Risk; az: string; en: string };
+// az_local: an optional Azerbaijan-specific follow-up naming the real service a
+// local user would actually use (mobile operators, ASAN / e-gov.az) — generic
+// advice like "call your bank" is aspirational; naming the step makes it followable.
+export type ActionItem = { risk: Risk; az: string; en: string; az_local?: string };
 
 // First matching rule wins, so put the sharpest (card, token) before the generic.
-const RULES: { match: RegExp; risk: Risk; az: string; en: string }[] = [
+const RULES: { match: RegExp; risk: Risk; az: string; en: string; az_local?: string }[] = [
   {
     match: /password|şifr|parol/,
     risk: "critical",
@@ -47,6 +50,7 @@ const RULES: { match: RegExp; risk: Risk; az: string; en: string }[] = [
     risk: "critical",
     az: "Şəxsiyyət oğurluğu riski — sənəd nömrəsinin sui-istifadəsini izlə, mümkünsə yenilə, kredit müraciətlərinə diqqət et.",
     en: "Identity-theft risk — watch for misuse of the ID number, replace it if possible, monitor for fraudulent credit applications.",
+    az_local: "ASAN xidmət / e-gov.az hesabında əlavə yoxlamanı (step-up) aktiv et; FİN/şəxsiyyət vəsiqəsi sızıbsa, bankda kart və hesab əməliyyatlarına əlavə təsdiq qoy.",
   },
   {
     match: /biometric/,
@@ -71,9 +75,14 @@ const RULES: { match: RegExp; risk: Risk; az: string; en: string }[] = [
     risk: "medium",
     az: "SIM-swap və smishing riski — operatorunda SIM qorumasını aktiv et, naməlum SMS linklərinə toxunma.",
     en: "SIM-swap and smishing risk — enable a SIM-lock with your carrier and don't tap links in unknown texts.",
+    az_local: "Azercell/Bakcell/Nar müştəri xidmətindən nömrənə SIM-PIN və nömrə-dəyişmə qorumasını aktiv etdir.",
   },
   {
-    match: /physical address|home address|address|geo|location/,
+    // Bare "address" must NOT be here — "Email addresses" / "IP addresses" (in
+    // almost every breach result) would match it first and wrongly claim the user's
+    // physical address leaked, shadowing the real email/IP rules below. Match only
+    // genuinely location-bearing classes.
+    match: /physical address|home address|street address|postal|residential|\bgeo\b|geographic|location/,
     risk: "medium",
     az: "Ünvan/məkan məlumatın açıqdır — doxxing və hədəfli fişinqə qarşı ayıq ol, real-time yer paylaşımını məhdudlaşdır.",
     en: "Address/location data is exposed — stay alert to doxxing and targeted phishing; limit real-time location sharing.",

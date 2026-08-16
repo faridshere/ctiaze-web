@@ -1,5 +1,7 @@
 // Mirrors the shape of a published document in ctiaze-engine's MongoDB "items"
 // collection (see ctiaze-engine/cti/store.py + publish.py). Read-only here.
+import { slugify } from "./slug";
+
 export type StoryDoc = {
   _id: string;
   title: string;
@@ -46,19 +48,6 @@ export type Story = {
   kind: string | null;
   azExposure: { product: string; count: number; asOf: string } | null;
 };
-
-function slugify(id: string, titleAz: string): string {
-  const base = titleAz
-    .toLowerCase()
-    .replace(/[^a-z0-9əıöüğşç\s-]/gi, "")
-    .trim()
-    .replace(/\s+/g, "-")
-    .slice(0, 60);
-  // id already carries a stable hash/cve — prefix it so the slug is always
-  // unique and stable even if two titles collide or a title is empty.
-  const shortId = id.replace(/^(cve:|url:|digest:|spike:)/, "").slice(0, 12);
-  return `${shortId}-${base}`.replace(/-+$/, "");
-}
 
 export function toStory(doc: StoryDoc): Story {
   const publishedAt = doc.published_at

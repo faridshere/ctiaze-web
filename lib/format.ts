@@ -3,6 +3,16 @@ export const AZ_MONTHS = [
   "iyul", "avq", "sen", "okt", "noy", "dek",
 ];
 
+// Serialize an object for a <script type="application/ld+json"> block. JSON.stringify
+// does NOT escape '<', and the HTML tokenizer ends a <script> at the first "</script"
+// regardless of JSON string context — so an upstream headline containing "</script>"
+// (our titles come from scraped third-party feeds) would break out of the block and
+// execute as markup. Escaping '<' (and '>' for symmetry) closes that hole; search
+// engines parse the \u003c-escaped JSON identically.
+export function jsonLdSafe(data: unknown): string {
+  return JSON.stringify(data).replace(/</g, "\\u003c").replace(/>/g, "\\u003e");
+}
+
 // Fixed timeZone so server and client render an identical string regardless of
 // the visitor's local timezone — avoids hydration mismatches entirely.
 const TIME_ZONE = "Asia/Baku";

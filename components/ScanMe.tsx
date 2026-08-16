@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { getDict, type Locale } from "@/lib/i18n";
 import { breachActions, riskLabel, type Risk } from "@/lib/breachactions";
 
@@ -19,22 +19,26 @@ type Infostealer = {
   status: "ok" | "unavailable"; infected: boolean; count: number;
   lastCompromised: string | null; corporateServices: number; userServices: number; source: string;
 } | null;
+type AddressClass = { kind: "personal" | "role" | "example" | "disposable"; shared: boolean } | null;
 type EmailResult = {
   kind: "email"; status: "ok" | "unavailable" | "invalid"; count: number;
   riskLabel: string | null; riskScore: number | null; passwordsExposed: boolean;
   breaches: Breach[]; exposedData: string[]; pastesCount: number; hibp: boolean;
-  infostealer: Infostealer; source: string; fetched_at: string | null;
+  infostealer: Infostealer; addressClass: AddressClass; source: string; fetched_at: string | null;
 };
+type RecStatus = "ok" | "absent" | "unknown";
+type SpoofGrade = { grade: "A" | "B" | "C" | "D" | "F"; spoofable: boolean } | null;
 type EmailSecurity = {
-  status: "ok" | "unavailable"; mx: boolean;
-  spf: { present: boolean; policy: string | null }; dmarc: { present: boolean; policy: string | null };
-  source: string; fetched_at: string;
+  status: "ok" | "unavailable"; mx: { present: boolean; status: RecStatus };
+  spf: { present: boolean; policy: string | null; status: RecStatus };
+  dmarc: { present: boolean; policy: string | null; status: RecStatus };
+  grade: SpoofGrade; source: string; fetched_at: string;
 } | null;
 type DomainInfostealer = {
   status: "ok" | "unavailable"; found: boolean; employees: number; users: number; thirdParties: number;
   total: number; lastEmployee: string | null; lastUser: string | null; families: string[]; source: string;
 } | null;
-type SubBlock = { status: "ok" | "unavailable"; count: number; sample: string[]; source: string; fetched_at: string };
+type SubBlock = { status: "ok" | "unavailable" | "not_supported"; count: number; sample: string[]; source: string; fetched_at: string };
 type ExposureBlock = {
   status: "ok" | "unavailable"; ip: string | null; found: boolean;
   ports: number[]; vulns: string[]; tags: string[]; source: string; fetched_at: string;
@@ -66,6 +70,16 @@ function dataLabel(s: string, locale: Locale): string {
   return locale === "az" ? DATA_LABEL_AZ[s.trim().toLowerCase()] ?? s : s;
 }
 
+// XposedOrNot's risk_label ("Critical"/"High"/…) arrives in English. Map it onto the
+// existing AZ localizer so the scariest word on the page isn't English in the AZ UI;
+// pass through anything unrecognised.
+function localizedRisk(raw: string, locale: Locale): string {
+  const k = raw.trim().toLowerCase();
+  return k === "critical" || k === "high" || k === "medium" || k === "low"
+    ? riskLabel(k as Risk, locale)
+    : raw;
+}
+
 async function sha1Hex(s: string): Promise<string> {
   const buf = await crypto.subtle.digest("SHA-1", new TextEncoder().encode(s));
   return [...new Uint8Array(buf)].map((b) => b.toString(16).padStart(2, "0")).join("").toUpperCase();
@@ -82,6 +96,14 @@ export function ScanMe({ locale }: { locale: Locale }) {
   const [pw, setPw] = useState("");
   const [pwLoading, setPwLoading] = useState(false);
   const [pwResult, setPwResult] = useState<PwState>(null);
+
+  // Move focus to the result when it arrives so screen-reader and keyboard users
+  // land on it instead of hearing "scanning…" then silence. Only on a real result
+  // (not on mount or when cleared at scan start).
+  const resultRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (result) resultRef.current?.focus();
+  }, [result]);
 
   async function run(term: string) {
     setError("");
@@ -179,7 +201,9 @@ export function ScanMe({ locale }: { locale: Locale }) {
         </p>
       )}
       {error && <p role="alert" className="mt-5 font-mono text-xs text-accent-critical">{error}</p>}
-      {result && !loading && (result.kind === "email" ? <EmailView r={result} t={t} locale={locale} /> : <DomainView r={result} t={t} />)}
+      <div ref={resultRef} tabIndex={-1} className="outline-none">
+        {result && !loading && (result.kind === "email" ? <EmailView r={result} t={t} locale={locale} /> : <DomainView r={result} t={t} />)}
+      </div>
 
       {/* password self-check (k-anonymity) */}
       <div className="mt-6 overflow-hidden rounded-md border border-hairline bg-surface-raised/40">
@@ -284,7 +308,15 @@ function ActionList({ actions, t, locale }: { actions: ReturnType<typeof breachA
             <span className={`mt-0.5 shrink-0 rounded-sm border px-1.5 py-0.5 font-mono text-[9.5px] uppercase tracking-wider ${RISK_CHIP[a.risk]}`}>
               {riskLabel(a.risk, locale)}
             </span>
-            <span className="text-[13.5px] leading-relaxed text-ink-secondary">{locale === "en" ? a.en : a.az}</span>
+            <span className="text-[13.5px] leading-relaxed text-ink-secondary">
+              {locale === "en" ? a.en : a.az}
+              {a.az_local && (
+                <span className="mt-1 flex gap-1.5 text-[12.5px] text-ink-muted">
+                  <span className="shrink-0 font-mono text-[10px] uppercase tracking-wider text-brand">{t.localActionLabel}:</span>
+                  <span>{a.az_local}</span>
+                </span>
+              )}
+            </span>
           </li>
         ))}
       </ol>
@@ -304,6 +336,7 @@ function EmailView({ r, t, locale }: { r: EmailResult; t: ScanDict; locale: Loca
   }
   const steal = r.infostealer;
   const infected = !!steal?.infected;
+  const shared = !!r.addressClass?.shared;
   const actions = breachActions(r.exposedData, { passwordsExposed: r.passwordsExposed, infostealer: infected }, locale);
 
   const verdict =
@@ -326,12 +359,15 @@ function EmailView({ r, t, locale }: { r: EmailResult; t: ScanDict; locale: Loca
           <div className="font-headline text-3xl text-accent-critical">{t.nBreach(r.count)}</div>
           {r.riskLabel && (
             <span className="pb-1 font-mono text-xs uppercase tracking-widest text-accent-critical">
-              {t.riskWord}: {r.riskLabel}{r.riskScore != null ? ` · ${r.riskScore}/100` : ""}
+              {t.riskWord}: {localizedRisk(r.riskLabel, locale)}{r.riskScore != null ? ` · ${r.riskScore}/100` : ""}
             </span>
           )}
         </div>
 
-        {r.passwordsExposed && (
+        {/* The password-leak banner is second-person ("your passwords leaked"), so it
+            only fires for a real personal address — never a shared/placeholder one,
+            where the shared-address note above already reframes whose data this is. */}
+        {r.passwordsExposed && !shared && (
           <p className="mt-3 rounded-sm border border-accent-critical/40 bg-accent-critical/10 px-3 py-2 text-[13px] leading-relaxed text-accent-critical">
             <b>{t.pwExposedBold}</b>{t.pwExposedRest}
           </p>
@@ -386,6 +422,12 @@ function EmailView({ r, t, locale }: { r: EmailResult; t: ScanDict; locale: Loca
   return (
     <ResultCard label={t.emailResult}>
       <div className="space-y-4">
+        {shared && r.addressClass && (
+          <p className="flex gap-2 rounded-md border border-accent-warning/40 bg-accent-warning/[0.06] px-4 py-3 text-[13px] leading-relaxed text-ink-secondary">
+            <span aria-hidden="true" className="text-accent-warning">ⓘ</span>
+            <span>{t.sharedAddrNote(r.addressClass.kind)}</span>
+          </p>
+        )}
         {infected && steal && <InfostealerBanner steal={steal} t={t} />}
         {verdict}
         {actions.length > 0 && <ActionList actions={actions} t={t} locale={locale} />}
@@ -408,7 +450,7 @@ function DomainView({ r, t }: { r: DomainResult; t: ScanDict }) {
     <ResultCard label={<>{t.attackSurface} · <span className="font-mono text-ink-secondary">{r.domain}</span></>}>
       <div className="grid gap-4 sm:grid-cols-2">
         <SubCard icon="◎" tone="brand" title={t.subTitle}
-          badge={r.subdomains?.status === "ok" ? "ok" : "unavailable"}
+          badge={r.subdomains?.status === "ok" ? "ok" : r.subdomains?.status === "not_supported" ? "n/a" : "unavailable"}
           badgeTone={r.subdomains?.status === "ok" ? "brand" : "muted"}
           unavailable={r.subdomains?.status !== "ok"}
         >
@@ -425,7 +467,9 @@ function DomainView({ r, t }: { r: DomainResult; t: ScanDict }) {
               <Source><b className="text-ink-secondary">certspotter + crt.sh</b></Source>
             </>
           ) : (
-            <p className="text-[13px] leading-relaxed text-ink-secondary">{t.subUnavail}</p>
+            <p className="text-[13px] leading-relaxed text-ink-secondary">
+              {r.subdomains?.status === "not_supported" ? t.subNotSupported : t.subUnavail}
+            </p>
           )}
         </SubCard>
 
@@ -506,89 +550,121 @@ function DomainView({ r, t }: { r: DomainResult; t: ScanDict }) {
           </SubCard>
         )}
 
-        {r.emailSecurity && (
-          <SubCard
-            icon="✉"
-            tone={emailSecStrong(r.emailSecurity) ? "good" : "warning"}
-            title={t.emailSecTitle}
-            badge={
-              r.emailSecurity.status !== "ok"
-                ? "unavailable"
-                : r.emailSecurity.dmarc.present
-                  ? `p=${r.emailSecurity.dmarc.policy ?? "?"}`
-                  : "no dmarc"
-            }
-            badgeTone={r.emailSecurity.status !== "ok" ? "muted" : emailSecStrong(r.emailSecurity) ? "good" : "warning"}
-            unavailable={r.emailSecurity.status !== "ok"}
-          >
-            {r.emailSecurity.status === "ok" ? (
-              <>
-                <div className="flex flex-wrap gap-1.5">
-                  <PostureChip label="MX" ok={r.emailSecurity.mx} />
-                  <PostureChip label="SPF" ok={r.emailSecurity.spf.present} note={r.emailSecurity.spf.policy} />
-                  <PostureChip
-                    label="DMARC"
-                    ok={r.emailSecurity.dmarc.policy === "quarantine" || r.emailSecurity.dmarc.policy === "reject"}
-                    note={r.emailSecurity.dmarc.policy}
-                  />
-                </div>
-                <p className="mt-2.5 text-[13px] leading-relaxed text-ink-secondary">
-                  {emailSecStrong(r.emailSecurity) ? t.emailSecStrong : t.emailSecWeak}
-                </p>
-                <Source><b className="text-ink-secondary">MX · SPF · DMARC</b></Source>
-              </>
-            ) : (
-              <p className="text-[13px] leading-relaxed text-ink-secondary">{t.emailSecUnavail}</p>
-            )}
-          </SubCard>
-        )}
+        {r.emailSecurity && <EmailSecCard es={r.emailSecurity} t={t} />}
 
-        {r.infostealer && (
-          <SubCard
-            icon="☣"
-            tone={r.infostealer.found ? "critical" : "good"}
-            title={t.stealerDomTitle}
-            badge={r.infostealer.status !== "ok" ? "unavailable" : r.infostealer.found ? t.timesBadge(r.infostealer.total) : "clean"}
-            badgeTone={r.infostealer.status !== "ok" ? "muted" : r.infostealer.found ? "critical" : "good"}
-            unavailable={r.infostealer.status !== "ok"}
-          >
-            {r.infostealer.status !== "ok" ? (
-              <p className="text-[13px] leading-relaxed text-ink-secondary">{t.intelUnavail}</p>
-            ) : r.infostealer.found ? (
-              <>
-                <ul className="space-y-1 font-mono text-[12px]">
-                  {r.infostealer.employees > 0 && <li className="text-accent-critical">▸ {t.stealerDomEmp(r.infostealer.employees)}</li>}
-                  {r.infostealer.users > 0 && <li className="text-ink-secondary">▸ {t.stealerDomUsr(r.infostealer.users)}</li>}
-                </ul>
-                <p className="mt-2 text-[13px] leading-relaxed text-ink-secondary">{t.stealerDomDesc}</p>
-                {r.infostealer.families.length > 0 && (
-                  <div className="mt-2 flex flex-wrap gap-1.5">
-                    {r.infostealer.families.map((f) => (
-                      <span key={f} className="rounded-sm border border-hairline bg-surface px-1.5 py-0.5 font-mono text-[10.5px] text-ink-muted">{f}</span>
-                    ))}
-                  </div>
-                )}
-                <Source><b className="text-ink-secondary">Hudson Rock</b></Source>
-              </>
-            ) : (
-              <p className="text-[13px] leading-relaxed text-ink-secondary">{t.stealerDomNone}</p>
-            )}
-          </SubCard>
-        )}
+        {r.infostealer && (() => {
+          const inf = r.infostealer;
+          // Direct compromise (this domain's own employees/users) is critical; a
+          // purely third-party signal is indirect, so tone it down to a warning.
+          const direct = inf.employees > 0 || inf.users > 0;
+          const foundTone = direct ? "critical" : "warning";
+          const noBreakdown = inf.employees === 0 && inf.users === 0 && inf.thirdParties === 0;
+          return (
+            <SubCard
+              icon="☣"
+              tone={inf.found ? foundTone : "good"}
+              title={t.stealerDomTitle}
+              badge={inf.status !== "ok" ? "unavailable" : inf.found ? t.timesBadge(inf.total) : "clean"}
+              badgeTone={inf.status !== "ok" ? "muted" : inf.found ? foundTone : "good"}
+              unavailable={inf.status !== "ok"}
+            >
+              {inf.status !== "ok" ? (
+                <p className="text-[13px] leading-relaxed text-ink-secondary">{t.intelUnavail}</p>
+              ) : inf.found ? (
+                <>
+                  <ul className="space-y-1 font-mono text-[12px]">
+                    {inf.employees > 0 && <li className="text-accent-critical">▸ {t.stealerDomEmp(inf.employees)}</li>}
+                    {inf.users > 0 && <li className="text-ink-secondary">▸ {t.stealerDomUsr(inf.users)}</li>}
+                    {inf.thirdParties > 0 && <li className="text-ink-muted">▸ {t.stealerDomThird(inf.thirdParties)}</li>}
+                    {/* Never leave the badge count unexplained: if the categories don't
+                        sum (or upstream fields drift), show the raw total. */}
+                    {noBreakdown && inf.total > 0 && <li className="text-ink-muted">▸ {t.stealerDomFallback(inf.total)}</li>}
+                  </ul>
+                  <p className="mt-2 text-[13px] leading-relaxed text-ink-secondary">{t.stealerDomDesc}</p>
+                  {inf.families.length > 0 && (
+                    <div className="mt-2 flex flex-wrap gap-1.5">
+                      {inf.families.map((f) => (
+                        <span key={f} className="rounded-sm border border-hairline bg-surface px-1.5 py-0.5 font-mono text-[10.5px] text-ink-muted">{f}</span>
+                      ))}
+                    </div>
+                  )}
+                  <Source><b className="text-ink-secondary">Hudson Rock</b></Source>
+                </>
+              ) : (
+                <p className="text-[13px] leading-relaxed text-ink-secondary">{t.stealerDomNone}</p>
+              )}
+            </SubCard>
+          );
+        })()}
       </div>
     </ResultCard>
   );
 }
 
-function emailSecStrong(es: NonNullable<EmailSecurity>): boolean {
-  return es.status === "ok" && es.spf.present && (es.dmarc.policy === "quarantine" || es.dmarc.policy === "reject");
+type ChipTone = "good" | "warn" | "muted";
+const CHIP_TONE: Record<ChipTone, string> = {
+  good: "border-accent-good/40 bg-accent-good/[0.06] text-accent-good",
+  warn: "border-accent-warning/40 bg-accent-warning/10 text-accent-warning",
+  muted: "border-hairline bg-surface text-ink-muted",
+};
+function PostureChip({ label, tone, note }: { label: string; tone: ChipTone; note?: string | null }) {
+  const mark = tone === "good" ? "✓" : tone === "warn" ? "✗" : "?";
+  return (
+    <span className={`rounded-sm border px-1.5 py-0.5 font-mono text-[11px] ${CHIP_TONE[tone]}`}>
+      {mark} {label}{note ? ` ${note}` : ""}
+    </span>
+  );
 }
 
-function PostureChip({ label, ok, note }: { label: string; ok: boolean; note?: string | null }) {
+// Email-security posture as an A–F spoofability grade over the SPF/DMARC state we
+// positively know. Each chip distinguishes verified-good, verified-weak, and
+// not-checked (unknown) — so a failed DNS lookup never reads as a real weakness.
+function EmailSecCard({ es, t }: { es: NonNullable<EmailSecurity>; t: ScanDict }) {
+  const g = es.grade;
+  const gradeTone: "good" | "warning" | "critical" | "muted" =
+    !g ? "muted" : g.grade === "A" || g.grade === "B" ? "good" : g.grade === "F" ? "critical" : "warning";
+  const mxTone: ChipTone = es.mx.status === "ok" && es.mx.present ? "good" : "muted";
+  const spfTone: ChipTone =
+    es.spf.status === "unknown" ? "muted"
+      : es.spf.status === "absent" ? "warn"
+      : es.spf.policy === "-all" || es.spf.policy === "~all" ? "good" : "warn";
+  const dmarcTone: ChipTone =
+    es.dmarc.status === "unknown" ? "muted"
+      : es.dmarc.policy === "reject" || es.dmarc.policy === "quarantine" ? "good" : "warn";
   return (
-    <span className={`rounded-sm border px-1.5 py-0.5 font-mono text-[11px] ${ok ? "border-accent-good/40 bg-accent-good/[0.06] text-accent-good" : "border-accent-warning/40 bg-accent-warning/10 text-accent-warning"}`}>
-      {ok ? "✓" : "✗"} {label}{note ? ` ${note}` : ""}
-    </span>
+    <SubCard
+      icon="✉"
+      tone={es.status !== "ok" ? "muted" : gradeTone}
+      title={t.emailSecTitle}
+      badge={es.status !== "ok" ? "unavailable" : g ? g.grade : "?"}
+      badgeTone={es.status !== "ok" ? "muted" : gradeTone}
+      unavailable={es.status !== "ok"}
+    >
+      {es.status === "ok" ? (
+        <>
+          <div className="flex flex-wrap gap-1.5">
+            <PostureChip label="MX" tone={mxTone} note={es.mx.status === "unknown" ? t.emailSecUnknown : null} />
+            <PostureChip label="SPF" tone={spfTone} note={es.spf.status === "unknown" ? t.emailSecUnknown : es.spf.policy} />
+            <PostureChip
+              label="DMARC"
+              tone={dmarcTone}
+              note={es.dmarc.status === "unknown" ? t.emailSecUnknown : es.dmarc.policy ? `p=${es.dmarc.policy}` : null}
+            />
+          </div>
+          {g ? (
+            <p className="mt-2.5 flex items-baseline gap-2 text-[13px] leading-relaxed text-ink-secondary">
+              <span className={`shrink-0 rounded-sm border border-hairline px-2 py-0.5 font-mono text-sm font-semibold ${TONE_TEXT[gradeTone]}`}>{g.grade}</span>
+              <span>{t.spoofGradeNote(g.grade)}</span>
+            </p>
+          ) : (
+            <p className="mt-2.5 text-[13px] leading-relaxed text-ink-secondary">{t.emailSecWeak}</p>
+          )}
+          <Source><b className="text-ink-secondary">MX · SPF · DMARC</b></Source>
+        </>
+      ) : (
+        <p className="text-[13px] leading-relaxed text-ink-secondary">{t.emailSecUnavail}</p>
+      )}
+    </SubCard>
   );
 }
 

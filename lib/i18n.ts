@@ -22,7 +22,8 @@ type Dict = {
     pastesLine: (n: number) => string; moreBreaches: (n: number) => string;
     cleanTitle: string; cleanBadge: string; cleanText: string;
     unavailTitle: string; unavailText: string; invalidEmailTitle: string; invalidEmailText: string;
-    attackSurface: string; subTitle: string; subUnit: string; subUnavail: string; moreN: (n: number) => string;
+    sharedAddrNote: (kind: string) => string;
+    attackSurface: string; subTitle: string; subUnit: string; subUnavail: string; subNotSupported: string; moreN: (n: number) => string;
     servicesTitle: string; notVisibleBadge: string; portBadge: (n: number) => string;
     cveCount: (n: number) => string; openPorts: string; noServices: (ip: string) => string;
     servicesUnavailNoIp: string; servicesUnavailShodan: string;
@@ -34,8 +35,11 @@ type Dict = {
     stealerMeta: (date: string, services: number) => string; stealerCleanNote: string;
     actionsTitle: string; actionsNote: string;
     emailSecTitle: string; emailSecStrong: string; emailSecWeak: string; emailSecUnavail: string;
+    emailSecUnknown: string; spoofGradeLabel: string; spoofGradeNote: (grade: string) => string;
     stealerDomTitle: string; stealerDomDesc: string; stealerDomNone: string;
     stealerDomEmp: (n: number) => string; stealerDomUsr: (n: number) => string;
+    stealerDomThird: (n: number) => string; stealerDomFallback: (n: number) => string;
+    localActionLabel: string;
   };
   actors: {
     eyebrow: string; h1: string; leadPre: string; leadMid: string; leadEnd: string;
@@ -116,9 +120,18 @@ const az: Dict = {
     unavailText: "XposedOrNot hazırda cavab vermir. Sənə «təmizsən» demirik — bir azdan yenidən yoxla.",
     invalidEmailTitle: "Düzgün e-poçt yaz",
     invalidEmailText: "Bu, düzgün formatda e-poçt ünvanı deyil, ona görə heç bir sorğu göndərilmədi.",
+    sharedAddrNote: (kind) =>
+      kind === "example"
+        ? "Bu nümunə/placeholder ünvandır (məs. example.com) — nəticələr bu ünvanı işlədən minlərlə adamındır, sənin şəxsi məlumatın deyil."
+        : kind === "role"
+          ? "Bu ortaq poçt qutusudur (info@, admin@ kimi) — sızmalar bir neçə işçiyə aiddir, tək bir şəxsə yox."
+          : kind === "disposable"
+            ? "Bu birdəfəlik/müvəqqəti poçt domenidir — nəticələr çoxlu istifadəçi arasında paylaşılır."
+            : "",
     attackSurface: "Domain attack surface",
     subTitle: "Subdomain-lar", subUnit: "CT log-larında görünən ad",
     subUnavail: "CT log-ları cavab vermədi — «0 subdomain» demirik, sadəcə indi yoxlaya bilmədik.",
+    subNotSupported: "gov.az kimi ictimai reyestr domenlərində bütün subdomain-ları saymaq mümkün deyil — konkret subdomain (məs. asan.gov.az) yoxla.",
     moreN: (n) => `+ daha ${n}`,
     servicesTitle: "Açıq servislər", notVisibleBadge: "görünmür",
     portBadge: (n) => `${n} port`, cveCount: (n) => `${n} CVE`, openPorts: "açıq portlar",
@@ -142,15 +155,26 @@ const az: Dict = {
     stealerCleanNote: "Breach bazalarında görünmür, amma cihaz yoluxub — aşağıdakı addımlar hələ də vacibdir.",
     actionsTitle: "Nə etməli",
     actionsNote: "Sızan məlumat növünə görə prioritetləşdirilib — kritikdən başla.",
+    localActionLabel: "Azərbaycanda",
     emailSecTitle: "E-poçt saxtalaşdırma qorunması",
     emailSecStrong: "Bu domain e-poçt saxtalaşdırmasına (spoofing) qarşı qorunur.",
     emailSecWeak: "DMARC yoxdur və ya zəifdir — bu domain fişinqdə saxtalaşdırıla bilər. p=reject-li DMARC əlavə et.",
     emailSecUnavail: "DNS qeydləri oxunmadı.",
+    emailSecUnknown: "yoxlanılmadı",
+    spoofGradeLabel: "Spoofing qiyməti",
+    spoofGradeNote: (g) =>
+      g === "A" ? "Əla — DMARC p=reject və SPF tam tənzimlənib."
+        : g === "B" ? "Yaxşı — DMARC p=reject var, SPF-i də möhkəmləndir (-all)."
+        : g === "C" ? "Orta — DMARC p=quarantine. p=reject-ə keç."
+        : g === "D" ? "Zəif — DMARC tətbiq olunmur; SPF var, amma from-saxtalaşdırma mümkündür."
+        : "Kritik — DMARC yoxdur/p=none: bu domenin adından saxta məktub göndərmək asandır.",
     stealerDomTitle: "Info-stealer sızmaları",
     stealerDomDesc: "Bu domenə aid kredensiallar info-stealer log-larında görünüb — yoluxmuş cihazlardan oğurlanıb.",
     stealerDomNone: "Bu domen info-stealer log-larında görünmür.",
     stealerDomEmp: (n) => `${n.toLocaleString("en-US")} işçi krediti`,
     stealerDomUsr: (n) => `${n.toLocaleString("en-US")} istifadəçi/müştəri krediti`,
+    stealerDomThird: (n) => `${n.toLocaleString("en-US")} üçüncü-tərəf krediti`,
+    stealerDomFallback: (n) => `${n.toLocaleString("en-US")} qeyd (təfərrüat əlçatan deyil)`,
   },
   actors: {
     eyebrow: "APT-lər və crime qrupları",
@@ -273,9 +297,18 @@ const en: Dict = {
     unavailText: "XposedOrNot isn't responding right now. We won't say «you're clean» — try again shortly.",
     invalidEmailTitle: "Enter a valid email",
     invalidEmailText: "That isn't a well-formed email address, so no lookup was made.",
+    sharedAddrNote: (kind) =>
+      kind === "example"
+        ? "This is a placeholder/example address (e.g. example.com) — the results belong to the thousands of people who use it, not to you."
+        : kind === "role"
+          ? "This is a shared mailbox (info@, admin@…) — the breaches belong to several staff, not one person."
+          : kind === "disposable"
+            ? "This is a disposable/temporary-mail domain — the results are shared across many users."
+            : "",
     attackSurface: "Domain attack surface",
     subTitle: "Subdomains", subUnit: "names seen in CT logs",
     subUnavail: "CT logs didn't respond — we don't say «0 subdomains», we just couldn't check right now.",
+    subNotSupported: "Public-registry domains like gov.az can't be enumerated as a whole — scan a specific subdomain (e.g. asan.gov.az) instead.",
     moreN: (n) => `+ ${n} more`,
     servicesTitle: "Open services", notVisibleBadge: "not visible",
     portBadge: (n) => `${n} ports`, cveCount: (n) => `${n} CVEs`, openPorts: "open ports",
@@ -299,15 +332,26 @@ const en: Dict = {
     stealerCleanNote: "Not in breach databases, but the device is infected — the steps below still matter.",
     actionsTitle: "What to do",
     actionsNote: "Prioritized by the type of data exposed — start with the critical items.",
+    localActionLabel: "In Azerbaijan",
     emailSecTitle: "Email spoofing defense",
     emailSecStrong: "This domain is protected against email spoofing.",
     emailSecWeak: "No or weak DMARC — this domain can be spoofed in phishing. Add a DMARC record with p=reject.",
     emailSecUnavail: "Couldn't read DNS records.",
+    emailSecUnknown: "not checked",
+    spoofGradeLabel: "Spoofing grade",
+    spoofGradeNote: (g) =>
+      g === "A" ? "Excellent — DMARC p=reject with a fully-qualified SPF."
+        : g === "B" ? "Good — DMARC p=reject; tighten SPF too (-all)."
+        : g === "C" ? "Fair — DMARC p=quarantine. Move to p=reject."
+        : g === "D" ? "Weak — DMARC isn't enforced; SPF exists, but from-header spoofing is possible."
+        : "Critical — no DMARC / p=none: sending forged mail from this domain is easy.",
     stealerDomTitle: "Infostealer exposure",
     stealerDomDesc: "Credentials for this domain appear in infostealer logs — stolen from infected devices.",
     stealerDomNone: "This domain doesn't appear in infostealer logs.",
     stealerDomEmp: (n) => `${n.toLocaleString("en-US")} employee creds`,
     stealerDomUsr: (n) => `${n.toLocaleString("en-US")} user/customer creds`,
+    stealerDomThird: (n) => `${n.toLocaleString("en-US")} third-party creds`,
+    stealerDomFallback: (n) => `${n.toLocaleString("en-US")} records (breakdown unavailable)`,
   },
   actors: {
     eyebrow: "APTs and crime groups",

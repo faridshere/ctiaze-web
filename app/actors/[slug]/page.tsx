@@ -6,6 +6,7 @@ import { Footer } from "@/components/Footer";
 import { ActorDossier } from "@/components/ActorDossier";
 import { getActorById, originLabel } from "@/lib/threatactors";
 import { getLocale } from "@/lib/i18n-server";
+import { jsonLdSafe } from "@/lib/format";
 
 export const revalidate = 3600;
 
@@ -15,18 +16,30 @@ function desc(a: NonNullable<Awaited<ReturnType<typeof getActorById>>>, en: bool
   return ((en ? a.description_en || a.description_az : a.description_az || a.description_en) || "").slice(0, 300);
 }
 
-export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
+export async function generateMetadata({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ slug: string }>;
+  searchParams: Promise<{ dil?: string }>;
+}): Promise<Metadata> {
   const { slug } = await params;
   const a = await getActorById(slug);
+  // Real 404 for an unknown actor slug (not a 200 soft-404 that crawlers index).
+  // getActorById is cache()-wrapped, so the body's identical call is free.
+  if (!a) notFound();
   const en = (await getLocale()) === "en";
-  if (!a) return { title: en ? "Not found" : "Tapılmadı" };
   const title = en ? `${a.name} — threat actor profile` : `${a.name} — təhdid aktoru`;
   const url = `${BASE}/actors/${a._id}`;
+  // Self-canonical per ?dil= variant so both languages get indexed (see the xeber
+  // page for the full rationale); bare URL keeps the bare canonical + x-default.
+  const dil = (await searchParams)?.dil;
+  const canonical = dil === "az" ? `${url}?dil=az` : dil === "en" ? `${url}?dil=en` : url;
   return {
     title,
     description: desc(a, en) || (en ? `Threat-actor dossier for ${a.name}.` : `${a.name} təhdid aktoru haqqında dossye.`),
-    alternates: { canonical: url, languages: { az: `${url}?dil=az`, en: `${url}?dil=en`, "x-default": url } },
-    openGraph: { title, url, type: "profile" },
+    alternates: { canonical, languages: { az: `${url}?dil=az`, en: `${url}?dil=en`, "x-default": url } },
+    openGraph: { title, url: canonical, type: "profile" },
   };
 }
 
@@ -56,7 +69,7 @@ export default async function ActorPage({ params }: { params: Promise<{ slug: st
     <div className="ops flex min-h-screen flex-col">
       <Header />
       <main id="main" className="mx-auto w-full max-w-3xl flex-1 px-4 py-14 sm:py-20">
-        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLdSafe(jsonLd) }} />
         <nav className="font-mono text-[11px] uppercase tracking-[0.14em] text-ink-muted">
           <Link href="/actors" className="hover:text-brand">{en ? "Threat actors" : "Təhdid aktorları"}</Link>
           <span className="mx-1.5">/</span>
