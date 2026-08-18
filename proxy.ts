@@ -29,6 +29,6 @@ export function proxy(req: NextRequest) {
 // s-maxage headers straight through to origin/Mongo on every hit.
 export const config = {
   matcher: [
-    "/((?!_next/static|_next/image|favicon.ico|robots.txt|sitemap.xml|api/|feed.json|rss.xml|llms.txt|opengraph-image|icon.svg).*)",
+    "/((?!_next/static|_next/image|favicon.ico|robots.txt|sitemap.xml|news-sitemap.xml|api/|feed.json|rss.xml|llms.txt|opengraph-image|icon.svg).*)",
   ],
 };

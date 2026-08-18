@@ -4,6 +4,7 @@ import { StoryLink } from "./StoryLink";
 import { GlyphChip } from "./GlyphChip";
 import { FlagChips } from "./FlagChips";
 import { formatStoryDate } from "@/lib/format";
+import { epssBadge } from "@/lib/storysignal";
 import { outletCode, outletHost } from "@/lib/outlets";
 import { useLocale } from "./locale";
 import { getDict } from "@/lib/i18n";
@@ -32,7 +33,7 @@ export function LedgerRow({ story, display = false }: { story: Story; display?: 
           <GlyphChip category={story.category} />
           <span className="uppercase tracking-[0.06em]">{code}</span>
         </span>
-        <FlagChips kev={story.kev} cveIds={story.cveIds} region={story.region} />
+        <FlagChips kev={story.kev} cveIds={story.cveIds} region={story.region} epssLabel={epssBadge(story)} />
       </div>
 
       {/* main */}

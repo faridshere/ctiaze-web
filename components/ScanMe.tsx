@@ -105,6 +105,25 @@ export function ScanMe({ locale }: { locale: Locale }) {
     if (result) resultRef.current?.focus();
   }, [result]);
 
+  // Deep link: /scan-me?q=example.az auto-runs on load, so a scan result is a
+  // SHAREABLE, repeatable URL (an admin can drop it in a work chat; a returning
+  // user can re-check with one tap). window.location on mount — not
+  // useSearchParams — so no Suspense boundary / SSR bailout is forced on the page.
+  const booted = useRef(false);
+  useEffect(() => {
+    if (booted.current) return;
+    booted.current = true;
+    const initial = new URLSearchParams(window.location.search).get("q")?.trim();
+    if (initial && initial.length <= 254) {
+      // Deferred init from a browser-only API (the URL) — runs once, guarded by
+      // booted, so no cascading-render risk.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setQ(initial);
+      run(initial);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   async function run(term: string) {
     setError("");
     setResult(null);
@@ -113,7 +132,17 @@ export function ScanMe({ locale }: { locale: Locale }) {
       const r = await fetch(`/api/scan?q=${encodeURIComponent(term)}`);
       const data = await r.json();
       if (!r.ok) setError(data.error || c.genericError);
-      else setResult(data as ScanResult);
+      else {
+        setResult(data as ScanResult);
+        // Keep the URL in sync so the result can be shared — DOMAIN scans only.
+        // An email in a URL leaks into history/server logs when shared, so email
+        // scans always strip ?q= (matches the route's never-stored privacy rule).
+        const d = data as ScanResult;
+        const url = new URL(window.location.href);
+        if (d.kind === "domain" && d.status === "ok" && d.domain) url.searchParams.set("q", d.domain);
+        else url.searchParams.delete("q");
+        window.history.replaceState(null, "", url.pathname + (url.search || ""));
+      }
     } catch {
       setError(c.networkError);
     } finally {

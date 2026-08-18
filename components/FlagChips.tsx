@@ -6,15 +6,19 @@ export function FlagChips({
   kev,
   cveIds,
   region,
+  epssLabel = null,
   className = "",
 }: {
   kev: boolean;
   cveIds: string[];
   region: boolean;
+  // Pre-computed by storysignal.epssBadge() — non-null only when the exploit
+  // probability is genuinely alarming (>=50%), so the chip stays rare and loud.
+  epssLabel?: string | null;
   className?: string;
 }) {
   const hasCve = cveIds.length > 0;
-  if (!kev && !hasCve && !region) return null;
+  if (!kev && !hasCve && !region && !epssLabel) return null;
   return (
     <span
       className={`inline-flex flex-wrap items-center gap-1 font-mono text-[length:var(--t-micro)] uppercase tracking-[0.06em] ${className}`}
@@ -22,6 +26,11 @@ export function FlagChips({
       {kev && (
         <span className="rounded-[var(--radius-chip)] bg-accent-critical px-1 py-px font-semibold text-surface">
           KEV
+        </span>
+      )}
+      {epssLabel && (
+        <span className="rounded-[var(--radius-chip)] border border-accent-warning px-1 py-px font-semibold text-accent-warning">
+          {epssLabel}
         </span>
       )}
       {hasCve && (

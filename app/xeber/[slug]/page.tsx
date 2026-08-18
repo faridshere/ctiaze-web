@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import type { Metadata } from "next";
@@ -9,7 +10,7 @@ import { SpektrStrip } from "@/components/SpektrStrip";
 import { ThreatActorCard } from "@/components/ThreatActorCard";
 import { IocPanel } from "@/components/IocPanel";
 import { formatStoryDate, jsonLdSafe } from "@/lib/format";
-import { urgencyHeader, exposureLine, storyActions } from "@/lib/storysignal";
+import { urgencyHeader, exposureLine, storyActions, epssBadge } from "@/lib/storysignal";
 import { getStoryBySlug, getStories } from "@/lib/stories";
 import { extractIocs, type IocType } from "@/lib/ioc";
 import { detectActors, specificPivots } from "@/lib/actors";
@@ -91,49 +92,14 @@ export default async function StoryPage({ params }: { params: Promise<Params> })
   // Threat intelligence derived from THIS story: indicators lifted from its text
   // (genuinely tied to this news), the actor(s) it names, and — only when it names
   // a SPECIFIC malware family/actor — that named threat's live infrastructure.
+  // Extraction is cheap local regex; the ThreatFox lookups live in <IntelInset>
+  // behind Suspense (below) so a cold abuse.ch index (~15s) can never block the
+  // article text — the story streams first, the intel fills in.
   const iocText = [story.titleAz, story.titleEn, story.bodyAz];
   const extracted = extractIocs(...iocText);
   const actors = detectActors(...iocText);
   const pivots = specificPivots(...iocText);
-
-  // Enrich the story's OWN indicators: cross-check each against the live ThreatFox
-  // feed so a defender learns which of this article's IOCs are known-malicious and
-  // behind what family — enrichment tied to the news, not a generic category dump.
-  const repChecks = await Promise.all(
-    extracted.map(async (i) => {
-      const k = tfKindOf(i.type);
-      if (!k) return null;
-      const hits = await lookupThreatFox(i.value, k).catch(() => []);
-      return hits.length
-        ? {
-            key: `${i.type}:${i.value.toLowerCase()}`,
-            rep: { malware: hits[0].malware, threatType: hits[0].threatType, confidence: hits[0].confidence },
-          }
-        : null;
-    })
-  );
-  const repMap = new Map(repChecks.filter((x): x is NonNullable<typeof x> => x !== null).map((x) => [x.key, x.rep]));
-  const enrichedExtracted = extracted.map((i) => ({
-    ...i,
-    rep: repMap.get(`${i.type}:${i.value.toLowerCase()}`) ?? null,
-  }));
-
-  // The named threat's live infrastructure, from the reliable keyless ThreatFox
-  // export filtered by family (server-rendered — no client loading/empty states).
-  const familyResult = pivots.length
-    ? await iocsByMalware(pivots, 20).catch(() => ({ family: "", hits: [] }))
-    : { family: "", hits: [] };
-  const familyIocs = familyResult.hits.map((h) => ({
-    kind: h.kind,
-    ioc: h.ioc,
-    malware: h.malware,
-    threatType: h.threatType,
-    confidence: h.confidence,
-    firstSeen: h.firstSeen ?? null,
-    reference: h.reference ?? null,
-    port: h.port ?? null,
-  }));
-  const hasIntel = extracted.length > 0 || actors.length > 0 || familyIocs.length > 0;
+  const maybeIntel = extracted.length > 0 || actors.length > 0 || pivots.length > 0;
 
   const storyUrl = `https://ctiaze.tech/xeber/${story.slug}`;
   const jsonLd = {
@@ -178,7 +144,7 @@ export default async function StoryPage({ params }: { params: Promise<Params> })
             <GlyphChip category={story.category} />
             <span className="uppercase tracking-[0.06em]">{categoryName(story.category, loc)}</span>
           </span>
-          <FlagChips kev={story.kev} cveIds={story.cveIds} region={story.region} />
+          <FlagChips kev={story.kev} cveIds={story.cveIds} region={story.region} epssLabel={epssBadge(story)} />
           <a
             href={story.sourceUrl}
             target="_blank"
@@ -339,24 +305,89 @@ export default async function StoryPage({ params }: { params: Promise<Params> })
           </a>
         </div>
 
-        {/* threat-intelligence inset — actor dossier + indicators (extracted + live) */}
-        {hasIntel && (
-          <section className="darkroom mt-10 border border-hairline bg-surface p-5 sm:p-6">
-            {actors.length > 0 && (
-              <>
-                <ThreatActorCard actors={actors} />
-                <div className="my-6 h-px w-full bg-hairline" />
-              </>
-            )}
-            <IocPanel
-              extracted={enrichedExtracted}
-              familyName={familyResult.family}
-              familyIocs={familyIocs}
-            />
-          </section>
+        {/* threat-intelligence inset — actor dossier + indicators (extracted + live).
+            Streamed behind Suspense: the ThreatFox lookups inside can take seconds
+            on a cold index, and the article must never wait on them. */}
+        {maybeIntel && (
+          <Suspense fallback={<IntelFallback en={en} />}>
+            <IntelInset extracted={extracted} actors={actors} pivots={pivots} />
+          </Suspense>
         )}
       </main>
       <Footer />
     </div>
+  );
+}
+
+function IntelFallback({ en }: { en: boolean }) {
+  return (
+    <section className="darkroom mt-10 border border-hairline bg-surface p-5 sm:p-6" aria-busy="true">
+      <p role="status" className="font-mono text-[11px] uppercase tracking-[0.14em] text-ink-muted">
+        <span className="text-accent-good">●</span> {en ? "loading threat intel…" : "təhdid inteli yüklənir…"}
+      </p>
+    </section>
+  );
+}
+
+// Server component so its awaits stream independently of the article body.
+async function IntelInset({
+  extracted,
+  actors,
+  pivots,
+}: {
+  extracted: ReturnType<typeof extractIocs>;
+  actors: ReturnType<typeof detectActors>;
+  pivots: ReturnType<typeof specificPivots>;
+}) {
+  // Enrich the story's OWN indicators: cross-check each against the live ThreatFox
+  // feed so a defender learns which of this article's IOCs are known-malicious and
+  // behind what family — enrichment tied to the news, not a generic category dump.
+  const repChecks = await Promise.all(
+    extracted.map(async (i) => {
+      const k = tfKindOf(i.type);
+      if (!k) return null;
+      const hits = await lookupThreatFox(i.value, k).catch(() => []);
+      return hits.length
+        ? {
+            key: `${i.type}:${i.value.toLowerCase()}`,
+            rep: { malware: hits[0].malware, threatType: hits[0].threatType, confidence: hits[0].confidence },
+          }
+        : null;
+    })
+  );
+  const repMap = new Map(repChecks.filter((x): x is NonNullable<typeof x> => x !== null).map((x) => [x.key, x.rep]));
+  const enrichedExtracted = extracted.map((i) => ({
+    ...i,
+    rep: repMap.get(`${i.type}:${i.value.toLowerCase()}`) ?? null,
+  }));
+
+  // The named threat's live infrastructure, from the reliable keyless ThreatFox
+  // export filtered by family (server-rendered — no client loading/empty states).
+  const familyResult = pivots.length
+    ? await iocsByMalware(pivots, 20).catch(() => ({ family: "", hits: [] }))
+    : { family: "", hits: [] };
+  const familyIocs = familyResult.hits.map((h) => ({
+    kind: h.kind,
+    ioc: h.ioc,
+    malware: h.malware,
+    threatType: h.threatType,
+    confidence: h.confidence,
+    firstSeen: h.firstSeen ?? null,
+    reference: h.reference ?? null,
+    port: h.port ?? null,
+  }));
+  const hasIntel = extracted.length > 0 || actors.length > 0 || familyIocs.length > 0;
+  if (!hasIntel) return null;
+
+  return (
+    <section className="darkroom mt-10 border border-hairline bg-surface p-5 sm:p-6">
+      {actors.length > 0 && (
+        <>
+          <ThreatActorCard actors={actors} />
+          <div className="my-6 h-px w-full bg-hairline" />
+        </>
+      )}
+      <IocPanel extracted={enrichedExtracted} familyName={familyResult.family} familyIocs={familyIocs} />
+    </section>
   );
 }
