@@ -75,7 +75,7 @@ export default async function StoryPage({ params }: { params: Promise<Params> })
   const en = (await getLocale()) === "en";
   const loc = en ? "en" : "az";
   const dTitle = en ? story.titleEn : story.titleAz;
-  const dBody = en ? story.summaryEn : story.bodyAz;
+  const dBody = en ? story.summaryEn || story.bodyAz : story.bodyAz;
 
   const [recent, badges] = await Promise.all([
     getStories(60).catch(() => []),

@@ -21,7 +21,9 @@ export function LedgerRow({ story, display = false }: { story: Story; display?: 
   const host = outletHost(story.sourceUrl);
   const code = outletCode(story.sourceUrl);
   const title = locale === "en" ? story.titleEn : story.titleAz;
-  const body = locale === "en" ? story.summaryEn : story.bodyAz;
+  // EN summary can be empty (digest/older docs) — fall back to the AZ body so an
+  // EN row never loses its excerpt entirely (same tradeoff the RSS feed makes).
+  const body = locale === "en" ? story.summaryEn || story.bodyAz : story.bodyAz;
   return (
     <article className="grid grid-cols-1 gap-x-4 gap-y-1.5 border-t border-hairline py-[var(--sp-row)] transition-colors first:border-t-0 hover:bg-surface-raised min-[700px]:grid-cols-[7rem_minmax(0,1fr)] min-[1100px]:grid-cols-[9.5rem_minmax(0,1fr)]">
       {/* gutter: telemetry — inline row on phone, stacked column on ≥700px */}

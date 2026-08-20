@@ -72,6 +72,18 @@ export async function getActorIds(limit = 800): Promise<string[]> {
     .map((a) => a._id);
 }
 
+// Every actor as {id, name}, alphabetical — powers the crawlable A–Z index so the
+// ~800 dossiers in the sitemap actually receive internal links (a sitemap-only URL
+// ranks poorly). Same substantive-first cap as the sitemap so the two agree.
+export async function getActorIndex(limit = 800): Promise<{ id: string; name: string; type: string }[]> {
+  const docs = await allActors();
+  return [...docs]
+    .sort((a, b) => substance(b) - substance(a) || activity(b) - activity(a) || byName(a, b))
+    .slice(0, limit)
+    .map((a) => ({ id: a._id, name: a.name, type: a.type }))
+    .sort((a, b) => a.name.localeCompare(b.name, "en"));
+}
+
 export async function getActorStats(): Promise<{
   total: number;
   active: number;

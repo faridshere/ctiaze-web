@@ -3,7 +3,8 @@ import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { ActorSearch } from "@/components/ActorSearch";
 import { ActorDossier } from "@/components/ActorDossier";
-import { getTopActors, getRegionalActors, getActorStats } from "@/lib/threatactors";
+import Link from "next/link";
+import { getTopActors, getRegionalActors, getActorStats, getActorIndex } from "@/lib/threatactors";
 import { getDict } from "@/lib/i18n";
 import { getLocale } from "@/lib/i18n-server";
 
@@ -25,9 +26,10 @@ function fmtDate(iso: string | null, locale: string): string {
 export default async function ActorsPage() {
   const locale = await getLocale();
   const t = getDict(locale).actors;
-  const [regional, stats] = await Promise.all([getRegionalActors(6), getActorStats()]);
+  const [regional, stats, index] = await Promise.all([getRegionalActors(6), getActorStats(), getActorIndex()]);
   // Leading grid excludes the regional actors shown above, so nothing repeats.
   const top = await getTopActors(24, new Set(regional.map((a) => a._id)));
+  const en = locale === "en";
 
   return (
     <div className="ops flex min-h-screen flex-col">
@@ -74,6 +76,35 @@ export default async function ActorsPage() {
           </div>
         ) : (
           <p className="mt-6 text-sm text-ink-muted">{t.rosterEmpty}</p>
+        )}
+
+        {/* Crawlable A–Z index: gives every dossier in the sitemap a real internal
+            link so search engines can reach and rank the full ~800-actor set, not
+            just the ~30 cards above. Server-rendered <a>, alphabetical. */}
+        {index.length > 0 && (
+          <section className="mt-16">
+            <div className="flex items-baseline gap-3">
+              <h2 className="font-headline text-xl text-ink-primary">
+                {en ? "All threat actors" : "Bütün təhdid aktorları"}
+              </h2>
+              <span className="h-px flex-1 bg-hairline" />
+              <span className="font-mono text-[11px] text-ink-muted">{index.length}</span>
+            </div>
+            <ul className="mt-6 grid grid-cols-2 gap-x-4 gap-y-1.5 sm:grid-cols-3 lg:grid-cols-4">
+              {index.map((a) => (
+                <li key={a.id} className="min-w-0">
+                  <Link
+                    href={`/actors/${a.id}`}
+                    className="block truncate py-0.5 text-sm text-ink-secondary transition-colors hover:text-brand"
+                    title={a.name}
+                  >
+                    <span className={a.type === "nation-state" ? "text-accent-critical/70" : "text-ink-muted"} aria-hidden="true">▸ </span>
+                    {a.name}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </section>
         )}
 
         <p className="mt-14 border-t border-hairline pt-8 font-mono text-xs leading-relaxed text-ink-muted">
