@@ -3,12 +3,21 @@ import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { CryptoLookup } from "@/components/CryptoLookup";
 import { getLocale } from "@/lib/i18n-server";
+import { localizedMeta } from "@/lib/seo";
 
-export const metadata: Metadata = {
-  title: "Kripto ünvan kəşfiyyatı · Crypto address intel",
-  description:
-    "On-chain intelligence for Bitcoin, Ethereum and other blockchain addresses — balance, total volume, activity history. For ransomware-payment and crypto-scam investigation.",
-};
+export async function generateMetadata(
+  { searchParams }: { searchParams: Promise<{ dil?: string }> },
+): Promise<Metadata> {
+  const en = (await getLocale()) === "en";
+  const dil = (await searchParams)?.dil;
+  return localizedMeta({
+    path: "/kripto", dil, en,
+    azTitle: "Kripto ünvan kəşfiyyatı · Crypto address intel",
+    enTitle: "Crypto address intel",
+    azDesc: "Bitcoin, Ethereum və digər blokçeyn ünvanları üçün on-chain kəşfiyyat — balans, ümumi həcm, aktivlik tarixçəsi. Ransomware-ödəniş və kripto-fırıldaq araşdırması üçün.",
+    enDesc: "On-chain intelligence for Bitcoin, Ethereum and other blockchain addresses — balance, total volume, activity history. For ransomware-payment and crypto-scam investigation.",
+  });
+}
 
 const EXAMPLES: [string, string, string][] = [
   ["bitcoin", "Genesis (Satoshi)", "1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa"],

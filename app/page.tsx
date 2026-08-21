@@ -5,10 +5,26 @@ import { SpektrLedger } from "@/components/SpektrLedger";
 import { DiqqetRail } from "@/components/DiqqetRail";
 import { getStories, getStats } from "@/lib/stories";
 import { getLatestSnapshot } from "@/lib/exposure";
+import type { Metadata } from "next";
 import { getDict } from "@/lib/i18n";
 import { getLocale } from "@/lib/i18n-server";
+import { localizedMeta } from "@/lib/seo";
 
 export const revalidate = 180;
+
+export async function generateMetadata(
+  { searchParams }: { searchParams: Promise<{ dil?: string }> },
+): Promise<Metadata> {
+  const en = (await getLocale()) === "en";
+  const dil = (await searchParams)?.dil;
+  return localizedMeta({
+    path: "/", dil, en,
+    azTitle: "ctiaze — Azərbaycan kiber-təhlükə kəşfiyyatı",
+    enTitle: "ctiaze — automated Azerbaijani cyber-threat intelligence",
+    azDesc: "Qlobal kiber-təhlükə xəbərləri Azərbaycan dilində — AI ilə seçilir, mənbəyə qarşı yoxlanılır, hər 2 saatdan bir avtomatik yenilənir. Yanlış pozitiv yoxdur.",
+    enDesc: "Global cyber-threat news in Azerbaijani — AI-curated, fact-checked against source, refreshed automatically every 2 hours. No false positives.",
+  });
+}
 
 export default async function HomePage() {
   const locale = await getLocale();

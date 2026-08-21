@@ -8,15 +8,24 @@ import {
 } from "@/lib/exposure";
 import { ExposureLookup } from "@/components/ExposureLookup";
 import { getLocale } from "@/lib/i18n-server";
+import { localizedMeta } from "@/lib/seo";
 import { AZ_MONTHS } from "@/lib/format";
 
 export const revalidate = 3600; // snapshot changes weekly; hourly ISR is ample
 
-export const metadata: Metadata = {
-  title: "Ekspozisiya — Azərbaycan hücum səthi",
-  description:
-    "Azərbaycanda internetə açıq host-ların həftəlik Shodan mənzərəsi: açıq RDP/SMB/Telnet, verilənlər bazaları və ICS/SCADA portları.",
-};
+export async function generateMetadata(
+  { searchParams }: { searchParams: Promise<{ dil?: string }> },
+): Promise<Metadata> {
+  const en = (await getLocale()) === "en";
+  const dil = (await searchParams)?.dil;
+  return localizedMeta({
+    path: "/exposure", dil, en,
+    azTitle: "Ekspozisiya — Azərbaycan hücum səthi",
+    enTitle: "Exposure — Azerbaijan's attack surface",
+    azDesc: "Azərbaycanda internetə açıq host-ların həftəlik Shodan mənzərəsi: açıq RDP/SMB/Telnet, verilənlər bazaları və ICS/SCADA portları.",
+    enDesc: "A weekly Shodan picture of internet-exposed hosts in Azerbaijan: open RDP/SMB/Telnet, databases and ICS/SCADA ports.",
+  });
+}
 
 const CATEGORY_LABEL: Record<string, string> = {
   "remote-access": "Uzaqdan giriş",

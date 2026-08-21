@@ -4,14 +4,23 @@ import { Footer } from "@/components/Footer";
 import { ScanMe } from "@/components/ScanMe";
 import { getDict } from "@/lib/i18n";
 import { getLocale } from "@/lib/i18n-server";
+import { localizedMeta } from "@/lib/seo";
 
 export const revalidate = 0;
 
-export const metadata: Metadata = {
-  title: "Özünü yoxla — breach və domain exposure · Scan me",
-  description:
-    "Check your email, password and work domain exposure. Breach lookup (XposedOrNot), pwned-password check (k-anonymity), subdomains (certspotter) and Shodan attack surface. No false positives.",
-};
+export async function generateMetadata(
+  { searchParams }: { searchParams: Promise<{ dil?: string }> },
+): Promise<Metadata> {
+  const en = (await getLocale()) === "en";
+  const dil = (await searchParams)?.dil;
+  return localizedMeta({
+    path: "/scan-me", dil, en,
+    azTitle: "Özünü yoxla — breach və domain exposure · Scan me",
+    enTitle: "Scan me — breach & domain exposure check",
+    azDesc: "E-poçt, parol və iş domeninin ifşasını yoxla. Breach axtarışı (XposedOrNot), pwned-parol yoxlaması (k-anonymity), subdomain-lar (certspotter) və Shodan hücum səthi. Yanlış pozitiv yoxdur.",
+    enDesc: "Check your email, password and work domain exposure. Breach lookup (XposedOrNot), pwned-password check (k-anonymity), subdomains (certspotter) and Shodan attack surface. No false positives.",
+  });
+}
 
 export default async function ScanMePage() {
   const locale = await getLocale();

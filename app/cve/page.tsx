@@ -9,14 +9,23 @@ import { getCveIndex } from "@/lib/cve";
 import { getStories } from "@/lib/stories";
 import { kevSet, epssMap, nvdLookup } from "@/lib/cveintel";
 import { getLocale } from "@/lib/i18n-server";
+import { localizedMeta } from "@/lib/seo";
 
 export const revalidate = 21600; // 6h — CVE authority data moves slowly
 
-export const metadata: Metadata = {
-  title: "CVE reyestri — aktiv istismar, EPSS, CVSS",
-  description:
-    "ctiaze arxivində adı çəkilən bütün CVE-lər — CISA KEV aktiv istismar statusu, FIRST EPSS istismar ehtimalı, NVD CVSS və təsvir, hər biri əlaqəli dispaça bağlı.",
-};
+export async function generateMetadata(
+  { searchParams }: { searchParams: Promise<{ dil?: string }> },
+): Promise<Metadata> {
+  const en = (await getLocale()) === "en";
+  const dil = (await searchParams)?.dil;
+  return localizedMeta({
+    path: "/cve", dil, en,
+    azTitle: "CVE reyestri — aktiv istismar, EPSS, CVSS",
+    enTitle: "CVE registry — active exploitation, EPSS, CVSS",
+    azDesc: "ctiaze arxivində adı çəkilən bütün CVE-lər — CISA KEV aktiv istismar statusu, FIRST EPSS istismar ehtimalı, NVD CVSS və təsvir, hər biri əlaqəli dispaça bağlı.",
+    enDesc: "Every CVE mentioned in the ctiaze archive — CISA KEV active-exploitation status, FIRST EPSS exploit probability, NVD CVSS and description, each linked to its story.",
+  });
+}
 
 // NVD is keyless + rate-limited, so each CVE's detail is cached for a week; the
 // page's own 6h ISR serves stale while these refresh in the background, so a slow

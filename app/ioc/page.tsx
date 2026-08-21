@@ -7,6 +7,7 @@ import { infraBoard, lookupThreatFox, type TfKind } from "@/lib/threatfox";
 import { getIocFeed, groupIocsByType } from "@/lib/iocfeed";
 import type { IocType } from "@/lib/ioc";
 import { getLocale } from "@/lib/i18n-server";
+import { localizedMeta } from "@/lib/seo";
 
 const IOC_WINDOW = 150;
 
@@ -20,11 +21,19 @@ function tfKindOf(t: IocType): TfKind | null {
 
 export const revalidate = 1800; // the board refreshes ~2×/hour; the lib caches 1h
 
-export const metadata: Metadata = {
-  title: "IOC / CVE yoxlama — təhdid reputasiyası",
-  description:
-    "İstənilən IP, domen, URL, hash və ya CVE-ni yoxlayın: abuse.ch ThreatFox reputasiyası, CISA KEV aktiv istismar statusu, FIRST EPSS və NVD triage-i.",
-};
+export async function generateMetadata(
+  { searchParams }: { searchParams: Promise<{ dil?: string }> },
+): Promise<Metadata> {
+  const en = (await getLocale()) === "en";
+  const dil = (await searchParams)?.dil;
+  return localizedMeta({
+    path: "/ioc", dil, en,
+    azTitle: "IOC / CVE yoxlama — təhdid reputasiyası",
+    enTitle: "IOC / CVE lookup — threat reputation",
+    azDesc: "İstənilən IP, domen, URL, hash və ya CVE-ni yoxlayın: abuse.ch ThreatFox reputasiyası, CISA KEV aktiv istismar statusu, FIRST EPSS və NVD triage-i.",
+    enDesc: "Check any IP, domain, URL, hash or CVE: abuse.ch ThreatFox reputation, CISA KEV active-exploitation status, FIRST EPSS and NVD triage.",
+  });
+}
 
 const THREAT_LABEL: Record<string, string> = {
   botnet_cc: "Botnet C2", payload_delivery: "Yük çatdırılması",

@@ -4,14 +4,23 @@ import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { getStats } from "@/lib/stories";
 import { getLocale } from "@/lib/i18n-server";
+import { localizedMeta } from "@/lib/seo";
 
 export const revalidate = 300;
 
-export const metadata: Metadata = {
-  title: "Haqqında · About",
-  description:
-    "How ctiaze works — ~60 global cybersecurity sources auto-collected, AI-filtered, fact-checked against source, and translated into Azerbaijani, 24/7 with no human in the loop.",
-};
+export async function generateMetadata(
+  { searchParams }: { searchParams: Promise<{ dil?: string }> },
+): Promise<Metadata> {
+  const en = (await getLocale()) === "en";
+  const dil = (await searchParams)?.dil;
+  return localizedMeta({
+    path: "/haqqinda", dil, en,
+    azTitle: "Haqqında · About",
+    enTitle: "About ctiaze",
+    azDesc: "ctiaze necə işləyir — ~60 qlobal təhlükəsizlik mənbəyi avtomatik toplanır, AI ilə süzülür, mənbəyə qarşı yoxlanılır və Azərbaycan dilinə tərcümə olunur, 24/7, insan müdaxiləsi olmadan.",
+    enDesc: "How ctiaze works — ~60 global cybersecurity sources auto-collected, AI-filtered, fact-checked against source, and translated into Azerbaijani, 24/7 with no human in the loop.",
+  });
+}
 
 const STEPS_AZ: [string, string][] = [
   ["Toplama", "~60 qlobal təhlükəsizlik mənbəyi (NVD, CISA KEV, ransomware.live, aparıcı security bloqları) hər 2 saatdan bir avtomatik oxunur."],
