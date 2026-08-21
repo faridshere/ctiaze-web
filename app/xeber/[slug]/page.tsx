@@ -313,6 +313,30 @@ export default async function StoryPage({ params }: { params: Promise<Params> })
             <IntelInset extracted={extracted} actors={actors} pivots={pivots} />
           </Suspense>
         )}
+
+        {/* Related stories — precomputed semantic neighbours (ops/embed_related.py).
+            Real internal links: keeps readers on-site and feeds crawlers a dense
+            topic graph. No live inference, no extra query. */}
+        {story.related.length > 0 && (
+          <nav aria-label={en ? "Related stories" : "Oxşar xəbərlər"} className="mt-10 border-t border-hairline pt-6">
+            <h2 className="font-mono text-[11px] uppercase tracking-[0.14em] text-ink-secondary">
+              {en ? "Related" : "Oxşar xəbərlər"}
+            </h2>
+            <ul className="mt-4 grid gap-2.5 sm:grid-cols-2">
+              {story.related.map((r) => (
+                <li key={r.slug}>
+                  <Link
+                    href={`/xeber/${r.slug}`}
+                    className="group flex gap-2 text-[14px] leading-snug text-ink-secondary transition-colors hover:text-brand"
+                  >
+                    <span aria-hidden="true" className="mt-0.5 shrink-0 text-brand">→</span>
+                    <span className="min-w-0">{en ? r.titleEn : r.titleAz}</span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </nav>
+        )}
       </main>
       <Footer />
     </div>

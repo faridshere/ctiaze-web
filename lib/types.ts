@@ -24,6 +24,9 @@ export type StoryDoc = {
   sev_rank?: number;         // 0..4
   kind?: string;             // e.g. "exposure_spike" (deterministic, never model-set)
   az_exposure?: { product?: string; count?: number; as_of?: string };
+  // Precomputed semantic neighbours (ops/embed_related.py) — small denormalized
+  // list so the story page can render "related" with no extra query / no live inference.
+  related?: { id: string; slug: string; az_title?: string; title?: string; sim?: number }[];
 };
 
 export type Story = {
@@ -31,6 +34,7 @@ export type Story = {
   slug: string;
   titleAz: string;
   bodyAz: string;
+  related: { slug: string; titleAz: string; titleEn: string }[];
   titleEn: string;
   summaryEn: string;
   sourceUrl: string;
@@ -65,6 +69,10 @@ export function toStory(doc: StoryDoc): Story {
     slug: slugify(doc._id, doc.az_title || doc.title || "xəbər"),
     titleAz: doc.az_title || doc.title,
     bodyAz: doc.az_body || "",
+    related: (doc.related ?? [])
+      .filter((r) => r?.slug)
+      .slice(0, 5)
+      .map((r) => ({ slug: r.slug, titleAz: r.az_title || r.title || "", titleEn: r.title || r.az_title || "" })),
     titleEn: doc.title,
     summaryEn: doc.summary || "",
     sourceUrl: doc.url,
