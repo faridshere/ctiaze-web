@@ -1,6 +1,7 @@
 import type { MetadataRoute } from "next";
 import { getStories } from "@/lib/stories";
 import { getActorIds } from "@/lib/threatactors";
+import { GLOSSARY } from "@/lib/glossary";
 
 export const revalidate = 3600;
 
@@ -19,10 +20,16 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // Stamping new Date() on every URL every run teaches Google to ignore our lastmod.
   const staticUrls: MetadataRoute.Sitemap = [
     { url: `${base}`, lastModified: newest, changeFrequency: "hourly", priority: 1 },
-    ...["/cve", "/ioc", "/exposure", "/actors", "/scan-me", "/kripto", "/haqqinda"].map(
+    ...["/cve", "/ioc", "/exposure", "/actors", "/scan-me", "/kripto", "/lugat", "/haqqinda"].map(
       (p) => ({ url: `${base}${p}`, changeFrequency: "daily" as const, priority: 0.8 })
     ),
   ];
+
+  const glossaryUrls: MetadataRoute.Sitemap = GLOSSARY.map((g) => ({
+    url: `${base}/lugat/${g.slug}`,
+    changeFrequency: "monthly",
+    priority: 0.5,
+  }));
 
   const storyUrls: MetadataRoute.Sitemap = stories.map((s) => ({
     url: `${base}/xeber/${s.slug}`,
@@ -37,5 +44,5 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.6,
   }));
 
-  return [...staticUrls, ...storyUrls, ...actorUrls];
+  return [...staticUrls, ...glossaryUrls, ...storyUrls, ...actorUrls];
 }

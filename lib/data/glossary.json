@@ -1,0 +1,362 @@
+[
+  {
+    "slug": "ransomware",
+    "term": "ransomware",
+    "az": "Ransomware, fayllarınızı şifrələyib geri qaytarmaq üçün fidyə tələb edən zərərli proqramdır.",
+    "en": "Ransomware is malicious software that encrypts your files and demands a ransom for their return."
+  },
+  {
+    "slug": "phishing",
+    "term": "phishing",
+    "az": "Phishing, etibarlı bir qurum kimi görünərək sizi şifrə və ya kart məlumatlarınızı verməyə aldatmaq üçün edilən saxta hücumdur.",
+    "en": "Phishing is a deceptive attack disguised as a trusted entity to trick you into revealing sensitive data like passwords or card details."
+  },
+  {
+    "slug": "malware",
+    "term": "malware",
+    "az": "Malware, kompüterinizə zərər vermək və ya icazəsiz giriş əldə etmək üçün hazırlanmış hər hansı virus, qurd və ya trojan kimi proqramdır.",
+    "en": "Malware is any software like viruses or trojans designed to damage a computer or gain unauthorized access."
+  },
+  {
+    "slug": "cve",
+    "term": "CVE",
+    "az": "CVE (Ümumi Boşluqlar və Açıqlar), proqram təminatında aşkarlanan təhlükəsizlik boşluqlarına verilən unikal koddur.",
+    "en": "CVE (Common Vulnerabilities and Exposures) is a unique identifier given to publicly known software security flaws."
+  },
+  {
+    "slug": "zero-day",
+    "term": "zero-day",
+    "az": "Zero-day, tərtibatçısı tərəfindən hələ kəşf edilmədiyi üçün dərhal (sıfırıncı gün) istismar oluna bilən yamaqsız təhlükəsizlik boşluğudur.",
+    "en": "A zero-day is an unpatched security hole unknown to the developer, which can be exploited immediately (day zero)."
+  },
+  {
+    "slug": "apt",
+    "term": "APT",
+    "az": "APT (Qabaqcıl Uzunmüddətli Təhdid), adətən bir dövlətə bağlı olan, uzun müddət gizli qalaraq məlumat oğurlamağa çalışan mütəşəkkil haker qrupudur.",
+    "en": "APT (Advanced Persistent Threat) is an organized hacker group, often state-sponsored, that covertly infiltrates a network to steal data over a long period."
+  },
+  {
+    "slug": "ddos",
+    "term": "DDoS",
+    "az": "DDoS, bir serveri çox sayda saxta bağlantı ilə dolduraraq real istifadəçilərin xidmətə əlçatanlığını pozan hücumdur.",
+    "en": "DDoS is an attack that floods a server with massive fake traffic, making the service unavailable to real users."
+  },
+  {
+    "slug": "mfa",
+    "term": "MFA",
+    "az": "MFA (Çoxfaktorlu Autentifikasiya), hesabınıza giriş üçün şifrədən əlavə SMS kod kimi ikinci bir təsdiq tələb edən əlavə qoruma qatıdır.",
+    "en": "MFA (Multi-Factor Authentication) is an extra security layer requiring a second verification, like an SMS code, besides your password."
+  },
+  {
+    "slug": "vpn",
+    "term": "VPN",
+    "az": "VPN (Virtual Şəxsi Şəbəkə), internet bağlantınızı şifrələyərək IP ünvanınızı gizlədən və sizi rəqəmsal dünyada anonim edən tuneldir.",
+    "en": "VPN (Virtual Private Network) is an encrypted tunnel that hides your IP address, making you anonymous online."
+  },
+  {
+    "slug": "firewall",
+    "term": "firewall",
+    "az": "Firewall, daxili şəbəkənizlə xarici internet arasında duran, icazəsiz keçidləri bloklayan rəqəmsal baryerdir.",
+    "en": "A firewall is a digital barrier between your network and the outside internet that blocks unauthorized access."
+  },
+  {
+    "slug": "encryption",
+    "term": "encryption",
+    "az": "Encryption, məlumatlarınızı yalnız doğru açarla oxuna bilən qarışıq kodlara çevirərək qoruyan üsuldur.",
+    "en": "Encryption is the process of scrambling your data into unreadable code that can only be decoded with the correct key."
+  },
+  {
+    "slug": "backup",
+    "term": "backup",
+    "az": "Backup, məlumatlarınızın ikinci nüsxəsini yaratmaqdır ki, itirilən, silinən və ya şifrələnən faylları geri qaytara biləsiniz.",
+    "en": "A backup is a second copy of your data allowing you to restore files in case of deletion, loss, or a ransomware attack."
+  },
+  {
+    "slug": "patch",
+    "term": "patch",
+    "az": "Patch, proqram təminatında aşkarlanan təhlükəsizlik boşluqlarını bağlamaq üçün buraxılan kiçik kod parçasıdır.",
+    "en": "A patch is a small piece of code released to close security holes found in a software."
+  },
+  {
+    "slug": "brute-force",
+    "term": "brute force",
+    "az": "Brute force, düzgününü tapana qədər bütün mümkün parol kombinasiyalarını ardıcıl sınaqdan keçirərək hesabı sındırmaq üsuludur.",
+    "en": "Brute force is a cracking method that tries every possible password combination sequentially until finding the correct one."
+  },
+  {
+    "slug": "sql-injection",
+    "term": "SQL injection",
+    "az": "SQL injection, veb saytın axtarış qutusuna zərərli verilənlər bazası əmrləri yazaraq məlumat sızdırmaq üçün istifadə edilən kod zəifliyidir.",
+    "en": "SQL injection is a code vulnerability that allows an attacker to inject malicious database commands into a website's input field to extract data."
+  },
+  {
+    "slug": "xss",
+    "term": "XSS",
+    "az": "Saytda boşluq tapıb başqalarının brauzerində pis kod işlətməkdir, adətən kukiləri oğurlamaq üçün istifadə olunur.",
+    "en": "A vulnerability that lets attackers run malicious scripts in a victim's browser, often to steal cookies."
+  },
+  {
+    "slug": "botnet",
+    "term": "botnet",
+    "az": "Hakerin uzaqdan idarə etdiyi, virusa yoluxmuş minlərlə kompüterdən ibarət ordudur, adətən güclü hücumlar üçün istifadə olunur.",
+    "en": "A network of infected computers controlled remotely by a hacker, often used for large-scale attacks."
+  },
+  {
+    "slug": "c2",
+    "term": "C2",
+    "az": "Hakerin yoluxdurduğu cihazlarla əlaqə saxlayıb onlara əmr verdiyi gizli idarəetmə mərkəzidir.",
+    "en": "The hidden server an attacker uses to send commands to infected devices and maintain control."
+  },
+  {
+    "slug": "rat",
+    "term": "RAT",
+    "az": "Hakerin sizin kompüterinizi uzaqdan idarə etməsinə, kamera və mikrofonunuzu açmasına imkan verən təhlükəli virusdur.",
+    "en": "Malware that gives an attacker full remote control over a victim's computer, including camera and microphone access."
+  },
+  {
+    "slug": "trojan",
+    "term": "trojan",
+    "az": "Faydalı proqram kimi görünüb sizi aldan zaman içəridə pis niyyətli kodu işə salan virus növüdür.",
+    "en": "Malware disguised as legitimate software that tricks users into running it and performs harmful actions secretly."
+  },
+  {
+    "slug": "worm",
+    "term": "worm",
+    "az": "Heç bir fayla klik etmədən şəbəkədə öz-özünə yayılan, sistem resurslarını yeyərək cihazı yavaşladan virusdur.",
+    "en": "Self-replicating malware that spreads across networks without user interaction, often slowing down systems."
+  },
+  {
+    "slug": "spyware",
+    "term": "spyware",
+    "az": "Xəbəriniz olmadan kompüterinizdə gizlənib klaviatura vuruşlarınızı, baxış tarixçənizi və şəxsi məlumatlarınızı oğurlayan proqramdır.",
+    "en": "Software that secretly monitors a user's activity, recording keystrokes, browsing history, and personal data."
+  },
+  {
+    "slug": "keylogger",
+    "term": "keylogger",
+    "az": "Klaviaturada basdığınız hər düyməni gizlicə qeydə alan vasitədir ki, bununla şifrə və bank məlumatlarınız oğurlana bilər.",
+    "en": "A tool that records every keystroke on a device to steal passwords, credit card numbers, and other secrets."
+  },
+  {
+    "slug": "credential-stuffing",
+    "term": "credential stuffing",
+    "az": "Əvvəllər sızmış istifadəçi adı və şifrələri toplayıb bir çox saytda yoxlayan avtomatik hücum növüdür, insanların eyni şifrəni təkrar işlətməsinə güvənir.",
+    "en": "An automated attack that tests leaked usernames and passwords on many sites, exploiting password reuse habits."
+  },
+  {
+    "slug": "sim-swap",
+    "term": "SIM swap",
+    "az": "Hakerin operatoru aldadaraq sizin nömrənizi öz SİM kartına keçirtməsi nəticəsində SMS-lə göndərilən təsdiq kodlarını ələ keçirməsidir.",
+    "en": "A scam where an attacker tricks a mobile carrier into transferring a victim's phone number to the attacker's SIM card to intercept verification codes."
+  },
+  {
+    "slug": "smishing",
+    "term": "smishing",
+    "az": "SMS vasitəsilə göndərilən saxta keçid və ya aldadıcı mesajlarla insanları tələyə salan sosial mühəndislik hücumudur.",
+    "en": "A phishing attack delivered via text message, containing malicious links or deceptive requests to trick victims."
+  },
+  {
+    "slug": "social-engineering",
+    "term": "social engineering",
+    "az": "Texniki deyil, insan psixologiyasını manipulyasiya edərək məxfi məlumatları ələ keçirmək sənətidir, məsələn, özünü rəis kimi təqdim etmək.",
+    "en": "The psychological manipulation of people to trick them into giving up confidential information, rather than hacking systems directly."
+  },
+  {
+    "slug": "data-breach",
+    "term": "data breach",
+    "az": "Məxfi və ya həssas məlumatların icazəsiz şəkildə ələ keçirilməsi, oğurlanması və ya sadəcə sızıb yayılması hadisəsidir.",
+    "en": "An incident where sensitive or confidential data is accessed, stolen, or exposed without authorization."
+  },
+  {
+    "slug": "dark-web",
+    "term": "dark web",
+    "az": "Adi brauzerlərlə girmək mümkün olmayan, anonimlik tələb edən və tez-tez oğurlanmış məlumatların satıldığı internetin gizli hissəsidir.",
+    "en": "The anonymous, encrypted part of the internet not indexed by standard search engines, often used for selling stolen data."
+  },
+  {
+    "slug": "ioc",
+    "term": "IOC",
+    "az": "Şəbəkədə və ya cihazda təhlükəsizlik pozuntusunun baş verdiyini göstərən, tapılan şübhəli IP ünvanı, fayl adı kimi rəqəmsal dəlil parçasıdır.",
+    "en": "A piece of digital evidence like a suspicious IP, file hash, or domain that indicates a network or device has been compromised."
+  },
+  {
+    "slug": "edr",
+    "term": "EDR",
+    "az": "Kompyuter, telefon kimi son nöqtə cihazlarını davamlı izləyən və təhlükələrə avtomatik cavab verən təhlükəsizlik alətidir, sadə antivirusdan daha ağıllıdır.",
+    "en": "A security tool that continuously monitors endpoint devices and automatically responds to threats, smarter than a basic antivirus."
+  },
+  {
+    "slug": "soc",
+    "term": "SOC",
+    "az": "Təşkilatın kibertəhlükəsizlik vəziyyətini 7/24 real vaxtda izləyən, hücumları aşkarlayan və müdaxilə edən mərkəzi komandadır.",
+    "en": "A centralized team that monitors, detects, and responds to cybersecurity incidents in real-time, 24/7."
+  },
+  {
+    "slug": "siem",
+    "term": "SIEM",
+    "az": "Şəbəkədəki bütün cihazlardan və proqramlardan təhlükəsizlik qeydlərini toplayıb analiz edərək şübhəli davranışları ortaya çıxaran sistemdir.",
+    "en": "A system that collects and analyzes security logs from across the network to detect suspicious activity."
+  },
+  {
+    "slug": "zero-trust",
+    "term": "zero trust",
+    "az": "'Heç kimə kor-koranə güvənmə' prinsipi; şəbəkə daxilindəki də daxil hər istifadəçi və cihazın davamlı olaraq yoxlanılmasını tələb edən təhlükəsizlik modelidir.",
+    "en": "A security model based on 'never trust, always verify', requiring continuous validation for every user and device, even inside the network."
+  },
+  {
+    "slug": "supply-chain-attack",
+    "term": "supply chain attack",
+    "az": "Hədəfi birbaşa yox, onun etibar etdiyi təchizatçı, xidmət və ya proqram təminatındakı zəifliyi istifadə edərək sızdırma taktikasıdır.",
+    "en": "A tactic that targets a victim by compromising a trusted third-party supplier, service, or software they use."
+  },
+  {
+    "slug": "wiper",
+    "term": "wiper",
+    "az": "Sadəcə şifrələməklə kifayətlənməyib, kompyuterdəki məlumatları tamamilə silərək bərpa olunmaz hala gətirən dağıdıcı zərərli proqramdır.",
+    "en": "Destructive malware designed to completely erase data on a computer, making it permanently unrecoverable."
+  },
+  {
+    "slug": "cryptojacking",
+    "term": "cryptojacking",
+    "az": "Birinin kompyuterini, telefonunu və ya serverini onun xəbəri olmadan kriptovalyuta qazmaq (mining) üçün gizlicə istifadə etmə hücumudur.",
+    "en": "The secret unauthorized use of someone's computer, phone, or server to mine cryptocurrency."
+  },
+  {
+    "slug": "sandbox",
+    "term": "sandbox",
+    "az": "Şübhəli faylları və ya proqramları əsas sistemə zərər vermədən təcrid olunmuş təhlükəsiz mühitdə test etməyə imkan verən virtual qutudur.",
+    "en": "An isolated, safe environment used to test suspicious files or software without risking the main system."
+  },
+  {
+    "slug": "honeypot",
+    "term": "honeypot",
+    "az": "Hakerləri özünə çəkmək, aldatmaq və onların istifadə etdiyi taktikaları öyrənmək üçün qəsdən qurulmuş saxta hədəf sistemdir.",
+    "en": "A decoy system intentionally set up to lure and trap hackers to study their tactics."
+  },
+  {
+    "slug": "penetration-testing",
+    "term": "penetration testing",
+    "az": "Real hücumdan əvvəl boşluqları tapmaq üçün sistemə nəzarətli şəkildə sızma simulyasiyası aparan icazəli haker hücumudur.",
+    "en": "An authorized simulated cyberattack on a system to find security weaknesses before real attackers do."
+  },
+  {
+    "slug": "threat-intelligence",
+    "term": "threat intelligence",
+    "az": "Mövcud və potensial kibertəhdidlər haqqında toplanmış, analiz edilmiş məlumatdır; bu məlumat təşkilata müdafiə qərarları verməkdə kömək edir.",
+    "en": "Collected and analyzed information about current and potential cyber threats that helps organizations make informed defense decisions."
+  },
+  {
+    "slug": "attack-surface",
+    "term": "attack surface",
+    "az": "Hakerin sistemə giriş əldə edə və ya məlumat çıxara biləcəyi bütün fiziki və rəqəmsal nöqtələrin cəmidir.",
+    "en": "The sum of all physical and digital points where a hacker can try to enter a system or extract data."
+  },
+  {
+    "slug": "privilege-escalation",
+    "term": "privilege escalation",
+    "az": "Hücumçunun sistemdə əvvəlcə ələ keçirdiyi aşağı səviyyəli girişdən administrator kimi yüksək səviyyəli girişə keçid etmə üsuludur.",
+    "en": "A technique where an attacker gains higher-level permissions, like administrator access, from an initially low-level compromise."
+  },
+  {
+    "slug": "lateral-movement",
+    "term": "lateral movement",
+    "az": "Hücumçunun şəbəkəyə bir dəfə girdikdən sonra əsas hədəfə çatmaq üçün sistemdən sistemə gizlicə yayılma hərəkətidir.",
+    "en": "The technique of an attacker moving stealthily from one compromised system to another within a network to reach the main target."
+  },
+  {
+    "slug": "data-exfiltration",
+    "term": "data exfiltration",
+    "az": "Məxfi və ya həssas məlumatların şirkət şəbəkəsindən icazəsiz olaraq xaricə, adətən hakerə, köçürülməsi əməliyyatıdır.",
+    "en": "The unauthorized transfer of confidential or sensitive data from an organization's network to an external location controlled by an attacker."
+  },
+  {
+    "slug": "deepfake",
+    "term": "deepfake",
+    "az": "Süni intellekt vasitəsilə insanın üzü və ya səsini real kimi göstərən saxta media məzmunudur.",
+    "en": "Synthetic media where a person's face or voice is replaced with someone else's likeness using artificial intelligence."
+  },
+  {
+    "slug": "kev",
+    "term": "KEV",
+    "az": "CISA tərəfindən dərc olunan, hazırda aktiv istismar edilən və dərhal yamaq tələb edən zəifliklər siyahısıdır.",
+    "en": "Known Exploited Vulnerabilities catalog by CISA listing actively exploited flaws requiring immediate patching."
+  },
+  {
+    "slug": "epss",
+    "term": "EPSS",
+    "az": "Bir zəifliyin yaxın gələcəkdə istismar olunma ehtimalını faizlə göstərən proqnoz sistemidir.",
+    "en": "Exploit Prediction Scoring System, estimating the probability in percent that a vulnerability will be exploited soon."
+  },
+  {
+    "slug": "cvss",
+    "term": "CVSS",
+    "az": "Zəifliyin şiddət dərəcəsini 0-dan 10-a qədər rəqəmlə qiymətləndirən standart çərçivədir.",
+    "en": "Common Vulnerability Scoring System, a standard framework for rating the severity of security vulnerabilities from 0 to 10."
+  },
+  {
+    "slug": "spear-phishing",
+    "term": "spear phishing",
+    "az": "Etibarlı qurum adından konkret şəxsə ünvanlanmış, fərdiləşdirilmiş saxta e-poçt hücumudur.",
+    "en": "Targeted phishing attack tailored to a specific individual or organization to steal sensitive data."
+  },
+  {
+    "slug": "infostealer",
+    "term": "infostealer",
+    "az": "Cihaza düşən kimi parolları, bank məlumatlarını və digər həssas informasiyaları oğurlayan zərərli proqram növüdür.",
+    "en": "Malware type designed to harvest credentials, financial data, and other sensitive information from infected systems."
+  },
+  {
+    "slug": "mitre-att-ck",
+    "term": "MITRE ATT&CK",
+    "az": "Real kiberhücum müşahidələrinə əsaslanan, hücum texnika və taktikalarının açıq bilik bazasıdır.",
+    "en": "Open knowledge base of adversary tactics and techniques derived from real-world cyber threat observations."
+  },
+  {
+    "slug": "sandboxing",
+    "term": "sandboxing",
+    "az": "Şübhəli proqramı əsas sistemə zərər verməməsi üçün təcrid olunmuş virtual mühitdə işə salmaq praktikasıdır.",
+    "en": "Security practice of running untrusted code in an isolated environment to prevent harm to the main system."
+  },
+  {
+    "slug": "patch-management",
+    "term": "patch management",
+    "az": "Əməliyyat sistemləri və proqram təminatlarındakı boşluqları aradan qaldıran yeniləmələrin planlı şəkildə tətbiq edilməsi prosesidir.",
+    "en": "Systematic process of acquiring, testing, and applying updates to fix security holes in operating systems and software."
+  },
+  {
+    "slug": "incident-response",
+    "term": "incident response",
+    "az": "Kiberhücum nəticəsində yaranan zərəri minimuma endirmək və sistemləri bərpa etmək üçün görülən təcili tədbirlər planıdır.",
+    "en": "Structured approach for handling and mitigating the impact of a cyberattack or data breach after it occurs."
+  },
+  {
+    "slug": "threat-actor",
+    "term": "threat actor",
+    "az": "Kiberhücum təşkil edən fərd, qrup və ya dövlət strukturu mənasını verir.",
+    "en": "Individual, group, or state entity responsible for executing malicious cyber operations."
+  },
+  {
+    "slug": "vishing",
+    "term": "vishing",
+    "az": "Telefon zəngləri vasitəsilə insanları aldadaraq şəxsi məlumatlarını ələ keçirməyə çalışan sosial mühəndislik üsuludur.",
+    "en": "Voice phishing, a social engineering attack using phone calls to trick victims into revealing sensitive information."
+  },
+  {
+    "slug": "rootkit",
+    "term": "rootkit",
+    "az": "Sistemdə gizli qalmaq və administrator səviyyəsində icazəsiz girişi təmin etmək üçün nəzərdə tutulmuş çox təhlükəli zərərli proqramdır.",
+    "en": "Stealthy malware bundle designed to hide its existence and provide unauthorized privileged access to a computer."
+  },
+  {
+    "slug": "payload",
+    "term": "payload",
+    "az": "Hücumun əsas zərər verən hissəsidir, məsələn fayl şifrələmək, məlumat oğurlamaq funksiyasını icra edir.",
+    "en": "The part of malware that performs the malicious action, such as encrypting files or stealing data."
+  },
+  {
+    "slug": "2fa",
+    "term": "2FA",
+    "az": "Hesaba giriş üçün paroldan başqa ikinci təsdiq tələb edən əlavə təhlükəsizlik qatıdır.",
+    "en": "Two-Factor Authentication, a security layer requiring two different verification methods for account access."
+  }
+]
