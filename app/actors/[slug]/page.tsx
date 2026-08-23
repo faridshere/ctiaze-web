@@ -4,6 +4,8 @@ import { notFound } from "next/navigation";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { ActorDossier } from "@/components/ActorDossier";
+import { ActorPlaybook } from "@/components/ActorPlaybook";
+import { AttackRose } from "@/components/AttackRose";
 import { getActorById, originLabel } from "@/lib/threatactors";
 import { getLocale } from "@/lib/i18n-server";
 import { jsonLdSafe } from "@/lib/format";
@@ -75,13 +77,44 @@ export default async function ActorPage({ params }: { params: Promise<{ slug: st
           <span className="mx-1.5">/</span>
           <span className="text-ink-secondary">{a.name}</span>
         </nav>
-        <h1 className="mt-3 font-headline text-3xl text-ink-primary sm:text-4xl">
-          {a.name}
-          {origin ? <span className="ml-2 align-middle font-mono text-sm text-ink-muted">· {origin}</span> : null}
-        </h1>
+        <div className="mt-3 flex flex-col-reverse gap-6 sm:flex-row sm:items-start sm:justify-between">
+          <div className="min-w-0">
+            <h1 className="font-headline text-3xl font-bold text-ink-primary sm:text-4xl">
+              {a.name}
+              {origin ? <span className="ml-2 align-middle font-mono text-sm font-normal text-ink-muted">· {origin}</span> : null}
+            </h1>
+            {(en ? a.tagline?.en || a.tagline?.az : a.tagline?.az || a.tagline?.en) ? (
+              <p className="mt-3 max-w-[52ch] border-l-2 border-brand/60 pl-3 text-[15px] leading-relaxed text-ink-secondary">
+                {en ? a.tagline?.en || a.tagline?.az : a.tagline?.az || a.tagline?.en}
+              </p>
+            ) : null}
+          </div>
+          {(a.techniques?.length ?? 0) > 0 ? (
+            <AttackRose
+              actor={a}
+              className="mx-auto size-40 shrink-0 sm:mx-0 sm:size-44"
+              title={en ? `${a.name} — attack rose from real ATT&CK techniques` : `${a.name} — real ATT&CK texnikalarından hücum qızılgülü`}
+            />
+          ) : null}
+        </div>
+        {(en ? a.intel?.en || a.intel?.az : a.intel?.az || a.intel?.en) ? (
+          <div
+            data-sc
+            className="mt-8 border border-hairline border-l-2 border-l-accent-good/70 bg-surface-raised p-4"
+            style={{ borderRadius: "var(--radius-chip)" }}
+          >
+            <h2 className="font-mono text-[11px] uppercase tracking-[0.16em] text-accent-good">
+              {en ? "Analyst brief" : "Analitik qeyd"}
+            </h2>
+            <p className="mt-2 text-[14.5px] leading-relaxed text-ink-secondary">
+              {en ? a.intel?.en || a.intel?.az : a.intel?.az || a.intel?.en}
+            </p>
+          </div>
+        ) : null}
         <div className="mt-8">
           <ActorDossier a={a} locale={locale} standalone />
         </div>
+        <ActorPlaybook a={a} en={en} />
         <p className="mt-8 font-mono text-[11px] leading-relaxed text-ink-muted">
           {en
             ? "Every claim on this page is drawn from the cited source (MISP Galaxy, MITRE ATT&CK, ransomware.live) — no attribution is invented."

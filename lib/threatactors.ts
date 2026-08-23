@@ -32,6 +32,13 @@ export type ThreatActor = {
   related_actors?: { name: string; _id: string }[];
   recent_activity: ActorRecentItem[];
   last_refreshed?: Date | string;
+  // DO-credit enrichment (engine ops/actor_playbooks + actor_intel): grounded
+  // per-stage detection guidance and a two-language analyst brief.
+  playbook?: {
+    stages?: { tactic?: string | null; techniques?: string[]; az?: string | null; en?: string | null }[] | null;
+  } | null;
+  intel?: { az?: string | null; en?: string | null } | null;
+  tagline?: { az?: string | null; en?: string | null } | null;
 };
 
 export type ActorHit = ThreatActor & {
