@@ -1,6 +1,7 @@
 import type { MetadataRoute } from "next";
 import { getStories } from "@/lib/stories";
 import { getActorIds } from "@/lib/threatactors";
+import { getAllCveIds } from "@/lib/cveintel-page";
 import { GLOSSARY } from "@/lib/glossary";
 
 export const revalidate = 3600;
@@ -10,9 +11,10 @@ export const revalidate = 3600;
 // Azerbaijani threat-actor dossier set in existence, where ctiaze can rank #1.
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const base = "https://ctiaze.tech";
-  const [stories, actorIds] = await Promise.all([
+  const [stories, actorIds, cveIds] = await Promise.all([
     getStories(500).catch(() => []),
     getActorIds(800).catch(() => []),
+    getAllCveIds().catch(() => []),
   ]);
   const newest = stories[0] ? new Date(stories[0].publishedAt) : new Date();
 
@@ -44,5 +46,14 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.6,
   }));
 
-  return [...staticUrls, ...glossaryUrls, ...storyUrls, ...actorUrls];
+  // Every /cve/[id] explainer (~7.9k — comfortably under the 50k-URL sitemap
+  // cap). No lastModified: the docs carry no date, and a fake one teaches
+  // Google to ignore our lastmod (see the note above).
+  const cveUrls: MetadataRoute.Sitemap = cveIds.map((id) => ({
+    url: `${base}/cve/${id}`,
+    changeFrequency: "monthly",
+    priority: 0.5,
+  }));
+
+  return [...staticUrls, ...glossaryUrls, ...storyUrls, ...actorUrls, ...cveUrls];
 }

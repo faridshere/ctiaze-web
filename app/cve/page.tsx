@@ -8,6 +8,7 @@ import { GlyphChip } from "@/components/GlyphChip";
 import { getCveIndex } from "@/lib/cve";
 import { getStories } from "@/lib/stories";
 import { kevSet, epssMap, nvdLookup } from "@/lib/cveintel";
+import { cveIntelIdSet } from "@/lib/cveintel-page";
 import { getLocale } from "@/lib/i18n-server";
 import { localizedMeta } from "@/lib/seo";
 
@@ -48,7 +49,13 @@ export default async function CvePage() {
   const [index, stories] = await Promise.all([getCveIndex(WINDOW), getStories(WINDOW).catch(() => [])]);
   const cveBearing = stories.filter((s) => s.cveIds.length > 0);
   const cves = index.map((x) => x.cve);
-  const [kev, epss] = await Promise.all([kevSet(), epssMap(cves)]);
+  // Which listed ids have a /cve/[id] explainer page (one indexed $in query) —
+  // only those become links, so the registry never points into a 404.
+  const [kev, epss, intelIds] = await Promise.all([
+    kevSet(),
+    epssMap(cves),
+    cveIntelIdSet(cves).catch(() => new Set<string>()),
+  ]);
 
   // Priority order for NVD enrichment + display: KEV first, then EPSS, then recency.
   const ranked = [...index].sort(
@@ -100,13 +107,25 @@ export default async function CvePage() {
                 <article
                   key={row.cve}
                   id={row.cve}
-                  className="grid grid-cols-1 gap-x-4 gap-y-2 border-t border-hairline py-[var(--sp-row)] first:border-t-0 min-[640px]:grid-cols-[9.5rem_minmax(0,1fr)]"
+                  className="grid grid-cols-1 gap-x-4 gap-y-2 border-t border-hairline py-[var(--sp-row)] first:border-t-0 min-[640px]:grid-cols-[9.5rem_minmax(0,1fr)] scroll-mt-16 [content-visibility:auto] [contain-intrinsic-size:auto_150px]"
                 >
-                  {/* gutter: CVE id + latest story date */}
+                  {/* gutter: CVE id (→ explainer page when one exists) + latest story date.
+                      h2 so heading navigation works on the registry's ~500 rows. */}
                   <div className="min-w-0">
-                    <div className="break-all font-mono text-[length:var(--t-meta)] text-ink-primary [overflow-wrap:anywhere]">
-                      {row.cve}
-                    </div>
+                    {intelIds.has(row.cve) ? (
+                      <h2 className="m-0 font-normal">
+                        <Link
+                          href={`/cve/${row.cve}`}
+                          className="block break-all font-mono text-[length:var(--t-meta)] text-ink-primary transition-colors hover:text-brand [overflow-wrap:anywhere]"
+                        >
+                          {row.cve}
+                        </Link>
+                      </h2>
+                    ) : (
+                      <h2 className="m-0 break-all font-mono text-[length:var(--t-meta)] font-normal text-ink-primary [overflow-wrap:anywhere]">
+                        {row.cve}
+                      </h2>
+                    )}
                     <div className="mt-0.5 font-mono text-[length:var(--t-micro)] tabular-nums text-ink-muted">
                       {row.latest.slice(0, 10)}
                     </div>
