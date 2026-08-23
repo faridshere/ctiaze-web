@@ -88,6 +88,11 @@ export default async function StoryPage({ params }: { params: Promise<Params> })
   const actions = storyActions(story, loc);
   const host = outletHost(story.sourceUrl);
   const code = outletCode(story.sourceUrl);
+  // Self-generated stories (e.g. the weekly exposure digest) carry no external
+  // source URL. Rendering the "source ↗" anchor for them produces a dead click
+  // (href absent) with a meaningless "SRC" code — so gate every source link on a
+  // real http(s) URL.
+  const hasSource = /^https?:\/\//i.test(story.sourceUrl || "");
 
   // Threat intelligence derived from THIS story: indicators lifted from its text
   // (genuinely tied to this news), the actor(s) it names, and — only when it names
@@ -145,15 +150,17 @@ export default async function StoryPage({ params }: { params: Promise<Params> })
             <span className="uppercase tracking-[0.06em]">{categoryName(story.category, loc)}</span>
           </span>
           <FlagChips kev={story.kev} cveIds={story.cveIds} region={story.region} epssLabel={epssBadge(story)} />
-          <a
-            href={story.sourceUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            title={host}
-            className="ml-auto transition-colors hover:text-brand"
-          >
-            {en ? "source" : "mənbə"} · {code} ↗
-          </a>
+          {hasSource && (
+            <a
+              href={story.sourceUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              title={host}
+              className="ml-auto transition-colors hover:text-brand"
+            >
+              {en ? "source" : "mənbə"} · {code} ↗
+            </a>
+          )}
         </div>
 
         <h1 className="mt-4 font-headline text-[length:var(--t-display)] font-semibold leading-[1.05] tracking-[-0.01em] text-ink-primary">
@@ -260,18 +267,20 @@ export default async function StoryPage({ params }: { params: Promise<Params> })
         {story.altSources.length > 0 && (
           <div className="mt-8 border-t border-hairline pt-5">
             <div className="font-mono text-[length:var(--t-micro)] uppercase tracking-[0.14em] text-ink-muted">
-              {en ? "Sources" : "Mənbələr"} · {story.altSources.length + 1}
+              {en ? "Sources" : "Mənbələr"} · {story.altSources.length + (hasSource ? 1 : 0)}
             </div>
             <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1.5 font-mono text-[length:var(--t-meta)]">
-              <a
-                href={story.sourceUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                title={host}
-                className="text-ink-primary transition-colors hover:text-brand"
-              >
-                {code} · {en ? "primary" : "ilkin"} ↗
-              </a>
+              {hasSource && (
+                <a
+                  href={story.sourceUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  title={host}
+                  className="text-ink-primary transition-colors hover:text-brand"
+                >
+                  {code} · {en ? "primary" : "ilkin"} ↗
+                </a>
+              )}
               {story.altSources.map((u) => (
                 <a
                   key={u}
@@ -294,15 +303,17 @@ export default async function StoryPage({ params }: { params: Promise<Params> })
         {/* attribution footer */}
         <div className="mt-10 flex flex-wrap items-center justify-between gap-x-6 gap-y-2 border-t border-hairline pt-5 font-mono text-[length:var(--t-meta)] text-ink-muted">
           <span className="text-accent-good">{en ? "grounded ✓" : "əsaslandırılıb ✓"}</span>
-          <a
-            href={story.sourceUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            title={host}
-            className="uppercase tracking-wider transition-colors hover:text-ink-primary"
-          >
-            {en ? "primary source" : "ilkin mənbə"} ↗
-          </a>
+          {hasSource && (
+            <a
+              href={story.sourceUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              title={host}
+              className="uppercase tracking-wider transition-colors hover:text-ink-primary"
+            >
+              {en ? "primary source" : "ilkin mənbə"} ↗
+            </a>
+          )}
         </div>
 
         {/* threat-intelligence inset — actor dossier + indicators (extracted + live).

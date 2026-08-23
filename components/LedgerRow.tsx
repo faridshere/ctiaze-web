@@ -20,6 +20,10 @@ export function LedgerRow({ story, display = false }: { story: Story; display?: 
   const { time } = formatStoryDate(story.publishedAt);
   const host = outletHost(story.sourceUrl);
   const code = outletCode(story.sourceUrl);
+  // Self-generated stories (e.g. the weekly exposure digest) have no external
+  // source URL — rendering the "mənbə ↗" anchor for them is a dead click (href
+  // absent) with a placeholder "SRC" code, so only link when it's a real URL.
+  const hasSource = /^https?:\/\//i.test(story.sourceUrl || "");
   const title = locale === "en" ? story.titleEn : story.titleAz;
   // EN summary can be empty (digest/older docs) — fall back to the AZ body so an
   // EN row never loses its excerpt entirely (same tradeoff the RSS feed makes).
@@ -62,15 +66,17 @@ export function LedgerRow({ story, display = false }: { story: Story; display?: 
         </StoryLink>
         <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 font-mono text-[length:var(--t-meta)] text-ink-muted">
           <span className="text-accent-good">{t.grounded}</span>
-          <a
-            href={story.sourceUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            title={host}
-            className="transition-colors hover:text-brand"
-          >
-            {t.source} · {code} ↗
-          </a>
+          {hasSource && (
+            <a
+              href={story.sourceUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              title={host}
+              className="transition-colors hover:text-brand"
+            >
+              {t.source} · {code} ↗
+            </a>
+          )}
           {story.altSources.length > 0 && (
             <span className="text-ink-secondary" title={t.moreSourcesTitle}>
               {t.moreSources(story.altSources.length)}
