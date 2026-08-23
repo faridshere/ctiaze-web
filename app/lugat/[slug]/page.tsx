@@ -3,7 +3,8 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
-import { GLOSSARY, getTerm, siblingTerms } from "@/lib/glossary";
+import { GLOSSARY } from "@/lib/glossary";
+import { getTermAny, siblingTermsAny } from "@/lib/glossary-db";
 import { getLocale } from "@/lib/i18n-server";
 import { localizedMeta } from "@/lib/seo";
 import { jsonLdSafe } from "@/lib/format";
@@ -18,7 +19,7 @@ export async function generateMetadata(
   { params, searchParams }: { params: Promise<{ slug: string }>; searchParams: Promise<{ dil?: string }> },
 ): Promise<Metadata> {
   const { slug } = await params;
-  const g = getTerm(slug);
+  const g = await getTermAny(slug);
   if (!g) notFound();
   const en = (await getLocale()) === "en";
   const dil = (await searchParams)?.dil;
@@ -27,16 +28,16 @@ export async function generateMetadata(
     azTitle: `${g.term} nədir? — ctiaze lüğət`,
     enTitle: `What is ${g.term}? — ctiaze glossary`,
     azDesc: g.az.slice(0, 160),
-    enDesc: g.en.slice(0, 160),
+    enDesc: (g.en || g.az).slice(0, 160),
   });
 }
 
 export default async function TermPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
-  const g = getTerm(slug);
+  const g = await getTermAny(slug);
   if (!g) notFound();
   const en = (await getLocale()) === "en";
-  const siblings = siblingTerms(slug);
+  const siblings = await siblingTermsAny(slug);
 
   const jsonLd = {
     "@context": "https://schema.org",
@@ -61,12 +62,14 @@ export default async function TermPage({ params }: { params: Promise<{ slug: str
           {en ? `What is ${g.term}?` : `${g.term} nədir?`}
         </h1>
 
-        <p className="mt-6 text-lg leading-relaxed text-ink-primary">{en ? g.en : g.az}</p>
+        <p className="mt-6 text-lg leading-relaxed text-ink-primary">{en && g.en ? g.en : g.az}</p>
         {/* Show the other language too — bilingual reference value + more indexable text */}
-        <p className="mt-4 border-l-2 border-hairline pl-4 text-[15px] leading-relaxed text-ink-secondary">
-          <span className="font-mono text-[10px] uppercase tracking-wider text-ink-muted">{en ? "Azərbaycanca" : "English"}: </span>
-          {en ? g.az : g.en}
-        </p>
+        {(en ? g.az : g.en) ? (
+          <p className="mt-4 border-l-2 border-hairline pl-4 text-[15px] leading-relaxed text-ink-secondary">
+            <span className="font-mono text-[10px] uppercase tracking-wider text-ink-muted">{en ? "Azərbaycanca" : "English"}: </span>
+            {en ? g.az : g.en}
+          </p>
+        ) : null}
 
         <div className="mt-10 border-t border-hairline pt-6">
           <h2 className="font-mono text-[11px] uppercase tracking-[0.14em] text-ink-secondary">
