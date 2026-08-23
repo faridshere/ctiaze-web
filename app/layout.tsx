@@ -1,36 +1,37 @@
 import type { Metadata, Viewport } from "next";
-import { IBM_Plex_Sans_Condensed, IBM_Plex_Sans, IBM_Plex_Mono } from "next/font/google";
+import { Chakra_Petch, Exo_2, JetBrains_Mono } from "next/font/google";
 import { Analytics } from "@vercel/analytics/next";
 import { CommandPalette } from "@/components/CommandPalette";
+import { MotionRoot } from "@/components/MotionRoot";
 import { LocaleProvider } from "@/components/locale";
 import { getLocale } from "@/lib/i18n-server";
 import "./globals.css";
 
-// Növbə type system: the IBM Plex superfamily IS the identity — one voice, three
-// weights of it. Plex Sans Condensed for display (the ledger's condensed
-// headlines), Plex Sans for Azerbaijani prose, Plex Mono for ALL telemetry
-// (timestamps, glyph codes, tickers, CVE/IOC values). next/font self-hosts the
-// woff2 from our own origin (no runtime CDN) and ships the SAME files to every
-// OS — removing the per-device font-fallback drift that made the old site look
-// different on PC/iPhone/Android. latin-ext pins Azerbaijani ə (U+0259).
-const headline = IBM_Plex_Sans_Condensed({
+// "Ink & signal" type system (2026-08 redesign, matched to /radar.html):
+// Chakra Petch — squared display voice for headlines/HUD labels; Exo 2 — techy
+// humanist for Azerbaijani prose; JetBrains Mono — ALL telemetry (timestamps,
+// glyph codes, tickers, CVE/IOC values). All three verified to carry full
+// Azerbaijani incl. ə (U+0259) in latin-ext — the trio was glyph-audited with
+// fontTools before adoption (Orbitron/Oxanium/Rajdhani fail on ə). next/font
+// self-hosts woff2 from our origin: no runtime CDN, no per-OS fallback drift.
+const headline = Chakra_Petch({
   variable: "--font-headline",
   subsets: ["latin", "latin-ext"],
-  weight: ["500", "600"],
+  weight: ["600", "700"],
   display: "swap",
 });
 
-const body = IBM_Plex_Sans({
+const body = Exo_2({
   variable: "--font-body",
   subsets: ["latin", "latin-ext"],
-  weight: ["400", "500"],
+  weight: ["400", "600"],
   display: "swap",
 });
 
-const mono = IBM_Plex_Mono({
+const mono = JetBrains_Mono({
   variable: "--font-mono",
   subsets: ["latin", "latin-ext"],
-  weight: ["400", "500"],
+  weight: ["400", "700"],
   display: "swap",
 });
 
@@ -58,10 +59,10 @@ export const metadata: Metadata = {
   },
 };
 
-// The screen identity is always the dark asphalt register (light is print-only),
+// The screen identity is always the dark ink register (light is print-only),
 // so the browser chrome is dark on every device — no per-page/per-OS colour drift.
 export const viewport: Viewport = {
-  themeColor: "#141210",
+  themeColor: "#0a0b0d",
   colorScheme: "dark",
 };
 
@@ -84,6 +85,7 @@ export default async function RootLayout({
           {locale === "en" ? "Skip to content" : "Əsas məzmuna keç"}
         </a>
         <LocaleProvider value={locale}>
+          <MotionRoot />
           <CommandPalette />
           {children}
           <Analytics />

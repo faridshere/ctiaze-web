@@ -3,11 +3,12 @@
 /* ---------------------------------------------------------------------------
    ctiaze — "Növbə" (The Watch Ledger): a Baku signals desk.
 
-   The product's default face is warm-asphalt DARK (#141210) — a night-shift
-   ledger, sodium-amber for interaction only. Light-preference users and print
-   get a "day-print" newsprint register (gray-tan, not cream). ONE brand hue
-   (amber/copper) is interaction-only; category color is a single muted ink
-   family; severity is never shown (it is null across the archive).
+   The product's default face is cool-ink DARK (#0a0b0d) — a night-shift
+   ledger, signal-orange for interaction only ("ink & signal", 2026-08).
+   Light-preference users and print get a "day-print" newsprint register
+   (gray-tan, not cream). ONE brand hue (signal/burnt-signal) is
+   interaction-only; category color is a single muted ink family; severity
+   is never shown (it is null across the archive).
 
    Architecture: the SAME token names carry both registers, plus a --cat-* map
    for the threat-category taxonomy. :root is DARK by default; a
@@ -17,31 +18,34 @@
    two registers can never drift.
    ------------------------------------------------------------------------- */
 :root {
-  /* --- DARK "asphalt" register — SINGLE SOURCE (--d-*). The default face. --- */
-  --d-surface: #141210; /* warm near-black asphalt */
-  --d-surface-raised: #1c1915;
-  --d-ink-primary: #ede8df; /* warm gauze ~14:1 */
-  --d-ink-secondary: #a69f92; /* ~8:1 */
-  --d-ink-muted: #8a8478; /* ~5.5:1 — AA for 11px mono meta */
-  --d-hairline: #2b2721;
-  --d-border: rgba(237, 232, 223, 0.08);
-  --d-brand: #e39a3b; /* sodium amber ~8:1 — interaction ONLY */
-  --d-brand-wash: rgba(227, 154, 59, 0.09);
-  --d-accent-critical: #eb6a62; /* KEV only in the feed */
-  --d-accent-serious: #e08543; /* reserved: tool output */
-  --d-accent-warning: #d9b23f; /* gold ~50° — hue-separated from amber ~35° */
-  --d-accent-good: #6fae6f; /* live / grounded */
+  /* --- DARK "ink" register — SINGLE SOURCE (--d-*). The default face.
+     2026-08 "ink & signal" redesign (Farid-approved live): cool ink ground,
+     ONE signal-orange interaction hue — aligned 1:1 with the /radar.html
+     experience so site + console read as one product. --- */
+  --d-surface: #0a0b0d; /* cool near-black ink */
+  --d-surface-raised: #14161b;
+  --d-ink-primary: #f2efe9; /* warm gauze ~15:1 */
+  --d-ink-secondary: #a7a9b0; /* ~7.5:1 */
+  --d-ink-muted: #767a87; /* ~5:1 — AA for 11px mono meta */
+  --d-hairline: #23262e;
+  --d-border: rgba(242, 239, 233, 0.08);
+  --d-brand: #ff5a1f; /* signal orange — interaction ONLY */
+  --d-brand-wash: rgba(255, 90, 31, 0.09);
+  --d-accent-critical: #ff4d5e; /* KEV only in the feed */
+  --d-accent-serious: #ff8a4d; /* reserved: tool output */
+  --d-accent-warning: #e0b94a; /* gold — hue-separated from signal */
+  --d-accent-good: #6cc98a; /* live / grounded */
   --d-shadow-card: none; /* hairlines, never shadows */
-  --d-cat-vuln: #8aa8c7;
-  --d-cat-exploit: #c0876f;
-  --d-cat-malware: #a691c7;
-  --d-cat-ransomware: #c27f9f;
-  --d-cat-apt: #79b3a4;
-  --d-cat-breach: #bc8f62;
-  --d-cat-research: #8fae8c;
-  --d-cat-supply-chain: #a9a29a;
-  --d-cat-policy: #98a0aa;
-  --d-cat-other: #857f76; /* one muted family, L≈0.74 C≈0.07 — cannot scream */
+  --d-cat-vuln: #7ea4cf;
+  --d-cat-exploit: #c98a5a;
+  --d-cat-malware: #b08fd0;
+  --d-cat-ransomware: #e0729a;
+  --d-cat-apt: #57b6a6;
+  --d-cat-breach: #bc9062;
+  --d-cat-research: #8db98a;
+  --d-cat-supply-chain: #a5a7ae;
+  --d-cat-policy: #94a0b4;
+  --d-cat-other: #82858f; /* one muted family — cannot scream */
 
   /* --- LIGHT "day-print" register — SINGLE SOURCE (--l-*). Newsprint gray-tan. --- */
   --l-surface: #efede7;
@@ -51,8 +55,8 @@
   --l-ink-muted: #6e675c;
   --l-hairline: #d8d4ca;
   --l-border: rgba(26, 24, 20, 0.1);
-  --l-brand: #8a5410;
-  --l-brand-wash: #f1e4d2;
+  --l-brand: #a03d0e; /* burnt signal for print */
+  --l-brand-wash: #f4e2d6;
   --l-accent-critical: #b3382f;
   --l-accent-serious: #a54a0e;
   --l-accent-warning: #8f6a00;
@@ -248,6 +252,70 @@ body:has(.ops) {
   border-radius: 2px;
 }
 
+/* ---------------------------------------------------------------------------
+   Motion layer — "ink & signal" signature moves. All scroll-purposeful, all
+   killed by prefers-reduced-motion. Elements opt in with data-sc (revealed by
+   the MotionRoot observer adding .in) — no per-element JS.
+   ------------------------------------------------------------------------- */
+/* Progressive enhancement: content is VISIBLE by default (no-JS, crawlers,
+   reader modes). MotionRoot stamps html.motion-ok on mount; only then do
+   [data-sc] elements arm and reveal via .in. */
+html.motion-ok [data-sc] {
+  opacity: 0;
+  transform: translateY(22px);
+  transition:
+    opacity 0.65s cubic-bezier(0.22, 0.61, 0.36, 1),
+    transform 0.65s cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+html.motion-ok [data-sc].in {
+  opacity: 1;
+  transform: none;
+}
+html.motion-ok [data-sc="2"] { transition-delay: 0.1s; }
+html.motion-ok [data-sc="3"] { transition-delay: 0.2s; }
+
+/* Headline line-lift (hero) */
+.hl { display: block; overflow: hidden; }
+.hl > span {
+  display: block;
+  transform: translateY(110%);
+  animation: hl-lift 0.7s cubic-bezier(0.22, 0.61, 0.36, 1) forwards;
+}
+.hl:nth-child(2) > span { animation-delay: 0.09s; }
+.hl:nth-child(3) > span { animation-delay: 0.18s; }
+@keyframes hl-lift { to { transform: none; } }
+
+/* Radar sweep — transform-origin pinned to view-box centre (the artifact bug,
+   fixed here from day one). */
+.rsweep {
+  transform-box: view-box;
+  transform-origin: 50% 50%;
+  animation: rsweep-spin 5.5s linear infinite;
+}
+@keyframes rsweep-spin { to { transform: rotate(360deg); } }
+
+/* Tactile light pass on interactive cards */
+.sweepable { position: relative; overflow: hidden; }
+.sweepable::after {
+  content: "";
+  position: absolute;
+  top: 0; bottom: 0; left: -60%;
+  width: 40%;
+  background: linear-gradient(100deg, transparent, var(--brand-wash), transparent);
+  transform: skewX(-18deg);
+  transition: left 0.45s cubic-bezier(0.22, 0.61, 0.36, 1);
+  pointer-events: none;
+}
+.sweepable:hover::after { left: 120%; }
+
+/* Signal pulse (live dots) */
+@keyframes signal-beat {
+  0% { box-shadow: 0 0 0 0 rgba(255, 90, 31, 0.5); }
+  70% { box-shadow: 0 0 0 8px rgba(255, 90, 31, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(255, 90, 31, 0); }
+}
+.signal-dot { animation: signal-beat 2s ease-out infinite; }
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -256,4 +324,9 @@ body:has(.ops) {
     animation-iteration-count: 1 !important;
     transition-duration: 0.001ms !important;
   }
+  html.motion-ok [data-sc] {
+    opacity: 1;
+    transform: none;
+  }
+  .hl > span { transform: none; }
 }
