@@ -72,12 +72,13 @@ export function ActorSearch({ locale }: { locale: Locale }) {
               spellCheck={false}
               placeholder={t.placeholder}
               aria-label={t.placeholder}
+              required
               className="w-full rounded-sm border border-hairline bg-surface py-2.5 pl-8 pr-3.5 font-mono text-sm text-ink-primary placeholder:text-ink-muted focus:border-brand focus:outline-none"
             />
           </label>
           <button
             type="submit"
-            disabled={loading || !q.trim()}
+            disabled={loading}
             className="rounded-sm bg-brand px-5 py-2.5 font-mono text-xs font-semibold uppercase tracking-widest text-[#07110e] transition-opacity hover:opacity-90 disabled:opacity-40"
           >
             {loading ? "…" : c.search}

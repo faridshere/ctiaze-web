@@ -137,11 +137,12 @@ export function ThreatLookup({ exampleIndicator }: { exampleIndicator?: string }
           spellCheck={false}
           placeholder={en ? "IP · domain · URL · hash · CVE — paste here" : "IP · domen · URL · hash · CVE — yapışdırın"}
           aria-label={en ? "Indicator: IP, domain, URL, hash or CVE" : "İndikator: IP, domen, URL, hash və ya CVE"}
+          required
           className="flex-1 rounded-sm border border-hairline bg-surface px-3.5 py-2.5 font-mono text-sm text-ink-primary placeholder:text-ink-muted focus:border-brand focus:outline-none"
         />
         <button
           type="submit"
-          disabled={loading || !q.trim()}
+          disabled={loading}
           className="rounded-sm bg-brand px-4 py-2.5 font-mono text-xs font-semibold uppercase tracking-widest text-[#07110e] transition-opacity hover:opacity-90 disabled:opacity-40"
         >
           {en ? "Check" : "Yoxla"}

@@ -139,7 +139,9 @@ export function AttackRose({
         x={C}
         y={C + 4}
         textAnchor="middle"
-        fontFamily="var(--font-mono), ui-monospace, monospace"
+        // var() resolves in CSS properties, not presentation attributes — same
+        // rule as the fill colors above, so the font goes via style.
+        style={{ fontFamily: "var(--font-mono), ui-monospace, monospace" }}
         fontSize="11"
         fontWeight="700"
         fill="#f2efe9"

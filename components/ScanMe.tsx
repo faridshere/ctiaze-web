@@ -195,7 +195,9 @@ export function ScanMe({ locale }: { locale: Locale }) {
               value={q}
               onChange={(e) => setQ(e.target.value)}
               inputMode="email"
-              autoComplete="off"
+              autoComplete="email"
+              name="q"
+              required
               spellCheck={false}
               placeholder={t.placeholder}
               aria-label={t.consoleLabel}
@@ -204,7 +206,7 @@ export function ScanMe({ locale }: { locale: Locale }) {
           </label>
           <button
             type="submit"
-            disabled={loading || !q.trim()}
+            disabled={loading}
             className="rounded-sm bg-brand px-5 py-2.5 font-mono text-xs font-semibold uppercase tracking-widest text-[#07110e] transition-opacity hover:opacity-90 disabled:opacity-40"
           >
             {loading ? "…" : c.check}
@@ -253,11 +255,12 @@ export function ScanMe({ locale }: { locale: Locale }) {
             spellCheck={false}
             placeholder={t.pwPlaceholder}
             aria-label={t.pwTitle}
+            required
             className="w-full flex-1 rounded-sm border border-hairline bg-surface px-3.5 py-2.5 font-mono text-sm text-ink-primary placeholder:text-ink-muted focus:border-brand focus:outline-none"
           />
           <button
             type="submit"
-            disabled={pwLoading || !pw}
+            disabled={pwLoading}
             className="rounded-sm bg-brand px-5 py-2.5 font-mono text-xs font-semibold uppercase tracking-widest text-[#07110e] transition-opacity hover:opacity-90 disabled:opacity-40"
           >
             {pwLoading ? "…" : c.check}

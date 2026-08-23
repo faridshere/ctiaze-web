@@ -26,7 +26,7 @@
   --d-surface-raised: #14161b;
   --d-ink-primary: #f2efe9; /* warm gauze ~15:1 */
   --d-ink-secondary: #a7a9b0; /* ~7.5:1 */
-  --d-ink-muted: #767a87; /* ~5:1 — AA for 11px mono meta */
+  --d-ink-muted: #82868f; /* ≥4.6:1 on raised surfaces too — AA for 11px mono meta */
   --d-hairline: #23262e;
   --d-border: rgba(242, 239, 233, 0.08);
   --d-brand: #ff5a1f; /* signal orange — interaction ONLY */
@@ -252,6 +252,15 @@ body:has(.ops) {
   border-radius: 2px;
 }
 
+/* Kill the mobile double-tap-zoom delay on all interactive chip-sized targets. */
+a,
+button,
+input,
+select,
+[role="button"] {
+  touch-action: manipulation;
+}
+
 /* ---------------------------------------------------------------------------
    Motion layer — "ink & signal" signature moves. All scroll-purposeful, all
    killed by prefers-reduced-motion. Elements opt in with data-sc (revealed by
@@ -303,10 +312,11 @@ html.motion-ok [data-sc="3"] { transition-delay: 0.2s; }
   width: 40%;
   background: linear-gradient(100deg, transparent, var(--brand-wash), transparent);
   transform: skewX(-18deg);
-  transition: left 0.45s cubic-bezier(0.22, 0.61, 0.36, 1);
+  /* transform-only: stays on the compositor, no per-frame reflow */
+  transition: transform 0.45s cubic-bezier(0.22, 0.61, 0.36, 1);
   pointer-events: none;
 }
-.sweepable:hover::after { left: 120%; }
+.sweepable:hover::after { transform: translateX(450%) skewX(-18deg); }
 
 /* Signal pulse (live dots) */
 @keyframes signal-beat {

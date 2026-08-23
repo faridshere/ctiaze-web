@@ -102,12 +102,13 @@ export function ExposureLookup() {
           spellCheck={false}
           placeholder={en ? "IP or domain — e.g. 45.33.32.156 or company.com" : "IP və ya domen — məs. 45.33.32.156 və ya sirket.az"}
           aria-label={en ? "IP address or domain" : "IP ünvanı və ya domen"}
+          required
           className="flex-1 rounded-sm border border-hairline bg-surface px-3.5 py-2.5 font-mono text-sm text-ink-primary placeholder:text-ink-muted focus:border-brand focus:outline-none"
         />
         <div className="flex gap-2">
           <button
             type="submit"
-            disabled={loading || !ip.trim()}
+            disabled={loading}
             className="rounded-sm bg-brand px-4 py-2.5 font-mono text-xs font-semibold uppercase tracking-widest text-[#07110e] transition-opacity hover:opacity-90 disabled:opacity-40"
           >
             {en ? "Check" : "Yoxla"}

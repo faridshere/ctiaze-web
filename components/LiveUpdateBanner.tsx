@@ -52,7 +52,7 @@ export function LiveUpdateBanner({ initialCount }: { initialCount: number }) {
   }
 
   return (
-    <div className="border-b border-hairline bg-surface-raised">
+    <div role="status" className="border-b border-hairline bg-surface-raised">
       <div className="mx-auto max-w-5xl px-4">
         <button
           onClick={refresh}

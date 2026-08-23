@@ -95,7 +95,7 @@ export function WatchDesk({
       <div className="border-t border-hairline">
         <dl className="mx-auto grid w-full max-w-[75rem] grid-cols-2 divide-x divide-hairline px-[var(--sp-gutter)] sm:grid-cols-4">
           {strip.map((s, i) => (
-            <div key={s.az} data-sc={i > 1 ? "2" : undefined} className="py-4 pl-4 first:pl-0 sm:py-5">
+            <div key={s.az} data-sc={i > 1 ? "2" : undefined} className="flex flex-col py-4 pl-4 first:pl-0 sm:py-5">
               <dt className="order-2 mt-1 font-mono text-[length:var(--t-micro)] uppercase tracking-widest text-ink-muted">
                 {en ? s.enL : s.az}
               </dt>

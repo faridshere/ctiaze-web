@@ -194,7 +194,7 @@ export function CommandPalette() {
           </button>
         </div>
 
-        <div className="max-h-[50vh] overflow-y-auto" role="listbox" id={LISTBOX_ID} aria-label={en ? "Search results" : "Axtarış nəticələri"}>
+        <div className="max-h-[50vh] overflow-y-auto overscroll-contain" role="listbox" id={LISTBOX_ID} aria-label={en ? "Search results" : "Axtarış nəticələri"}>
           {loadError && (
             <p role="alert" className="px-4 py-6 text-center font-mono text-xs text-ink-muted">
               {en ? "search failed to load — try again" : "axtarış yüklənmədi — yenidən cəhd edin"}
