@@ -107,8 +107,8 @@ export default async function GlossaryPage() {
 
         <p className="mt-12 border-t border-hairline pt-6 font-mono text-[11px] leading-relaxed text-ink-muted">
           {en
-            ? `${terms.length} terms · mined and written on the DigitalOcean credit, owned forever · part of ctiaze.`
-            : `${terms.length} termin · DigitalOcean krediti ilə hasil edilib, həmişəlik bizimdir · ctiaze-nin bir hissəsi.`}
+            ? `${terms.length} terms · part of ctiaze — Azerbaijan's cyber-threat intelligence.`
+            : `${terms.length} termin · ctiaze-nin bir hissəsi — Azərbaycan kiber-təhlükə kəşfiyyatı.`}
         </p>
       </main>
       <Footer />
