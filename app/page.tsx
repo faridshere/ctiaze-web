@@ -3,7 +3,9 @@ import { Footer } from "@/components/Footer";
 import { LiveUpdateBanner } from "@/components/LiveUpdateBanner";
 import { SpektrLedger } from "@/components/SpektrLedger";
 import { DiqqetRail } from "@/components/DiqqetRail";
+import { WatchDesk } from "@/components/WatchDesk";
 import { getStories, getStats } from "@/lib/stories";
+import { getDoStats } from "@/lib/dostats";
 import { getLatestSnapshot } from "@/lib/exposure";
 import type { Metadata } from "next";
 import { getDict } from "@/lib/i18n";
@@ -29,10 +31,11 @@ export async function generateMetadata(
 export default async function HomePage() {
   const locale = await getLocale();
   const t = getDict(locale).feed;
-  const [stories, stats, snapshot] = await Promise.all([
+  const [stories, stats, snapshot, doStats] = await Promise.all([
     getStories(60),
     getStats(),
     getLatestSnapshot().catch(() => null),
+    getDoStats(),
   ]);
   const azHosts = snapshot?.total_hosts ?? 0;
   const kevStories = stories.filter((s) => s.kev).slice(0, 5);
@@ -68,10 +71,8 @@ export default async function HomePage() {
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(orgLd) }} />
       <Header />
       <LiveUpdateBanner initialCount={stats.total} />
+      <WatchDesk en={en} archive={stats.total} stats={doStats} />
       <main id="main" className="mx-auto w-full max-w-[75rem] flex-1 px-[var(--sp-gutter)] pb-[var(--sp-section)]">
-        <h1 className="sr-only">
-          {en ? "ctiaze — automated Azerbaijani cyber-threat-intelligence" : "ctiaze — Azərbaycan kiber-təhlükə kəşfiyyatı"}
-        </h1>
         {stories.length === 0 ? (
           <p className="py-24 text-center font-mono text-[length:var(--t-meta)] text-ink-muted">
             {t.emptyFeed}
