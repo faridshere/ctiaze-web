@@ -9,6 +9,26 @@ import type { Story } from "@/lib/types";
 
 const KEY = "ctiaze.stack";
 
+// Clipboard fallback for non-secure contexts / older browsers where the async
+// Clipboard API is unavailable or blocked (mirrors IocPanel's copy discipline).
+// Defined but never invoked during SSR — it only runs from an onClick handler.
+function legacyCopy(text: string): boolean {
+  try {
+    const ta = document.createElement("textarea");
+    ta.value = text;
+    ta.setAttribute("readonly", "");
+    ta.style.position = "fixed";
+    ta.style.top = "-9999px";
+    document.body.appendChild(ta);
+    ta.select();
+    const ok = document.execCommand("copy");
+    document.body.removeChild(ta);
+    return ok;
+  } catch {
+    return false;
+  }
+}
+
 // "Mənim stekim" — a personal, client-only watchlist. Turns the global feed into
 // "does anything today touch MY infrastructure?" — the daily-open question the
 // AZ/region filters can't answer. Matching is deterministic (lib/stack.ts), so a
@@ -20,6 +40,7 @@ export function StackWatch({ stories }: { stories: Story[] }) {
   // read it, so a lazy initializer would hydration-mismatch — same pattern SpektrLedger uses).
   const [state, setState] = useState<{ mounted: boolean; sel: string[] }>({ mounted: false, sel: [] });
   const [editing, setEditing] = useState(false);
+  const [copied, setCopied] = useState(false);
   const { mounted, sel } = state;
 
   useEffect(() => {
@@ -40,6 +61,26 @@ export function StackWatch({ stories }: { stories: Story[] }) {
     });
   }
 
+  // Build the reader's personal feed URL from their watched stack and copy the
+  // absolute URL — the retention win: the watchlist follows them into their own
+  // RSS reader / Slack / Teams, not just this page. The component tracks no KEV or
+  // category filter, so only ?q= is composed (the RSS route AND-combines it with
+  // ?kev/?region/?cat when a subscriber adds those by hand).
+  async function copyFeed() {
+    const url = `${window.location.origin}/rss.xml?q=${encodeURIComponent(sel.join(","))}`;
+    let ok = false;
+    try {
+      await navigator.clipboard.writeText(url);
+      ok = true;
+    } catch {
+      ok = legacyCopy(url); // non-secure context / clipboard blocked
+    }
+    if (ok) {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1400);
+    }
+  }
+
   if (!mounted) return null; // localStorage is client-only — render after mount to avoid hydration mismatch
 
   const selSet = new Set(sel);
@@ -55,12 +96,21 @@ export function StackWatch({ stories }: { stories: Story[] }) {
       <div className="flex items-center gap-2">
         <span className="font-mono text-[length:var(--t-micro)] uppercase tracking-[0.14em] text-brand">{t.title}</span>
         {sel.length > 0 && (
-          <button
-            onClick={() => setEditing((e) => !e)}
-            className="ml-auto font-mono text-[length:var(--t-micro)] text-ink-muted transition-colors hover:text-brand"
-          >
-            {editing ? t.done : t.edit}
-          </button>
+          <div className="ml-auto flex items-center gap-3">
+            <button
+              onClick={copyFeed}
+              title={locale === "en" ? "Subscribe to your stack in any RSS reader / Slack / Teams" : "Öz stekini istənilən RSS oxuyucuda / Slack / Teams-də izlə"}
+              className="font-mono text-[length:var(--t-micro)] text-ink-muted transition-colors hover:text-brand"
+            >
+              {copied ? (locale === "en" ? "✓ copied" : "✓ kopyalandı") : locale === "en" ? "Copy feed" : "Feed-i kopyala"}
+            </button>
+            <button
+              onClick={() => setEditing((e) => !e)}
+              className="font-mono text-[length:var(--t-micro)] text-ink-muted transition-colors hover:text-brand"
+            >
+              {editing ? t.done : t.edit}
+            </button>
+          </div>
         )}
       </div>
 

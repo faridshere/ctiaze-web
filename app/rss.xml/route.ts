@@ -24,14 +24,38 @@ export async function GET(req: Request) {
   const onlyKev = q.get("kev") === "1";
   const onlyRegion = q.get("region") === "1";
   const cat = (q.get("cat") || "").trim().toLowerCase();
+  // ?q=term1,term2 — a personal "my stack" feed (FortiGate, VMware…). Each term must be
+  // a case-insensitive substring of a story's title (AZ+EN) or its tag-like fields
+  // (category, CVE ids — the same values emitted as <category> below). Deduped and
+  // double-capped (total input length + term count) so a crafted URL can't turn the
+  // feed into an expensive scan. AND-composed with the filters above; absent/empty q
+  // leaves behaviour unchanged.
+  const terms = [
+    ...new Set(
+      (q.get("q") || "")
+        .slice(0, 200)
+        .toLowerCase()
+        .split(",")
+        .map((t) => t.trim())
+        .filter(Boolean),
+    ),
+  ].slice(0, 10);
 
   let stories = await getStories(80);
   if (onlyKev) stories = stories.filter((s) => s.kev);
   if (onlyRegion) stories = stories.filter((s) => s.region);
   if (cat) stories = stories.filter((s) => s.category.toLowerCase() === cat);
+  if (terms.length) {
+    stories = stories.filter((s) => {
+      const hay = `${s.titleAz} ${s.titleEn} ${s.category} ${s.cveIds.join(" ")}`.toLowerCase();
+      return terms.some((t) => hay.includes(t));
+    });
+  }
   stories = stories.slice(0, 50);
 
-  const suffix = [onlyKev && "KEV", onlyRegion && "AZ", cat].filter(Boolean).join(" · ");
+  const suffix = [onlyKev && "KEV", onlyRegion && "AZ", cat, terms.length && terms.join(", ")]
+    .filter(Boolean)
+    .join(" · ");
   const selfQs = q.toString();
   const self = `${SITE}/rss.xml${selfQs ? `?${selfQs}` : ""}`;
 
