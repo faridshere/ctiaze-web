@@ -4,6 +4,7 @@ import { LiveUpdateBanner } from "@/components/LiveUpdateBanner";
 import { SpektrLedger } from "@/components/SpektrLedger";
 import { DiqqetRail } from "@/components/DiqqetRail";
 import { WatchDesk } from "@/components/WatchDesk";
+import { SinceLastVisit } from "@/components/SinceLastVisit";
 import { getStories, getStats } from "@/lib/stories";
 import { getDoStats } from "@/lib/dostats";
 import { getLatestSnapshot } from "@/lib/exposure";
@@ -74,6 +75,7 @@ export default async function HomePage() {
       <LiveUpdateBanner initialCount={stats.total} />
       <WatchDesk en={en} archive={stats.total} stats={doStats} />
       <main id="main" className="mx-auto w-full max-w-[75rem] flex-1 px-[var(--sp-gutter)] pb-[var(--sp-section)]">
+        <SinceLastVisit currentCount={stats.total} en={en} />
         {stories.length === 0 ? (
           <p className="py-24 text-center font-mono text-[length:var(--t-meta)] text-ink-muted">
             {t.emptyFeed}
