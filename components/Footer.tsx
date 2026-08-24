@@ -19,6 +19,7 @@ export function Footer() {
         <nav className="flex flex-wrap gap-x-6 gap-y-2 font-mono text-[11px] uppercase tracking-wider text-ink-muted">
           <a href="/feed.json" className="hover:text-brand">feed.json</a>
           <a href="/rss.xml" className="hover:text-brand">rss</a>
+          <Link href="/hucum" className="hover:text-brand">{t.guides}</Link>
           <Link href="/lugat" className="hover:text-brand">{t.glossary}</Link>
           <Link href="/haqqinda" className="hover:text-brand">{t.about}</Link>
           <a href="https://t.me/ctiaze" target="_blank" rel="noopener noreferrer" className="hover:text-brand">

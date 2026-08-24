@@ -2,6 +2,7 @@ import type { MetadataRoute } from "next";
 import { getStories } from "@/lib/stories";
 import { getActorIds } from "@/lib/threatactors";
 import { getAllCveIds } from "@/lib/cveintel-page";
+import { getGuideSlugs } from "@/lib/guides";
 import { GLOSSARY } from "@/lib/glossary";
 
 export const revalidate = 3600;
@@ -11,10 +12,11 @@ export const revalidate = 3600;
 // Azerbaijani threat-actor dossier set in existence, where ctiaze can rank #1.
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const base = "https://ctiaze.tech";
-  const [stories, actorIds, cveIds] = await Promise.all([
+  const [stories, actorIds, cveIds, guideSlugs] = await Promise.all([
     getStories(500).catch(() => []),
     getActorIds(800).catch(() => []),
     getAllCveIds().catch(() => []),
+    getGuideSlugs().catch(() => []),
   ]);
   const newest = stories[0] ? new Date(stories[0].publishedAt) : new Date();
 
@@ -22,10 +24,16 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // Stamping new Date() on every URL every run teaches Google to ignore our lastmod.
   const staticUrls: MetadataRoute.Sitemap = [
     { url: `${base}`, lastModified: newest, changeFrequency: "hourly", priority: 1 },
-    ...["/cve", "/ioc", "/exposure", "/actors", "/scan-me", "/kripto", "/lugat", "/haqqinda"].map(
+    ...["/cve", "/ioc", "/exposure", "/actors", "/veziyyet", "/hucum", "/scan-me", "/kripto", "/lugat", "/haqqinda"].map(
       (p) => ({ url: `${base}${p}`, changeFrequency: "daily" as const, priority: 0.8 })
     ),
   ];
+
+  const guideUrls: MetadataRoute.Sitemap = guideSlugs.map((slug) => ({
+    url: `${base}/hucum/${slug}`,
+    changeFrequency: "monthly",
+    priority: 0.6,
+  }));
 
   const glossaryUrls: MetadataRoute.Sitemap = GLOSSARY.map((g) => ({
     url: `${base}/lugat/${g.slug}`,
@@ -55,5 +63,5 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.5,
   }));
 
-  return [...staticUrls, ...glossaryUrls, ...storyUrls, ...actorUrls, ...cveUrls];
+  return [...staticUrls, ...guideUrls, ...glossaryUrls, ...storyUrls, ...actorUrls, ...cveUrls];
 }
