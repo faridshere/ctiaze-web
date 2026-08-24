@@ -13,6 +13,7 @@ import {
 import { getLocale } from "@/lib/i18n-server";
 import { localizedMeta } from "@/lib/seo";
 import { jsonLdSafe } from "@/lib/format";
+import { SeeAlso } from "@/components/SeeAlso";
 
 export const revalidate = 86400;
 
@@ -251,6 +252,9 @@ export default async function GuidePage({
             </ul>
           </div>
         ) : null}
+
+        {/* cross-knowledge mesh — bge-m3 neighbours (kb_related), only live routes */}
+        <SeeAlso sourceType="concept" sourceId={slug} en={en} />
 
         {/* HONESTY FOOTER — AI-written from the cited source items, nothing invented */}
         <p className="mt-10 font-mono text-[11px] leading-relaxed text-ink-muted">

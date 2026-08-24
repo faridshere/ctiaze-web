@@ -8,6 +8,7 @@ import { getTermAny, siblingTermsAny } from "@/lib/glossary-db";
 import { getLocale } from "@/lib/i18n-server";
 import { localizedMeta } from "@/lib/seo";
 import { jsonLdSafe } from "@/lib/format";
+import { SeeAlso } from "@/components/SeeAlso";
 
 export const revalidate = 86400;
 
@@ -88,6 +89,9 @@ export default async function TermPage({ params }: { params: Promise<{ slug: str
             ))}
           </ul>
         </div>
+
+        {/* cross-knowledge mesh — bge-m3 neighbours (kb_related), only live routes */}
+        <SeeAlso sourceType="glossary" sourceId={g.slug} en={en} />
       </main>
       <Footer />
     </div>

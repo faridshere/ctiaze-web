@@ -11,6 +11,7 @@ import { getLocale } from "@/lib/i18n-server";
 import { jsonLdSafe } from "@/lib/format";
 import { getQaForActor } from "@/lib/qa";
 import { QaBlock, faqPageJsonLd } from "@/components/QaBlock";
+import { SeeAlso } from "@/components/SeeAlso";
 
 export const revalidate = 3600;
 
@@ -126,6 +127,8 @@ export default async function ActorPage({ params }: { params: Promise<{ slug: st
         </div>
         <ActorPlaybook a={a} en={en} />
         <QaBlock items={qa} en={en} />
+        {/* cross-knowledge mesh — bge-m3 neighbours (kb_related), only live routes */}
+        <SeeAlso sourceType="actor" sourceId={a._id} en={en} />
         <p className="mt-8 font-mono text-[11px] leading-relaxed text-ink-muted">
           {en
             ? "Every claim on this page is drawn from the cited source (MISP Galaxy, MITRE ATT&CK, ransomware.live) — no attribution is invented."

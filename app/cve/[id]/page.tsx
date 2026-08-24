@@ -11,6 +11,7 @@ import { jsonLdSafe } from "@/lib/format";
 import { getQaForCve } from "@/lib/qa";
 import { getVendorsForCve } from "@/lib/vendors";
 import { QaBlock, faqPageJsonLd } from "@/components/QaBlock";
+import { SeeAlso } from "@/components/SeeAlso";
 
 export const revalidate = 86400; // explainers are static engine output — daily is plenty
 
@@ -210,6 +211,9 @@ export default async function CveIntelPage({ params }: { params: Promise<{ id: s
         )}
 
         <QaBlock items={qa} en={en} />
+
+        {/* cross-knowledge mesh — bge-m3 neighbours (kb_related), only live routes */}
+        <SeeAlso sourceType="cve" sourceId={doc.id} en={en} />
 
         {/* honest footer — provenance of the explainer + the official record */}
         <div data-sc className="mt-10 border-t border-hairline pt-5">
