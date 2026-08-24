@@ -10,6 +10,7 @@ import { getLatestSnapshot } from "@/lib/exposure";
 import type { Metadata } from "next";
 import { getDict } from "@/lib/i18n";
 import { getLocale } from "@/lib/i18n-server";
+import { jsonLdSafe } from "@/lib/format";
 import { localizedMeta } from "@/lib/seo";
 
 export const revalidate = 180;
@@ -68,7 +69,7 @@ export default async function HomePage() {
 
   return (
     <div className="flex min-h-screen flex-col">
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(orgLd) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLdSafe(orgLd) }} />
       <Header />
       <LiveUpdateBanner initialCount={stats.total} />
       <WatchDesk en={en} archive={stats.total} stats={doStats} />
