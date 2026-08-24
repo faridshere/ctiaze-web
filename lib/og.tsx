@@ -9,11 +9,14 @@ import { ImageResponse } from "next/og";
 export const OG_SIZE = { width: 1200, height: 630 };
 export const OG_CONTENT_TYPE = "image/png";
 
-const BG = "#0c110f";
-const INK = "#eef2f0";
-const DIM = "#8b948e";
-const BRAND = "#35d39a";
-const CRIT = "#ff6b6b";
+// "Ink & signal" palette — kept in lockstep with app/globals.css --d-* tokens so
+// the share cards match the page a click lands on (satori can't resolve var(),
+// so these are the literal token values).
+const BG = "#0a0b0d";
+const INK = "#f2efe9";
+const DIM = "#a7a9b0";
+const BRAND = "#ff5a1f";
+const CRIT = "#ff4d5e";
 const LINE = "rgba(255,255,255,0.09)";
 
 async function loadFont(text: string, weight: number): Promise<ArrayBuffer | null> {
@@ -53,7 +56,7 @@ export async function ogCard(title: string, tagline: string, meta: Meta = {}) {
           width: "100%", height: "100%", background: BG, color: INK,
           display: "flex", flexDirection: "column", justifyContent: "space-between",
           padding: "64px 72px", fontFamily: "Archivo, sans-serif",
-          backgroundImage: `radial-gradient(1100px 500px at 85% -10%, rgba(53,211,154,0.10), transparent)`,
+          backgroundImage: `radial-gradient(1100px 500px at 85% -10%, rgba(255,90,31,0.10), transparent)`,
         }}
       >
         {/* wordmark */}
