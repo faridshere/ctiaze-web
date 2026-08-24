@@ -8,6 +8,8 @@ import { cveBadges } from "@/lib/cveintel";
 import { getLocale } from "@/lib/i18n-server";
 import { localizedMeta } from "@/lib/seo";
 import { jsonLdSafe } from "@/lib/format";
+import { getQaForCve } from "@/lib/qa";
+import { QaBlock, faqPageJsonLd } from "@/components/QaBlock";
 
 export const revalidate = 86400; // explainers are static engine output — daily is plenty
 
@@ -81,6 +83,10 @@ export default async function CveIntelPage({ params }: { params: Promise<{ id: s
   const other = en ? doc.az : doc.en;
   const url = `${BASE}/cve/${doc.id}`;
 
+  // Grounded Q&A pairs for this CVE (bilingual, engine-authored) — powers both the
+  // visible FAQ and the FAQPage rich-result markup below.
+  const qa = await getQaForCve(doc.id, en);
+
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "TechArticle",
@@ -92,10 +98,14 @@ export default async function CveIntelPage({ params }: { params: Promise<{ id: s
     mainEntityOfPage: url,
     isPartOf: { "@type": "WebSite", name: "ctiaze", url: BASE },
   };
+  const faqLd = qa.length ? faqPageJsonLd(qa) : null;
 
   return (
     <div className="ops flex min-h-screen flex-col">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLdSafe(jsonLd) }} />
+      {faqLd && (
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLdSafe(faqLd) }} />
+      )}
       <Header />
       <main id="main" className="mx-auto w-full max-w-2xl flex-1 px-4 py-14 sm:py-20">
         <nav className="font-mono text-[11px] uppercase tracking-[0.14em] text-ink-muted">
@@ -186,6 +196,8 @@ export default async function CveIntelPage({ params }: { params: Promise<{ id: s
             ) : null}
           </div>
         )}
+
+        <QaBlock items={qa} en={en} />
 
         {/* honest footer — provenance of the explainer + the official record */}
         <div data-sc className="mt-10 border-t border-hairline pt-5">

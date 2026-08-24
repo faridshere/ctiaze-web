@@ -9,6 +9,8 @@ import { AttackRose } from "@/components/AttackRose";
 import { getActorById, originLabel } from "@/lib/threatactors";
 import { getLocale } from "@/lib/i18n-server";
 import { jsonLdSafe } from "@/lib/format";
+import { getQaForActor } from "@/lib/qa";
+import { QaBlock, faqPageJsonLd } from "@/components/QaBlock";
 
 export const revalidate = 3600;
 
@@ -53,6 +55,10 @@ export default async function ActorPage({ params }: { params: Promise<{ slug: st
   const en = locale === "en";
   const origin = originLabel(a, locale);
 
+  // Grounded Q&A pairs for this actor (bilingual, engine-authored) — powers both
+  // the visible FAQ and the FAQPage rich-result markup below.
+  const qa = await getQaForActor(a._id, en);
+
   // A defensible entity description for search / answer engines: what a source
   // states, nothing invented — same honesty stance as the rest of the product.
   const jsonLd = {
@@ -66,12 +72,16 @@ export default async function ActorPage({ params }: { params: Promise<{ slug: st
     url: `${BASE}/actors/${a._id}`,
     ...(a.last_refreshed ? { dateModified: new Date(a.last_refreshed).toISOString() } : {}),
   };
+  const faqLd = qa.length ? faqPageJsonLd(qa) : null;
 
   return (
     <div className="ops flex min-h-screen flex-col">
       <Header />
       <main id="main" className="mx-auto w-full max-w-3xl flex-1 px-4 py-14 sm:py-20">
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLdSafe(jsonLd) }} />
+        {faqLd && (
+          <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLdSafe(faqLd) }} />
+        )}
         <nav className="font-mono text-[11px] uppercase tracking-[0.14em] text-ink-muted">
           <Link href="/actors" className="hover:text-brand">{en ? "Threat actors" : "Təhdid aktorları"}</Link>
           <span className="mx-1.5">/</span>
@@ -115,6 +125,7 @@ export default async function ActorPage({ params }: { params: Promise<{ slug: st
           <ActorDossier a={a} locale={locale} standalone />
         </div>
         <ActorPlaybook a={a} en={en} />
+        <QaBlock items={qa} en={en} />
         <p className="mt-8 font-mono text-[11px] leading-relaxed text-ink-muted">
           {en
             ? "Every claim on this page is drawn from the cited source (MISP Galaxy, MITRE ATT&CK, ransomware.live) — no attribution is invented."
