@@ -6,7 +6,7 @@ export function normalizeLocale(v: string | undefined | null): Locale {
 
 type Dict = {
   nav: Record<"feed" | "radar" | "cve" | "ioc" | "exposure" | "actors" | "veziyyet" | "scanme" | "kripto" | "about", string>;
-  footer: { tagline: string; about: string; glossary: string; guides: string };
+  footer: { tagline: string; about: string; glossary: string; guides: string; sectors: string };
   common: { check: string; search: string; loadingScan: string; networkError: string; genericError: string };
   scan: {
     eyebrow: string; h1: string; leadPre: string; leadMid: string; leadEnd: string;
@@ -77,7 +77,7 @@ type Dict = {
 
 const az: Dict = {
   nav: { feed: "Lent", radar: "Radar", cve: "CVE", ioc: "IOC", exposure: "Exposure", actors: "Aktorlar", veziyyet: "Vəziyyət", scanme: "Özünü yoxla", kripto: "Kripto", about: "Haqqında" },
-  footer: { tagline: "~60 mənbə → AI qiymətləndirmə və yoxlama → Azərbaycan dilində. 24/7, insan müdaxiləsi olmadan.", about: "haqqında", glossary: "lüğət", guides: "hücum növləri" },
+  footer: { tagline: "~60 mənbə → AI qiymətləndirmə və yoxlama → Azərbaycan dilində. 24/7, insan müdaxiləsi olmadan.", about: "haqqında", glossary: "lüğət", guides: "hücum növləri", sectors: "sektorlar" },
   common: { check: "Yoxla", search: "Axtar", loadingScan: "skan edilir…", networkError: "Şəbəkə xətası — yenidən cəhd edin", genericError: "Xəta baş verdi" },
   scan: {
     eyebrow: "Şəxsi exposure yoxlaması",
@@ -254,7 +254,7 @@ const az: Dict = {
 
 const en: Dict = {
   nav: { feed: "Feed", radar: "Radar", cve: "CVE", ioc: "IOC", exposure: "Exposure", actors: "Actors", veziyyet: "Situation", scanme: "Scan me", kripto: "Crypto", about: "About" },
-  footer: { tagline: "~60 sources → AI scoring and verification → in Azerbaijani. 24/7, no human in the loop.", about: "about", glossary: "glossary", guides: "attack types" },
+  footer: { tagline: "~60 sources → AI scoring and verification → in Azerbaijani. 24/7, no human in the loop.", about: "about", glossary: "glossary", guides: "attack types", sectors: "sectors" },
   common: { check: "Check", search: "Search", loadingScan: "scanning…", networkError: "Network error — try again", genericError: "Something went wrong" },
   scan: {
     eyebrow: "Personal exposure check",

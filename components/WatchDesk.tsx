@@ -1,4 +1,5 @@
 import { CountUp } from "./CountUp";
+import { SectorRecall } from "./SectorRecall";
 import type { DoStats } from "@/lib/dostats";
 
 /**
@@ -45,6 +46,7 @@ export function WatchDesk({
           <p className="mt-4 max-w-[52ch] text-[length:var(--t-body)] leading-relaxed text-ink-secondary">
             {sub}
           </p>
+          <SectorRecall en={en} />
         </div>
 
         {/* Threat Radar feature card — the door into the deep experience */}
