@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { rateLimit, clientIp, withinDailyBudget } from "@/lib/ratelimit";
+import { rateLimit, clientIp, withinSharedDailyBudget } from "@/lib/ratelimit";
 import { getDb } from "@/lib/db";
 import { getLatestSnapshot } from "@/lib/exposure";
 import { toStory, type StoryDoc } from "@/lib/types";
@@ -209,7 +209,7 @@ async function hibpRows(email: string): Promise<{ rows: Breach[]; available: boo
   // Best-effort per-instance daily ceiling on the paid HIBP calls. When exceeded,
   // skip HIBP and fall through to the free breach sources (scan still works) — the
   // per-IP limiter already ran at the route entry.
-  if (!withinDailyBudget("scan:hibp", 1500)) return { rows: [], available: false };
+  if (!(await withinSharedDailyBudget("scan:hibp", 1500))) return { rows: [], available: false };
   try {
     const r = await fetch(
       `https://haveibeenpwned.com/api/v3/breachedaccount/${encodeURIComponent(email)}?truncateResponse=false`,

@@ -42,6 +42,40 @@ export function withinDailyBudget(key: string, max: number, windowMs = 86_400_00
   return true;
 }
 
+// TRUE cross-instance daily cap, backed by a shared store when one is configured.
+// Uses Upstash Redis's REST API (no npm dependency — just fetch) IF both
+// UPSTASH_REDIS_REST_URL and UPSTASH_REDIS_REST_TOKEN are set; otherwise it
+// transparently falls back to the per-instance withinDailyBudget() above. Any
+// store error (timeout, 5xx, malformed reply) also falls back — the paid route
+// must never be blocked by the limiter's own infra. Free-tier Upstash is enough
+// (a handful of commands per paid request, well under 10k/day).
+export async function withinSharedDailyBudget(
+  key: string,
+  max: number,
+  windowMs = 86_400_000,
+): Promise<boolean> {
+  const url = process.env.UPSTASH_REDIS_REST_URL;
+  const token = process.env.UPSTASH_REDIS_REST_TOKEN;
+  if (!url || !token) return withinDailyBudget(key, max, windowMs);
+  try {
+    const k = `budget:${key}`;
+    const res = await fetch(`${url}/pipeline`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+      // INCR the counter, and set the daily TTL only if it has none yet (NX).
+      body: JSON.stringify([["INCR", k], ["EXPIRE", k, Math.ceil(windowMs / 1000), "NX"]]),
+      signal: AbortSignal.timeout(1500),
+    });
+    if (!res.ok) return withinDailyBudget(key, max, windowMs);
+    const data = (await res.json()) as Array<{ result?: unknown }>;
+    const n = Array.isArray(data) ? Number(data[0]?.result) : NaN;
+    if (!Number.isFinite(n)) return withinDailyBudget(key, max, windowMs);
+    return n <= max;
+  } catch {
+    return withinDailyBudget(key, max, windowMs); // never block a paid route on the store
+  }
+}
+
 export function clientIp(req: Request): string {
   // x-real-ip is set by Vercel's edge to the TRUE connecting IP and is overwritten
   // on every request, so the client cannot spoof it — prefer it. Only fall back to

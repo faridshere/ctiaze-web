@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { rateLimit, clientIp, withinDailyBudget } from "@/lib/ratelimit";
+import { rateLimit, clientIp, withinSharedDailyBudget } from "@/lib/ratelimit";
 
 // Crypto address intelligence via Blockchair (GitHub Student Pack key, 100k
 // requests). Normalises the per-chain response shape (UTXO chains use
@@ -56,9 +56,9 @@ export async function GET(req: Request) {
       { status: 500 }
     );
   }
-  // Best-effort per-instance daily ceiling on the paid Blockchair calls so
-  // rotating-IP abuse can't drain the monthly budget from one instance.
-  if (!withinDailyBudget("chain:blockchair", 2000)) {
+  // Daily ceiling on the paid Blockchair calls so rotating-IP abuse can't drain
+  // the monthly budget. Cross-instance when Upstash is configured, else per-instance.
+  if (!(await withinSharedDailyBudget("chain:blockchair", 2000))) {
     return NextResponse.json(
       { error: "Xidmət hazırda yüklüdür — bir azdan yenidən cəhd edin" },
       { status: 503 },
