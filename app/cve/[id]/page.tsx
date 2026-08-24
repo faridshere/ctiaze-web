@@ -9,6 +9,7 @@ import { getLocale } from "@/lib/i18n-server";
 import { localizedMeta } from "@/lib/seo";
 import { jsonLdSafe } from "@/lib/format";
 import { getQaForCve } from "@/lib/qa";
+import { getVendorsForCve } from "@/lib/vendors";
 import { QaBlock, faqPageJsonLd } from "@/components/QaBlock";
 
 export const revalidate = 86400; // explainers are static engine output — daily is plenty
@@ -78,6 +79,8 @@ export default async function CveIntelPage({ params }: { params: Promise<{ id: s
   const ep = pct(badge?.epss ?? null);
   const prio = doc.priority && doc.priority !== "kev" ? PRIORITY_LABEL[doc.priority] : null;
   const cweHref = doc.cwe ? cweUrl(doc.cwe.id) : null;
+  // Vendor chip(s): this CVE's affected vendor(s) → their /vendor/[slug] hub.
+  const vendors = (await getVendorsForCve(doc.id).catch(() => [])).slice(0, 2);
 
   const lead = en ? doc.en || doc.az : doc.az || doc.en;
   const other = en ? doc.az : doc.en;
@@ -157,6 +160,15 @@ export default async function CveIntelPage({ params }: { params: Promise<{ id: s
                 {doc.cwe.name ? ` · ${doc.cwe.name}` : ""}
               </span>
             ))}
+          {vendors.map((v) => (
+            <Link
+              key={v.slug}
+              href={`/vendor/${v.slug}`}
+              className="rounded-[var(--radius-chip)] border border-hairline bg-surface px-1.5 py-0.5 text-ink-secondary transition-colors hover:border-brand hover:text-brand"
+            >
+              {en ? "vendor" : "vendor"}: {v.name} →
+            </Link>
+          ))}
         </div>
 
         <p className="mt-6 text-lg leading-relaxed text-ink-primary">{lead}</p>

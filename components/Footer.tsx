@@ -20,6 +20,7 @@ export function Footer() {
           <a href="/feed.json" className="hover:text-brand">feed.json</a>
           <a href="/rss.xml" className="hover:text-brand">rss</a>
           <Link href="/sektor" className="hover:text-brand">{t.sectors}</Link>
+          <Link href="/vendor" className="hover:text-brand">{t.vendors}</Link>
           <Link href="/hucum" className="hover:text-brand">{t.guides}</Link>
           <Link href="/lugat" className="hover:text-brand">{t.glossary}</Link>
           <Link href="/haqqinda" className="hover:text-brand">{t.about}</Link>
