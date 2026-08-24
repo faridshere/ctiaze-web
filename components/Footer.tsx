@@ -23,6 +23,7 @@ export function Footer() {
           <Link href="/vendor" className="hover:text-brand">{t.vendors}</Link>
           <Link href="/hucum" className="hover:text-brand">{t.guides}</Link>
           <Link href="/lugat" className="hover:text-brand">{t.glossary}</Link>
+          <Link href="/metodologiya" className="hover:text-brand">{t.methodology}</Link>
           <Link href="/haqqinda" className="hover:text-brand">{t.about}</Link>
           <a href="https://t.me/ctiaze" target="_blank" rel="noopener noreferrer" className="hover:text-brand">
             telegram ↗
