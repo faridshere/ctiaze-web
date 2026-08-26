@@ -13,10 +13,12 @@ export function NavLink({ href, children }: { href: string; children: React.Reac
       ? "border-brand text-ink-primary"
       : "border-transparent text-ink-secondary hover:text-ink-primary"
   }`;
-  // Static files (e.g. /radar.html) and external URLs are NOT App Router routes —
-  // Next's <Link> client router can't navigate to them (dead click / prefetch of
-  // a non-route). Render a plain anchor so the browser does a real navigation.
-  const isDocumentHref = /^https?:\/\//.test(href) || href.endsWith(".html");
+  // Static files, external URLs, and /radar (a rewrite to the static console,
+  // not an App Router route) can't be client-navigated by Next's <Link> — it
+  // would prefetch a non-existent RSC payload and dead-click. Render a plain
+  // anchor so the browser does a real navigation.
+  const isDocumentHref =
+    /^https?:\/\//.test(href) || href.endsWith(".html") || href === "/radar";
   if (isDocumentHref) {
     return (
       <a href={href} className={className}>
