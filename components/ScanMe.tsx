@@ -480,7 +480,7 @@ function DomainView({ r, t }: { r: DomainResult; t: ScanDict }) {
   }
   return (
     <ResultCard label={<>{t.attackSurface} · <span className="font-mono text-ink-secondary">{r.domain}</span></>}>
-      <div className="grid gap-4 sm:grid-cols-2">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <SubCard icon="◎" tone="brand" title={t.subTitle}
           badge={r.subdomains?.status === "ok" ? "ok" : r.subdomains?.status === "not_supported" ? "n/a" : "unavailable"}
           badgeTone={r.subdomains?.status === "ok" ? "brand" : "muted"}

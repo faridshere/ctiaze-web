@@ -155,7 +155,7 @@ export default async function VendorHubPage({
               <span aria-hidden className="h-px flex-1 bg-hairline" />
               <span className="font-normal text-ink-muted">{shown.length}</span>
             </h2>
-            <ul className="mt-5 grid gap-2 sm:grid-cols-2">
+            <ul className="mt-5 grid grid-cols-1 gap-2 sm:grid-cols-2">
               {shown.map((cve) => {
                 const b = badges.get(cve);
                 const isKev = Boolean(b?.kev) || kev.has(cve);

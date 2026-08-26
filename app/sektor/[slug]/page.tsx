@@ -145,7 +145,7 @@ export default async function SectorHubPage({
                 {s.actors.length}
               </span>
             </h2>
-            <ul className="mt-5 grid gap-3 sm:grid-cols-2">
+            <ul className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2">
               {s.actors.map((a) => {
                 const origin = originLabel(a, locale);
                 const flag = flagEmoji(a.origin_country);

@@ -380,7 +380,7 @@ export default async function ExposurePage() {
         )}
 
         {/* orgs + products */}
-        <section className="mt-14 grid gap-10 sm:grid-cols-2">
+        <section className="mt-14 grid grid-cols-1 gap-10 sm:grid-cols-2">
           <div>
             <h2 className="font-mono text-xs uppercase tracking-[0.18em] text-ink-secondary">
               {en ? "Most-exposed operators" : "Ən çox açıq operator"}

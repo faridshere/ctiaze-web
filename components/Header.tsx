@@ -36,7 +36,7 @@ export function Header() {
             </span>
           </Link>
 
-          <nav className="hidden items-center gap-5 sm:flex">
+          <nav className="hidden items-center gap-4 xl:flex">
             {NAV.map(([href, key]) => (
               <NavLink key={href} href={href}>
                 {t[key]}
@@ -58,7 +58,7 @@ export function Header() {
         </div>
       </div>
 
-      <nav className="flex items-center gap-5 overflow-x-auto border-b border-hairline px-[var(--sp-gutter)] py-2.5 sm:hidden">
+      <nav className="flex items-center gap-5 overflow-x-auto border-b border-hairline px-[var(--sp-gutter)] py-2.5 xl:hidden">
         {NAV.map(([href, key]) => (
           <NavLink key={href} href={href}>
             {t[key]}

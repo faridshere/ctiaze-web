@@ -83,7 +83,7 @@ export default async function GlossaryPage() {
                 {groups.get(L)!.length}
               </span>
             </h2>
-            <ul className="mt-4 grid gap-3 sm:grid-cols-2">
+            <ul className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
               {groups.get(L)!.map((g) => (
                 <li key={g.slug}>
                   <Link

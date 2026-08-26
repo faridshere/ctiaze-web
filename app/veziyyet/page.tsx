@@ -331,7 +331,7 @@ export default async function VeziyyetPage() {
           )}
 
           {(landscape.sectors.length > 0 || landscape.topCves.length > 0) && (
-            <div className="mt-10 grid gap-8 sm:grid-cols-2">
+            <div className="mt-10 grid grid-cols-1 gap-8 sm:grid-cols-2">
               {landscape.sectors.length > 0 && (
                 <div>
                   <p className="mb-3 font-mono text-[11px] uppercase tracking-[0.16em] text-ink-muted">

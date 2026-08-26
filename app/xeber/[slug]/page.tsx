@@ -333,7 +333,7 @@ export default async function StoryPage({ params }: { params: Promise<Params> })
             <h2 className="font-mono text-[11px] uppercase tracking-[0.14em] text-ink-secondary">
               {en ? "Related" : "Oxşar xəbərlər"}
             </h2>
-            <ul className="mt-4 grid gap-2.5 sm:grid-cols-2">
+            <ul className="mt-4 grid grid-cols-1 gap-2.5 sm:grid-cols-2">
               {story.related.map((r) => (
                 <li key={r.slug}>
                   <Link
