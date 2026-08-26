@@ -76,9 +76,16 @@ export default async function CveIntelPage({ params }: { params: Promise<{ id: s
 
   // Live authority badges (CISA KEV set + FIRST EPSS) — same helpers as /cve.
   const badge = (await cveBadges([doc.id]).catch(() => new Map())).get(doc.id);
-  const isKev = Boolean(badge?.kev) || doc.priority === "kev";
+  // KEV is a patch-NOW signal, so it must be authoritative: trust ONLY the live
+  // CISA KEV catalog (badge.kev), never the engine's priority:"kev" flag — that
+  // flag bleeds from multi-CVE roundup articles (an item's aggregate kev=true
+  // tags every CVE it mentions), which false-badged ~93% of "kev" pages. A CVE
+  // the engine flagged "kev" but CISA doesn't confirm degrades to "high"
+  // (it came from a security roundup — defensible), never a fabricated KEV chip.
+  const isKev = Boolean(badge?.kev);
   const ep = pct(badge?.epss ?? null);
-  const prio = doc.priority && doc.priority !== "kev" ? PRIORITY_LABEL[doc.priority] : null;
+  const effectivePrio = doc.priority === "kev" && !isKev ? "high" : doc.priority;
+  const prio = effectivePrio && effectivePrio !== "kev" ? PRIORITY_LABEL[effectivePrio] : null;
   const cweHref = doc.cwe ? cweUrl(doc.cwe.id) : null;
   // Vendor chip(s): this CVE's affected vendor(s) → their /vendor/[slug] hub.
   const vendors = (await getVendorsForCve(doc.id).catch(() => [])).slice(0, 2);

@@ -39,6 +39,12 @@ const STOPWORD_DENYLIST = new Set([
   "use", "this", "that", "the", "and", "for", "with", "are", "was", "were",
   "will", "would", "can", "could", "should", "not", "any", "rt", "ac", "ama",
   "tbh", "imo", "fyi", "lol", "omg", "btw", "aka", "etc", "via", "per", "vs",
+  // CTI-analyst audit: these DB entries carry wrong/fabricated definitions
+  // (DR→"Demilitarized Zone" [that's DMZ], GFI→"Global Flex International",
+  // SC→"Security Certification", UA→"Ukraine armed forces" [UA = User Agent]).
+  // None are whitelisted real acronyms, so drop the wrong entries rather than
+  // publish a false definition — better absent than misleading.
+  "dr", "gfi", "sc", "ua",
 ]);
 
 // Legitimate short security acronyms that must NEVER be dropped by the

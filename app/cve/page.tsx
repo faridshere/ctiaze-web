@@ -60,7 +60,7 @@ export default async function CvePage() {
   // Priority order for NVD enrichment + display: KEV first, then EPSS, then recency.
   const ranked = [...index].sort(
     (a, b) =>
-      Number(kev.has(b.cve) || b.kev) - Number(kev.has(a.cve) || a.kev) ||
+      Number(kev.has(b.cve)) - Number(kev.has(a.cve)) ||
       (epss.get(b.cve) ?? -1) - (epss.get(a.cve) ?? -1) ||
       b.latest.localeCompare(a.latest)
   );
@@ -100,7 +100,7 @@ export default async function CvePage() {
         ) : (
           <div className="mt-8">
             {ranked.map((row) => {
-              const isKev = kev.has(row.cve) || row.kev;
+              const isKev = kev.has(row.cve); // live CISA KEV only — never the roundup-bled flag
               const ep = pct(epss.get(row.cve) ?? null);
               const info = nvd.get(row.cve);
               return (
