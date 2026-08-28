@@ -51,7 +51,6 @@ export function DiqqetRail({
           title={azHosts > 0 ? t.exposureHosts(azHosts.toLocaleString("en-US")) : t.exposureFallback}
         />
         <ToolTeaser href="/ioc" label={t.toolIoc} title={t.iocTitle} />
-        <ToolTeaser href="/kripto" label={t.toolKripto} title={t.kriptoTitle} />
       </div>
 
       <div className="border-t border-hairline pt-4 font-mono text-[length:var(--t-micro)] uppercase tracking-[0.12em] text-ink-muted">

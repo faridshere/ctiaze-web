@@ -10,15 +10,11 @@ import { getDict } from "@/lib/i18n";
 
 const NAV: [string, keyof ReturnType<typeof getDict>["nav"]][] = [
   ["/", "feed"],
-  ["/radar", "radar"],
   ["/cve", "cve"],
   ["/ioc", "ioc"],
   ["/exposure", "exposure"],
   ["/actors", "actors"],
-  ["/apt", "apt"],
-  ["/veziyyet", "veziyyet"],
   ["/scan-me", "scanme"],
-  ["/kripto", "kripto"],
   ["/haqqinda", "about"],
 ];
 

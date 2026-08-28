@@ -28,7 +28,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // Stamping new Date() on every URL every run teaches Google to ignore our lastmod.
   const staticUrls: MetadataRoute.Sitemap = [
     { url: `${base}`, lastModified: newest, changeFrequency: "hourly", priority: 1 },
-    ...["/radar", "/cve", "/ioc", "/exposure", "/actors", "/apt", "/sektor", "/vendor", "/veziyyet", "/hucum", "/scan-me", "/kripto", "/lugat", "/metodologiya", "/haqqinda"].map(
+    ...["/radar", "/cve", "/ioc", "/exposure", "/actors", "/apt", "/sektor", "/vendor", "/veziyyet", "/hucum", "/scan-me", "/lugat", "/metodologiya", "/haqqinda"].map(
       (p) => ({ url: `${base}${p}`, changeFrequency: "daily" as const, priority: 0.8 })
     ),
   ];
