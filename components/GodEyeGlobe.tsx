@@ -1,135 +1,143 @@
 "use client";
 import { useEffect, useRef } from "react";
-import { LANDMASK, MROWS, MCOLS } from "@/lib/landmask";
 
-// God's-eye globe — Canvas 2D, no libraries. Real Natural-Earth continents,
-// a lit Caucasus/Central-Asia/Türkiye region, regional city lights, and live
-// "nix" threat choreography. Decorative (aria-hidden); the hero's value prop,
-// stats and CTA live as real DOM above it.
+// Photorealistic WebGL Earth (real NASA day/night satellite textures from
+// /public/textures), day/night terminator, atmosphere, and the lit
+// Caucasus/Central-Asia/Türkiye region with live threat pings. Decorative
+// (aria-hidden); the hero value prop, stats and CTA are real DOM above it.
 export function GodEyeGlobe() {
   const wrap = useRef<HTMLDivElement>(null);
   const skyRef = useRef<HTMLCanvasElement>(null);
-  const globeRef = useRef<HTMLCanvasElement>(null);
+  const glRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
-    const wrapEl = wrap.current, sky = skyRef.current, cv = globeRef.current;
-    if (!wrapEl || !sky || !cv) return;
-    const sctx = sky.getContext("2d")!, ctx = cv.getContext("2d")!;
+    const wrapEl = wrap.current, sky = skyRef.current, glc = glRef.current;
+    if (!wrapEl || !sky || !glc) return;
+    const sctx = sky.getContext("2d")!;
+    const GL = (glc.getContext("webgl", { antialias: true, alpha: true, premultipliedAlpha: false }) ||
+      glc.getContext("experimental-webgl")) as WebGLRenderingContext | null;
+    if (!GL) return;
     const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
     const fine = matchMedia("(pointer: fine)").matches;
     const D2R = Math.PI / 180;
-
-    // decode land mask
-    const bin = atob(LANDMASK); const bits = new Uint8Array(bin.length);
-    for (let i = 0; i < bin.length; i++) bits[i] = bin.charCodeAt(i);
-    const isLand = (lat: number, lon: number) => {
-      let r = (90 - lat) | 0; if (r < 0) r = 0; if (r >= MROWS) r = MROWS - 1;
-      const c = ((((lon + 180) | 0) % MCOLS) + MCOLS) % MCOLS; const idx = r * MCOLS + c;
-      return (bits[idx >> 3] >> (7 - (idx & 7))) & 1;
-    };
-
-    let W = 0, H = 0, DPR = 1, cx = 0, cy = 0, R = 0, small = false;
-    const LAT0 = 41, LON0 = 56, DLAT = 10, DLON = 34;
-    const SEAS = [[43, 34.5, 4, 7.5], [41.5, 50.6, 5.6, 3.2], [45, 59, 1.8, 3]];
-    const inEll = (lat: number, lon: number, e: number[]) => { const a = (lat - e[0]) / e[2], b = ((lon - e[1] + 540) % 360 - 180) / e[3]; return a * a + b * b < 1; };
-    const regionF = (lat: number, lon: number) => { const a = (lat - LAT0) / DLAT, b = ((lon - LON0 + 540) % 360 - 180) / DLON, r = a * a + b * b; return r < 1 ? 1 - r : 0; };
-    const inSea = (lat: number, lon: number) => SEAS.some((e) => inEll(lat, lon, e));
-    const wvec = (lat: number, lon: number): number[] => { const la = lat * D2R, lo = lon * D2R, cl = Math.cos(la); return [cl * Math.cos(lo), Math.sin(la), cl * Math.sin(lo)]; };
-    const project = (w: number[], yaw: number, pitch: number) => {
-      const x1 = w[0] * Math.cos(yaw) + w[2] * Math.sin(yaw), z1 = -w[0] * Math.sin(yaw) + w[2] * Math.cos(yaw), y1 = w[1];
-      const y2 = y1 * Math.cos(pitch) - z1 * Math.sin(pitch), z2 = y1 * Math.sin(pitch) + z1 * Math.cos(pitch);
-      return [x1, y2, z2];
-    };
-    const yawBase = -56 * D2R, pitchBase = 24 * D2R, t0 = performance.now();
-    let dragYaw = 0, dragPitch = 0, mpx = 0, mpy = 0;
-    const CITIES: number[][] = [[40.4, 49.9, 1], [41.7, 44.8, 0], [40.2, 44.5, 0], [41.0, 29.0, 1], [39.9, 32.9, 0], [43.2, 76.9, 1], [41.3, 69.2, 0], [51.1, 71.4, 0], [37.9, 58.4, 0], [42.9, 74.6, 0], [35.7, 51.4, 0], [47.1, 51.9, 0]];
-    const anchor = wvec(40.4, 49.9);
-
-    type Pt = { w: number[]; lat: number; lon: number; rf: number; land: number };
-    let pts: Pt[] = [];
-    const build = () => { pts = []; const la = small ? 4 : 3;
-      for (let lat = -88; lat <= 88; lat += la) { const lo = la / Math.max(0.28, Math.cos(lat * D2R));
-        for (let lon = -180; lon < 180; lon += lo) { const rf = regionF(lat, lon); if (rf > 0 && inSea(lat, lon)) continue; pts.push({ w: wvec(lat, lon), lat, lon, rf, land: isLand(lat, lon) }); } } };
-    const sunVec = (now: number) => { const lon = (now * 0.000012) % (Math.PI * 2), lat = 8 * D2R, cl = Math.cos(lat); return [cl * Math.cos(lon), Math.sin(lat), cl * Math.sin(lon)]; };
-
-    type Threat = { w: number[]; born: number; life: number; nixAt: number; nixed: boolean; arc: number };
-    let threats: Threat[] = []; let heat: { w: number[]; born: number }[] = [];
-    const spawn = () => { let lat = 0, lon = 0, rf = 0, tr = 0;
-      do { lat = LAT0 + (Math.random() * 2 - 1) * DLAT; lon = LON0 + (Math.random() * 2 - 1) * DLON; rf = regionF(lat, lon); tr++; } while ((rf < 0.14 || inSea(lat, lon) || !isLand(lat, lon)) && tr < 14);
-      threats.push({ w: wvec(lat, lon), born: performance.now(), life: 2800 + Math.random() * 3400, nixAt: 1000 + Math.random() * 2600, nixed: false, arc: 0 }); };
+    let W = 0, H = 0, DPR = 1;
 
     let stars: { x: number; y: number; r: number; t: number; s: number }[] = [];
-    const buildStars = () => { stars = []; const n = small ? 100 : 220; for (let i = 0; i < n; i++) stars.push({ x: Math.random(), y: Math.random(), r: Math.random() * 1.3 + 0.2, t: Math.random() * 6.28, s: 0.4 + Math.random() }); };
-    const drawSky = (now: number) => { sctx.clearRect(0, 0, W, H); for (const st of stars) { const tw = reduce ? 0.7 : 0.5 + 0.5 * Math.sin(now * 0.001 * st.s + st.t); sctx.fillStyle = `rgba(200,220,240,${(0.1 + tw * 0.5).toFixed(3)})`; sctx.beginPath(); sctx.arc(st.x * W, st.y * H, st.r, 0, 7); sctx.fill(); } };
+    const buildStars = () => { stars = []; const n = 260; for (let i = 0; i < n; i++) stars.push({ x: Math.random(), y: Math.random(), r: Math.random() * 1.3 + 0.2, t: Math.random() * 6.28, s: 0.4 + Math.random() }); };
+    const drawSky = (now: number) => { sctx.clearRect(0, 0, W, H); for (const st of stars) { const tw = reduce ? 0.7 : 0.5 + 0.5 * Math.sin(now * 0.001 * st.s + st.t); sctx.fillStyle = `rgba(200,220,240,${(0.08 + tw * 0.42).toFixed(3)})`; sctx.beginPath(); sctx.arc(st.x * W, st.y * H, st.r, 0, 7); sctx.fill(); } };
 
-    const resize = () => { DPR = Math.min(window.devicePixelRatio || 1, 1.6); W = wrapEl.clientWidth; H = wrapEl.clientHeight; small = W < 860;
-      [sky, cv].forEach((c) => { c.width = Math.floor(W * DPR); c.height = Math.floor(H * DPR); c.getContext("2d")!.setTransform(DPR, 0, 0, DPR, 0, 0); });
-      cx = W * (W < 1000 ? 0.5 : 0.66); cy = H * 0.5; R = Math.min(W, H) * (small ? 0.58 : 0.5); build(); buildStars(); drawSky(performance.now()); };
+    const ident = () => [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1];
+    const persp = (fovy: number, asp: number, n: number, f: number) => { const t = 1 / Math.tan(fovy / 2), o = ident(); o[0] = t / asp; o[5] = t; o[10] = (f + n) / (n - f); o[11] = -1; o[14] = 2 * f * n / (n - f); o[15] = 0; return o; };
+    const transZ = (z: number) => { const o = ident(); o[14] = z; return o; };
+    const rotX = (a: number) => { const c = Math.cos(a), s = Math.sin(a), o = ident(); o[5] = c; o[6] = s; o[9] = -s; o[10] = c; return o; };
+    const rotY = (a: number) => { const c = Math.cos(a), s = Math.sin(a), o = ident(); o[0] = c; o[2] = -s; o[8] = s; o[10] = c; return o; };
+    const mul = (a: number[], b: number[]) => { const o = new Array(16); for (let r = 0; r < 4; r++) for (let c = 0; c < 4; c++) { let s = 0; for (let k = 0; k < 4; k++) s += a[k * 4 + r] * b[c * 4 + k]; o[c * 4 + r] = s; } return o as number[]; };
+    const m3 = (m: number[]) => [m[0], m[1], m[2], m[4], m[5], m[6], m[8], m[9], m[10]];
 
+    const sphere = (seg: number) => { const pos: number[] = [], nor: number[] = [], uv: number[] = [], idx: number[] = []; for (let y = 0; y <= seg; y++) { const v = y / seg, lat = 90 - v * 180, la = lat * D2R; for (let x = 0; x <= seg; x++) { const u = x / seg, lon = -180 + u * 360, lo = lon * D2R, cl = Math.cos(la); const px = cl * Math.cos(lo), py = Math.sin(la), pz = cl * Math.sin(lo); pos.push(px, py, pz); nor.push(px, py, pz); uv.push(u, v); } } for (let y = 0; y < seg; y++) for (let x = 0; x < seg; x++) { const a = y * (seg + 1) + x, b = a + seg + 1; idx.push(a, b, a + 1, b, b + 1, a + 1); } return { pos, nor, uv, idx }; };
+    const shd = (t: number, src: string) => { const s = GL.createShader(t)!; GL.shaderSource(s, src); GL.compileShader(s); return s; };
+    const prog = (vs: string, fs: string) => { const p = GL.createProgram()!; GL.attachShader(p, shd(GL.VERTEX_SHADER, vs)); GL.attachShader(p, shd(GL.FRAGMENT_SHADER, fs)); GL.linkProgram(p); return p; };
+
+    const earthVS = "attribute vec3 position;attribute vec3 normal;attribute vec2 uv;uniform mat4 uP,uV,uM;uniform mat3 uN;varying vec3 vN;varying vec2 vUv;varying vec3 vVP;void main(){vec4 vp=uV*uM*vec4(position,1.0);vVP=vp.xyz;vN=uN*normal;vUv=uv;gl_Position=uP*vp;}";
+    const earthFS = "precision highp float;varying vec3 vN;varying vec2 vUv;varying vec3 vVP;uniform sampler2D day;uniform sampler2D night;uniform vec3 sun;uniform float time;void main(){vec3 N=normalize(vN);float s=dot(N,normalize(sun));vec3 d=texture2D(day,vUv).rgb;vec3 nl=texture2D(night,vUv).rgb;float df=smoothstep(-0.14,0.20,s);vec3 col=mix(nl*1.5,d,df)+d*0.05;vec3 cam=normalize(-vVP);float fres=pow(1.0-max(dot(N,cam),0.0),3.0);col+=vec3(0.22,0.5,0.72)*fres*0.9;float lon=vUv.x*360.0-180.0;float lat=90.0-vUv.y*180.0;float a=(lat-41.0)/11.0;float b=(lon-56.0)/33.0;float rf=clamp(1.0-(a*a+b*b),0.0,1.0);float pulse=0.6+0.4*sin(time*1.6);col+=vec3(1.0,0.38,0.14)*rf*(0.42+0.34*pulse);gl_FragColor=vec4(col,1.0);}";
+    const ptVS = "attribute vec3 position;attribute float aSize;attribute float aAge;uniform mat4 uP,uV,uM;varying float vAge;void main(){vec4 vp=uV*uM*vec4(position*1.008,1.0);gl_Position=uP*vp;gl_PointSize=aSize;vAge=aAge;}";
+    const ptFS = "precision highp float;varying float vAge;uniform vec3 uCol;void main(){vec2 c=gl_PointCoord-0.5;float d=length(c);if(d>0.5)discard;float g=smoothstep(0.5,0.0,d);gl_FragColor=vec4(uCol,g*(1.0-vAge*0.8));}";
+
+    const pEarth = prog(earthVS, earthFS), pPt = prog(ptVS, ptFS);
+    const glUseProgram = GL.useProgram.bind(GL);
+    const AU = (pr: WebGLProgram, n: string) => GL.getAttribLocation(pr, n);
+    const UU = (pr: WebGLProgram, n: string) => GL.getUniformLocation(pr, n);
+    const eL = { pos: AU(pEarth, "position"), nor: AU(pEarth, "normal"), uv: AU(pEarth, "uv"), uP: UU(pEarth, "uP"), uV: UU(pEarth, "uV"), uM: UU(pEarth, "uM"), uN: UU(pEarth, "uN"), sun: UU(pEarth, "sun"), time: UU(pEarth, "time"), day: UU(pEarth, "day"), night: UU(pEarth, "night") };
+    const pL = { pos: AU(pPt, "position"), size: AU(pPt, "aSize"), age: AU(pPt, "aAge"), uP: UU(pPt, "uP"), uV: UU(pPt, "uV"), uM: UU(pPt, "uM"), uCol: UU(pPt, "uCol") };
+    const geo = sphere(64);
+    const buf = (data: number[], el?: boolean) => { const b = GL.createBuffer()!; GL.bindBuffer(el ? GL.ELEMENT_ARRAY_BUFFER : GL.ARRAY_BUFFER, b); GL.bufferData(el ? GL.ELEMENT_ARRAY_BUFFER : GL.ARRAY_BUFFER, el ? new Uint16Array(data) : new Float32Array(data), GL.STATIC_DRAW); return b; };
+    const vboP = buf(geo.pos), vboN = buf(geo.nor), vboU = buf(geo.uv), ibo = buf(geo.idx, true), ptBuf = GL.createBuffer();
+    let texDay: WebGLTexture | null = null, texNight: WebGLTexture | null = null, ready = false;
+    const loadTex = (url: string) => new Promise<WebGLTexture>((res) => { const img = new Image(); img.onload = () => { const t = GL.createTexture()!; GL.bindTexture(GL.TEXTURE_2D, t); GL.texParameteri(GL.TEXTURE_2D, GL.TEXTURE_WRAP_S, GL.REPEAT); GL.texParameteri(GL.TEXTURE_2D, GL.TEXTURE_WRAP_T, GL.CLAMP_TO_EDGE); GL.texParameteri(GL.TEXTURE_2D, GL.TEXTURE_MIN_FILTER, GL.LINEAR_MIPMAP_LINEAR); GL.texParameteri(GL.TEXTURE_2D, GL.TEXTURE_MAG_FILTER, GL.LINEAR); GL.texImage2D(GL.TEXTURE_2D, 0, GL.RGBA, GL.RGBA, GL.UNSIGNED_BYTE, img); GL.generateMipmap(GL.TEXTURE_2D); res(t); }; img.src = url; });
+
+    const LAT0 = 41, LON0 = 56, DLAT = 10, DLON = 34;
+    const wvec = (lat: number, lon: number) => { const la = lat * D2R, lo = lon * D2R, cl = Math.cos(la); return [cl * Math.cos(lo), Math.sin(la), cl * Math.sin(lo)]; };
+    const regionF = (lat: number, lon: number) => { const a = (lat - LAT0) / DLAT, b = ((lon - LON0 + 540) % 360 - 180) / DLON, r = a * a + b * b; return r < 1 ? 1 - r : 0; };
+    type Threat = { w: number[]; born: number; life: number; nixAt: number; nixed: boolean };
+    const threats: Threat[] = []; const anchor = wvec(40.4, 49.9);
+    const spawn = () => { let lat = 0, lon = 0, rf = 0, tr = 0; do { lat = LAT0 + (Math.random() * 2 - 1) * DLAT; lon = LON0 + (Math.random() * 2 - 1) * DLON; rf = regionF(lat, lon); tr++; } while (rf < 0.14 && tr < 10); threats.push({ w: wvec(lat, lon), born: performance.now(), life: 3000 + Math.random() * 3200, nixAt: 1100 + Math.random() * 2400, nixed: false }); };
+
+    const yawBase = -34 * D2R, pitchBase = 20 * D2R, t0 = performance.now();
+    let dragYaw = 0, dragPitch = 0, mpx = 0, mpy = 0;
+
+    const resize = () => { DPR = Math.min(window.devicePixelRatio || 1, 1.7); W = wrapEl.clientWidth; H = wrapEl.clientHeight;
+      [sky, glc].forEach((c) => { c.width = Math.floor(W * DPR); c.height = Math.floor(H * DPR); }); sctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+      GL.viewport(0, 0, glc.width, glc.height); buildStars(); drawSky(performance.now()); };
+
+    let saLast = 0;
     const draw = (now: number) => {
-      ctx.clearRect(0, 0, W, H);
-      const yaw = yawBase + dragYaw + (reduce ? 0 : Math.sin(now * 0.00004) * 0.05 + mpx * 0.04);
-      const pitch = Math.max(-1.2, Math.min(1.2, pitchBase + dragPitch + (reduce ? 0 : Math.sin(now * 0.00003) * 0.016 + mpy * 0.03)));
-      const sun = sunVec(reduce ? t0 + 3e5 : now);
-      const g = ctx.createRadialGradient(cx - R * 0.32, cy - R * 0.36, R * 0.1, cx, cy, R * 1.02);
-      g.addColorStop(0, "#101a24"); g.addColorStop(.5, "#0a1119"); g.addColorStop(.85, "#070c12"); g.addColorStop(1, "#04070b");
-      ctx.fillStyle = g; ctx.beginPath(); ctx.arc(cx, cy, R, 0, 7); ctx.fill();
-      const atm = ctx.createRadialGradient(cx, cy, R * 0.88, cx, cy, R * 1.16);
-      atm.addColorStop(0, "rgba(111,211,230,0)"); atm.addColorStop(.55, "rgba(111,211,230,0.11)"); atm.addColorStop(1, "rgba(111,211,230,0)");
-      ctx.fillStyle = atm; ctx.beginPath(); ctx.arc(cx, cy, R * 1.16, 0, 7); ctx.fill();
-      const rc = project(wvec(LAT0, LON0), yaw, pitch);
-      if (rc[2] > -0.15) { const gx = cx + rc[0] * R, gy = cy - rc[1] * R, rg = ctx.createRadialGradient(gx, gy, 0, gx, gy, R * 0.6); rg.addColorStop(0, "rgba(255,90,31,0.22)"); rg.addColorStop(.5, "rgba(255,90,31,0.07)"); rg.addColorStop(1, "rgba(255,90,31,0)"); ctx.fillStyle = rg; ctx.beginPath(); ctx.arc(gx, gy, R * 0.6, 0, 7); ctx.fill(); }
-      for (const p of pts) { const v = project(p.w, yaw, pitch); if (v[2] <= 0.02) continue; const sx = cx + v[0] * R, sy = cy - v[1] * R, depth = v[2]; const illum = p.w[0] * sun[0] + p.w[1] * sun[1] + p.w[2] * sun[2], night = illum < 0;
-        if (p.rf > 0) { const b = p.rf * (0.5 + 0.5 * depth) * (night ? 1.16 : 1);
-          if (p.land) { const sz = p.rf > 0.5 ? 2.1 : 1.6; ctx.fillStyle = `rgba(255,${120 + ((1 - p.rf) * 70 | 0)},${48 + ((1 - p.rf) * 22 | 0)},${(0.34 + b * 0.58).toFixed(3)})`; ctx.fillRect(sx - sz / 2, sy - sz / 2, sz, sz); }
-          else { ctx.fillStyle = `rgba(255,150,90,${(0.09 + b * 0.16).toFixed(3)})`; ctx.fillRect(sx, sy, 1.2, 1.2); } }
-        else if (p.land) { const db = (0.16 + 0.22 * depth) * (night ? 0.5 : 1); ctx.fillStyle = `rgba(126,146,172,${db.toFixed(3)})`; ctx.fillRect(sx, sy, 1.5, 1.5); }
-        else if ((p.lat | 0) % 10 === 0 && Math.round(p.lon) % 10 === 0) { ctx.fillStyle = `rgba(66,84,108,${(0.09 + 0.11 * depth).toFixed(3)})`; ctx.fillRect(sx, sy, 1, 1); } }
-      for (const C of CITIES) { const cvp = project(wvec(C[0], C[1]), yaw, pitch); if (cvp[2] <= 0.03) continue; const cxp = cx + cvp[0] * R, cyp = cy - cvp[1] * R; ctx.save(); ctx.shadowBlur = C[2] ? 9 : 5; ctx.shadowColor = "#FFB27A"; ctx.fillStyle = C[2] ? "rgba(255,220,180,0.95)" : "rgba(255,180,120,0.8)"; ctx.beginPath(); ctx.arc(cxp, cyp, C[2] ? 1.7 : 1.2, 0, 7); ctx.fill(); ctx.restore(); }
-      ctx.strokeStyle = "rgba(111,211,230,0.18)"; ctx.lineWidth = 1.6; ctx.beginPath(); ctx.arc(cx, cy, R + 1, 0, 7); ctx.stroke();
-      const av = project(anchor, yaw, pitch), ax = cx + av[0] * R, ay = cy - av[1] * R, aVis = av[2] > 0.02;
-      if (aVis) { ctx.save(); ctx.shadowBlur = 13; ctx.shadowColor = "#6FD3E6"; ctx.fillStyle = "#B7ECF5"; ctx.beginPath(); ctx.arc(ax, ay, 2.7, 0, 7); ctx.fill(); ctx.restore(); ctx.strokeStyle = `rgba(111,211,230,${(0.3 + 0.3 * Math.sin(now * 0.004)).toFixed(2)})`; ctx.lineWidth = 1; ctx.beginPath(); ctx.arc(ax, ay, 6 + 2 * Math.sin(now * 0.004), 0, 7); ctx.stroke(); }
-      for (let j = threats.length - 1; j >= 0; j--) { const th = threats[j], age = now - th.born; if (age > th.life) { heat.push({ w: th.w, born: now }); threats.splice(j, 1); continue; }
-        const tv = project(th.w, yaw, pitch); if (tv[2] <= 0.02) continue; const tx = cx + tv[0] * R, ty = cy - tv[1] * R, k = Math.min(age / 380, 1);
-        if (!reduce && age > th.nixAt && !th.nixed) { th.arc = Math.min((age - th.nixAt) / 520, 1); if (th.arc >= 1) th.nixed = true; }
-        if (th.arc > 0 && aVis) { const e = th.arc, mx2 = (ax + tx) / 2, my2 = (ay + ty) / 2 - R * 0.3 * Math.min(e, 1); ctx.strokeStyle = `rgba(111,211,230,${(0.85 * (1 - Math.abs(e - 0.55))).toFixed(3)})`; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(ax, ay); ctx.quadraticCurveTo(mx2, my2, ax + (tx - ax) * e, ay + (ty - ay) * e); ctx.stroke(); }
-        const settle = th.nixed ? Math.max(0, 1 - (age - th.nixAt - 520) / 300) : 1, rad = (2 + (1 - k) * 9) * settle + (th.nixed ? 0 : 1.6);
-        ctx.save(); ctx.shadowBlur = 16 * settle; ctx.shadowColor = "#FF5A1F"; ctx.fillStyle = th.nixed ? `rgba(255,255,255,${settle.toFixed(2)})` : "rgba(255,90,31,0.96)"; ctx.beginPath(); ctx.arc(tx, ty, Math.max(rad, 0.5), 0, 7); ctx.fill(); ctx.restore();
-        if (k < 1) { ctx.strokeStyle = `rgba(255,90,31,${(0.5 * (1 - k)).toFixed(3)})`; ctx.lineWidth = 1; ctx.beginPath(); ctx.arc(tx, ty, 4 + k * 17, 0, 7); ctx.stroke(); } }
-      for (let h = heat.length - 1; h >= 0; h--) { const hm = heat[h], ha = (now - hm.born) / 20000; if (ha >= 1) { heat.splice(h, 1); continue; } const hv = project(hm.w, yaw, pitch); if (hv[2] <= 0.02) continue; const hx = cx + hv[0] * R, hy = cy - hv[1] * R, hg = ctx.createRadialGradient(hx, hy, 0, hx, hy, 11); hg.addColorStop(0, `rgba(255,90,31,${(0.13 * (1 - ha)).toFixed(3)})`); hg.addColorStop(1, "rgba(255,90,31,0)"); ctx.fillStyle = hg; ctx.beginPath(); ctx.arc(hx, hy, 11, 0, 7); ctx.fill(); }
+      const tsec = (now - t0) / 1000;
+      GL.clearColor(0, 0, 0, 0); GL.clear(GL.COLOR_BUFFER_BIT | GL.DEPTH_BUFFER_BIT); GL.enable(GL.DEPTH_TEST); GL.depthFunc(GL.LEQUAL);
+      const asp = glc.width / glc.height, P = persp(42 * D2R, asp, 0.1, 10), camZ = W < 1000 ? 3.15 : 2.95;
+      let Vv = transZ(-camZ); if (W >= 1000) { const tx = ident(); tx[12] = 1.05; Vv = mul(tx, Vv); }
+      const yaw = yawBase + dragYaw + (reduce ? 0 : tsec * 0.012 + mpx * 0.05);
+      const pitch = Math.max(-1.2, Math.min(1.2, pitchBase + dragPitch + mpy * 0.04));
+      const Mm = mul(rotX(pitch), rotY(yaw)), Nm = m3(Mm);
+      glUseProgram(pEarth);
+      const bindA = (l: number, vbo: WebGLBuffer | null, size: number) => { GL.bindBuffer(GL.ARRAY_BUFFER, vbo); GL.enableVertexAttribArray(l); GL.vertexAttribPointer(l, size, GL.FLOAT, false, 0, 0); };
+      bindA(eL.pos, vboP, 3); bindA(eL.nor, vboN, 3); bindA(eL.uv, vboU, 2);
+      GL.uniformMatrix4fv(eL.uP, false, new Float32Array(P));
+      GL.uniformMatrix4fv(eL.uV, false, new Float32Array(Vv));
+      GL.uniformMatrix4fv(eL.uM, false, new Float32Array(Mm));
+      GL.uniformMatrix3fv(eL.uN, false, new Float32Array(Nm));
+      GL.uniform3f(eL.sun, 0.55, 0.35, 0.75); GL.uniform1f(eL.time, tsec);
+      GL.activeTexture(GL.TEXTURE0); GL.bindTexture(GL.TEXTURE_2D, texDay); GL.uniform1i(eL.day, 0);
+      GL.activeTexture(GL.TEXTURE1); GL.bindTexture(GL.TEXTURE_2D, texNight); GL.uniform1i(eL.night, 1);
+      GL.bindBuffer(GL.ELEMENT_ARRAY_BUFFER, ibo); GL.drawElements(GL.TRIANGLES, geo.idx.length, GL.UNSIGNED_SHORT, 0);
+      if (!reduce && now - saLast > 950) { saLast = now; if (threats.length < 9) spawn(); }
+      const pd: number[] = [];
+      for (let j = threats.length - 1; j >= 0; j--) { const th = threats[j], age = now - th.born; if (age > th.life) { threats.splice(j, 1); continue; } if (!reduce && age > th.nixAt) th.nixed = true; const k = Math.min(age / 380, 1), size = (th.nixed ? 5 : 6 + (1 - k) * 22) * DPR, agev = th.nixed ? Math.min((age - th.nixAt) / 700, 1) : 0; pd.push(th.w[0], th.w[1], th.w[2], size, agev, 0); }
+      pd.push(anchor[0], anchor[1], anchor[2], (7 + 2 * Math.sin(now * 0.004)) * DPR, 0, 1);
+      glUseProgram(pPt);
+      GL.uniformMatrix4fv(pL.uP, false, new Float32Array(P));
+      GL.uniformMatrix4fv(pL.uV, false, new Float32Array(Vv));
+      GL.uniformMatrix4fv(pL.uM, false, new Float32Array(Mm));
+      GL.enable(GL.BLEND); GL.blendFunc(GL.SRC_ALPHA, GL.ONE); GL.depthMask(false);
+      const stride = 24; GL.bindBuffer(GL.ARRAY_BUFFER, ptBuf); GL.bufferData(GL.ARRAY_BUFFER, new Float32Array(pd), GL.DYNAMIC_DRAW);
+      GL.enableVertexAttribArray(pL.pos); GL.vertexAttribPointer(pL.pos, 3, GL.FLOAT, false, stride, 0);
+      GL.enableVertexAttribArray(pL.size); GL.vertexAttribPointer(pL.size, 1, GL.FLOAT, false, stride, 12);
+      GL.enableVertexAttribArray(pL.age); GL.vertexAttribPointer(pL.age, 1, GL.FLOAT, false, stride, 16);
+      const count = pd.length / 6;
+      GL.uniform3f(pL.uCol, 1.0, 0.38, 0.14); GL.drawArrays(GL.POINTS, 0, count - 1);
+      GL.uniform3f(pL.uCol, 0.72, 0.92, 0.98); GL.drawArrays(GL.POINTS, count - 1, 1);
+      GL.depthMask(true); GL.disable(GL.BLEND);
     };
 
-    let raf = 0, running = false, spawnAcc = 0, lastFrame = performance.now(), skyAcc = 0;
-    const frame = (now: number) => { if (!running) return; const dt = now - lastFrame; lastFrame = now; if (dt > 15) { draw(now); skyAcc += dt; if (skyAcc > 90) { skyAcc = 0; drawSky(now); } spawnAcc += dt; if (spawnAcc > (small ? 1500 : 950)) { spawnAcc = 0; if (threats.length < (small ? 4 : 8)) spawn(); } } raf = requestAnimationFrame(frame); };
-    const start = () => { if (running || reduce) return; running = true; lastFrame = performance.now(); raf = requestAnimationFrame(frame); };
+    let raf = 0, running = false, lastF = performance.now(), skyAcc = 0;
+    const frame = (now: number) => { if (!running) return; const dt = now - lastF; lastF = now; if (dt > 15 && ready) { draw(now); skyAcc += dt; if (skyAcc > 90) { skyAcc = 0; drawSky(now); } } raf = requestAnimationFrame(frame); };
+    const start = () => { if (running) return; running = true; lastF = performance.now(); raf = requestAnimationFrame(frame); };
     const stop = () => { running = false; cancelAnimationFrame(raf); };
-    const staticFrame = () => { threats = []; heat = []; for (let i = 0; i < 7; i++) spawn(); for (let k = 0; k < 3; k++) { const tt = threats[k]; if (tt) { tt.nixed = true; tt.nixAt = 0; tt.arc = 0.55; } heat.push({ w: wvec(LAT0 + (Math.random() * 2 - 1) * 7, LON0 + (Math.random() * 2 - 1) * 24), born: performance.now() - 9000 }); } drawSky(performance.now()); draw(performance.now()); };
 
-    // drag (desktop / fine pointer only, so mobile scroll is unaffected)
     let dragging = false, lx = 0, ly = 0;
-    const onDown = (e: PointerEvent) => { dragging = true; lx = e.clientX; ly = e.clientY; cv.classList.add("dragging"); cv.setPointerCapture?.(e.pointerId); };
-    const onMove = (e: PointerEvent) => { if (dragging) { dragYaw += (e.clientX - lx) * 0.006; dragPitch += (e.clientY - ly) * 0.006; lx = e.clientX; ly = e.clientY; if (reduce) draw(performance.now()); } else if (fine) { mpx = e.clientX / W - 0.5; mpy = e.clientY / H - 0.5; } };
-    const onUp = () => { dragging = false; cv.classList.remove("dragging"); };
-    if (fine) { cv.style.pointerEvents = "auto"; cv.addEventListener("pointerdown", onDown); cv.addEventListener("pointermove", onMove); window.addEventListener("pointerup", onUp); }
-    else cv.style.pointerEvents = "none";
+    const onDown = (e: PointerEvent) => { dragging = true; lx = e.clientX; ly = e.clientY; glc.classList.add("dragging"); };
+    const onMove = (e: PointerEvent) => { if (dragging) { dragYaw += (e.clientX - lx) * 0.006; dragPitch += (e.clientY - ly) * 0.006; lx = e.clientX; ly = e.clientY; } else { mpx = e.clientX / W - 0.5; mpy = e.clientY / H - 0.5; } };
+    const onUp = () => { dragging = false; glc.classList.remove("dragging"); };
+    if (fine) { glc.style.pointerEvents = "auto"; glc.addEventListener("pointerdown", onDown); glc.addEventListener("pointermove", onMove); window.addEventListener("pointerup", onUp); } else glc.style.pointerEvents = "none";
 
     resize();
-    const ro = new ResizeObserver(() => resize());
-    ro.observe(wrapEl);
+    const ro = new ResizeObserver(() => resize()); ro.observe(wrapEl);
     const onVis = () => (document.hidden ? stop() : start());
-    document.addEventListener("visibilitychange", onVis);
     let io: IntersectionObserver | null = null;
-    if (reduce) staticFrame();
-    else if ("IntersectionObserver" in window) { io = new IntersectionObserver((es) => es.forEach((e) => (e.isIntersecting ? start() : stop())), { threshold: 0.04 }); io.observe(wrapEl); }
-    else start();
+    Promise.all([loadTex("/textures/earth-day.jpg"), loadTex("/textures/earth-night.png")]).then(([d, n]) => {
+      texDay = d; texNight = n; ready = true;
+      if (reduce) { draw(performance.now()); return; }
+      document.addEventListener("visibilitychange", onVis);
+      if ("IntersectionObserver" in window) { io = new IntersectionObserver((es) => es.forEach((e) => (e.isIntersecting ? start() : stop())), { threshold: 0.03 }); io.observe(wrapEl); }
+      else start();
+    });
 
-    return () => { stop(); ro.disconnect(); io?.disconnect(); document.removeEventListener("visibilitychange", onVis); if (fine) { cv.removeEventListener("pointerdown", onDown); cv.removeEventListener("pointermove", onMove); window.removeEventListener("pointerup", onUp); } };
+    return () => { stop(); ro.disconnect(); io?.disconnect(); document.removeEventListener("visibilitychange", onVis); if (fine) { glc.removeEventListener("pointerdown", onDown); glc.removeEventListener("pointermove", onMove); window.removeEventListener("pointerup", onUp); } };
   }, []);
 
   return (
     <div ref={wrap} aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden">
       <canvas ref={skyRef} className="absolute inset-0 h-full w-full" />
-      <canvas ref={globeRef} className="absolute inset-0 h-full w-full [cursor:grab] [&.dragging]:cursor-grabbing" />
+      <canvas ref={glRef} className="absolute inset-0 h-full w-full [cursor:grab] [&.dragging]:cursor-grabbing" />
     </div>
   );
 }

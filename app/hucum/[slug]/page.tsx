@@ -6,7 +6,6 @@ import { Footer } from "@/components/Footer";
 import {
   getGuide,
   getGuideEvidence,
-  getGuideSlugs,
   siblingGuides,
   stripCitations,
 } from "@/lib/guides";
@@ -19,9 +18,13 @@ export const revalidate = 86400;
 
 const BASE = "https://ctiaze.tech";
 
+export const dynamicParams = true;
+
+// Render on-demand (ISR) instead of prerendering every page at build — the
+// per-page Mongo aggregation is slow and was timing the build out (>60s/page).
+// Any slug still generates on first request and caches (revalidate above).
 export async function generateStaticParams() {
-  const slugs = await getGuideSlugs();
-  return slugs.map((slug) => ({ slug }));
+  return [];
 }
 
 export async function generateMetadata({

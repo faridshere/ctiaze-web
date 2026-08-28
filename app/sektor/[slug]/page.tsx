@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { AttackRose } from "@/components/AttackRose";
-import { getSector, getSectorSlugs } from "@/lib/sectors";
+import { getSector } from "@/lib/sectors";
 import { actorInitials, flagEmoji, originLabel } from "@/lib/threatactors";
 import { getLocale } from "@/lib/i18n-server";
 import { localizedMeta } from "@/lib/seo";
@@ -14,9 +14,13 @@ export const revalidate = 86400;
 
 const BASE = "https://ctiaze.tech";
 
+export const dynamicParams = true;
+
+// Render on-demand (ISR) instead of prerendering every page at build — the
+// per-page Mongo aggregation is slow and was timing the build out (>60s/page).
+// Any slug still generates on first request and caches (revalidate above).
 export async function generateStaticParams() {
-  const slugs = await getSectorSlugs();
-  return slugs.map((slug) => ({ slug }));
+  return [];
 }
 
 // T1566.001 → attack.mitre.org/techniques/T1566/001 (same mapping as ActorPlaybook).
