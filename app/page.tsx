@@ -1,4 +1,5 @@
 import { Header } from "@/components/Header";
+import { Hero } from "@/components/Hero";
 import { Footer } from "@/components/Footer";
 import { LiveUpdateBanner } from "@/components/LiveUpdateBanner";
 import { SpektrLedger } from "@/components/SpektrLedger";
@@ -72,6 +73,7 @@ export default async function HomePage() {
     <div className="flex min-h-screen flex-col">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLdSafe(orgLd) }} />
       <Header />
+      <Hero archive={stats.total} azHosts={azHosts} />
       <LiveUpdateBanner initialCount={stats.total} />
       <WatchDesk en={en} archive={stats.total} stats={doStats} />
       <main id="main" className="mx-auto w-full max-w-[75rem] flex-1 px-[var(--sp-gutter)] pb-[var(--sp-section)]">

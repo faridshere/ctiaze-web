@@ -10,11 +10,12 @@ import { getDict } from "@/lib/i18n";
 
 const NAV: [string, keyof ReturnType<typeof getDict>["nav"]][] = [
   ["/", "feed"],
+  ["/exposure", "exposure"],
   ["/cve", "cve"],
   ["/ioc", "ioc"],
-  ["/exposure", "exposure"],
   ["/actors", "actors"],
-  ["/scan-me", "scanme"],
+  ["/developers", "api"],
+  ["/pricing", "pricing"],
   ["/haqqinda", "about"],
 ];
 
@@ -28,7 +29,7 @@ export function Header() {
           <Link href="/" className="group flex shrink-0 items-center gap-2">
             <CtiazeMark className="size-5 text-ink-primary transition-all group-hover:scale-105 group-hover:drop-shadow-[0_0_6px_rgba(255,90,31,0.55)]" />
             <span className="font-headline text-lg font-semibold tracking-tight text-ink-primary">
-              ctiaze
+              skopnix
             </span>
           </Link>
 
