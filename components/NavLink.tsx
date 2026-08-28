@@ -18,7 +18,7 @@ export function NavLink({ href, children }: { href: string; children: React.Reac
   // would prefetch a non-existent RSC payload and dead-click. Render a plain
   // anchor so the browser does a real navigation.
   const isDocumentHref =
-    /^https?:\/\//.test(href) || href.endsWith(".html") || href === "/radar";
+    /^https?:\/\//.test(href) || href.endsWith(".html");
   if (isDocumentHref) {
     return (
       <a href={href} className={className}>

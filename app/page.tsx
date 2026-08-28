@@ -25,8 +25,8 @@ export async function generateMetadata(
     path: "/", dil, en,
     azTitle: "ctiaze — Azərbaycan kiber-təhlükə kəşfiyyatı",
     enTitle: "ctiaze — automated Azerbaijani cyber-threat intelligence",
-    azDesc: "Qlobal kiber-təhlükə xəbərləri Azərbaycan dilində — AI ilə seçilir, mənbəyə qarşı yoxlanılır, hər 2 saatdan bir avtomatik yenilənir. Yanlış pozitiv yoxdur.",
-    enDesc: "Global cyber-threat news in Azerbaijani — AI-curated, fact-checked against source, refreshed automatically every 2 hours. No false positives.",
+    azDesc: "Qlobal kiber-təhlükə xəbərləri Azərbaycan dilində — AI ilə seçilir, mənbəyə qarşı yoxlanılır, hər 2 saatdan bir avtomatik yenilənir.",
+    enDesc: "Global cyber-threat news in Azerbaijani — AI-curated, fact-checked against source, refreshed automatically every 2 hours.",
   });
 }
 

@@ -17,8 +17,8 @@ export async function generateMetadata(
     path: "/scan-me", dil, en,
     azTitle: "Özünü yoxla — breach və domain exposure · Scan me",
     enTitle: "Scan me — breach & domain exposure check",
-    azDesc: "E-poçt, parol və iş domeninin ifşasını yoxla. Breach axtarışı (XposedOrNot), pwned-parol yoxlaması (k-anonymity), subdomain-lar (certspotter) və Shodan hücum səthi. Yanlış pozitiv yoxdur.",
-    enDesc: "Check your email, password and work domain exposure. Breach lookup (XposedOrNot), pwned-password check (k-anonymity), subdomains (certspotter) and Shodan attack surface. No false positives.",
+    azDesc: "E-poçt, parol və iş domeninin ifşasını yoxla. Breach axtarışı (XposedOrNot), pwned-parol yoxlaması (k-anonymity), subdomain-lar (certspotter) və Shodan hücum səthi.",
+    enDesc: "Check your email, password and work domain exposure. Breach lookup (XposedOrNot), pwned-password check (k-anonymity), subdomains (certspotter) and Shodan attack surface.",
   });
 }
 

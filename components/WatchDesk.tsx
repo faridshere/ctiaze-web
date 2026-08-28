@@ -51,7 +51,7 @@ export function WatchDesk({
 
         {/* Threat Radar feature card — the door into the deep experience */}
         <a
-          href="/radar"
+          href="/exposure"
           data-sc
           className="sweepable group flex items-center gap-4 border border-hairline bg-surface-raised p-4 transition-colors hover:border-brand/40"
           style={{ borderRadius: "var(--radius-chip)" }}

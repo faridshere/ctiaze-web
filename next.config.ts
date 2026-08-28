@@ -38,15 +38,14 @@ const nextConfig: NextConfig = {
   async headers() {
     return [{ source: "/:path*", headers: SECURITY_HEADERS }];
   },
-  // Serve the self-contained console at the clean /radar URL (the file lives at
-  // public/radar.html). A rewrite keeps the pretty URL; a permanent redirect
-  // sends any old /radar.html link to it. No loop: redirects run on the incoming
-  // request, rewrites resolve internally afterward.
-  async rewrites() {
-    return [{ source: "/radar", destination: "/radar.html" }];
-  },
+  // /radar (static console) and /apt (redundant with /actors) removed in the
+  // skopnix cleanup — 301 old URLs to the closest live page.
   async redirects() {
-    return [{ source: "/radar.html", destination: "/radar", permanent: true }];
+    return [
+      { source: "/radar", destination: "/exposure", permanent: true },
+      { source: "/radar.html", destination: "/exposure", permanent: true },
+      { source: "/apt", destination: "/actors", permanent: true },
+    ];
   },
 };
 
