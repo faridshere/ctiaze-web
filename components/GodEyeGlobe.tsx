@@ -74,7 +74,7 @@ export function GodEyeGlobe() {
       const tsec = (now - t0) / 1000;
       GL.clearColor(0, 0, 0, 0); GL.clear(GL.COLOR_BUFFER_BIT | GL.DEPTH_BUFFER_BIT); GL.enable(GL.DEPTH_TEST); GL.depthFunc(GL.LEQUAL);
       const asp = glc.width / glc.height, P = persp(42 * D2R, asp, 0.1, 10), camZ = W < 1000 ? 3.15 : 2.95;
-      let Vv = transZ(-camZ); if (W >= 1000) { const tx = ident(); tx[12] = 1.05; Vv = mul(tx, Vv); }
+      let Vv = transZ(-camZ); { const tx = ident(); tx[13] = -1.02; Vv = mul(tx, Vv); } // background duty: Earth's limb rises low-center behind the hero copy
       const yaw = yawBase + dragYaw + (reduce ? 0 : tsec * 0.012 + mpx * 0.05);
       const pitch = Math.max(-1.2, Math.min(1.2, pitchBase + dragPitch + mpy * 0.04));
       const Mm = mul(rotX(pitch), rotY(yaw)), Nm = m3(Mm);

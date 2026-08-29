@@ -63,6 +63,21 @@ async function allActors(): Promise<ThreatActor[]> {
   return docs;
 }
 
+// Lean roster for the index surfaces (/actors cards, stats, sorts): everything
+// the cards render EXCEPT playbook + intel — the two multi-KB dossier-only
+// fields. This is what keeps the /actors cold render inside the function budget
+// (the full fetch was the intermittent "can't access /actors" failure).
+let leanCache: { at: number; docs: ThreatActor[] } | null = null;
+
+async function leanActors(): Promise<ThreatActor[]> {
+  if (rosterCache && Date.now() - rosterCache.at < ROSTER_TTL_MS) return rosterCache.docs;
+  if (leanCache && Date.now() - leanCache.at < ROSTER_TTL_MS) return leanCache.docs;
+  const col = await collection();
+  const docs = (await col.find({}, { projection: { playbook: 0, intel: 0 } }).toArray()) as ThreatActor[];
+  leanCache = { at: Date.now(), docs };
+  return docs;
+}
+
 // One dossier by its stable slug (_id) — powers the crawlable /actors/[slug] page.
 export async function getActorById(id: string): Promise<ThreatActor | null> {
   const docs = await allActors();
@@ -72,7 +87,7 @@ export async function getActorById(id: string): Promise<ThreatActor | null> {
 // Every actor slug, for the sitemap. Substantive actors first (a thin name-only
 // stub is low-value to crawl), capped so the sitemap stays a sensible size.
 export async function getActorIds(limit = 800): Promise<string[]> {
-  const docs = await allActors();
+  const docs = await leanActors();
   return [...docs]
     .sort((a, b) => substance(b) - substance(a) || activity(b) - activity(a) || byName(a, b))
     .slice(0, limit)
@@ -83,7 +98,7 @@ export async function getActorIds(limit = 800): Promise<string[]> {
 // ~800 dossiers in the sitemap actually receive internal links (a sitemap-only URL
 // ranks poorly). Same substantive-first cap as the sitemap so the two agree.
 export async function getActorIndex(limit = 800): Promise<{ id: string; name: string; type: string }[]> {
-  const docs = await allActors();
+  const docs = await leanActors();
   return [...docs]
     .sort((a, b) => substance(b) - substance(a) || activity(b) - activity(a) || byName(a, b))
     .slice(0, limit)
@@ -97,7 +112,7 @@ export async function getActorStats(): Promise<{
   translated: number;
   lastRefreshed: string | null;
 }> {
-  const docs = await allActors();
+  const docs = await leanActors();
   const active = docs.filter((a) => (a.recent_activity?.length ?? 0) > 0).length;
   const translated = docs.filter((a) => a.description_az).length;
   const last = docs
@@ -149,7 +164,7 @@ function byName(a: ThreatActor, b: ThreatActor): number {
 // The APTs and crime groups stated to target Azerbaijan / the Caucasus — the whole
 // reason a local reader comes here rather than to MITRE. Regional weight first.
 export async function getRegionalActors(n = 6): Promise<ThreatActor[]> {
-  const docs = await allActors();
+  const docs = await leanActors();
   return docs
     .filter((a) => regionalWeight(a) > 0)
     .sort(
@@ -166,7 +181,7 @@ export async function getRegionalActors(n = 6): Promise<ThreatActor[]> {
 // (richness first, so thin stubs never lead), with an optional exclude set so it
 // doesn't repeat the regional section shown above it.
 export async function getTopActors(n = 12, exclude?: Set<string>): Promise<ThreatActor[]> {
-  const docs = await allActors();
+  const docs = await leanActors();
   return [...docs]
     .filter((a) => !exclude?.has(a._id))
     .sort(

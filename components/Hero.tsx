@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { GodEyeGlobe } from "@/components/GodEyeGlobe";
 
 const nf = (n: number) => n.toLocaleString("en-US");
 
@@ -28,10 +29,13 @@ export function Hero({
 }) {
   return (
     <section className="relative isolate overflow-hidden border-b border-hairline bg-[#05060a]">
+      <div aria-hidden className="absolute inset-0 opacity-75">
+        <GodEyeGlobe />
+      </div>
       {STREAKS.map((st, i) => (
         <div key={i} aria-hidden className="aurora-streak pointer-events-none absolute rounded-full" style={{ ...st, filter: "blur(70px)", transform: "rotate(-24deg)", mixBlendMode: "screen", animationDelay: `${i * -3.2}s` }} />
       ))}
-      <div aria-hidden className="pointer-events-none absolute inset-0" style={{ background: "radial-gradient(140% 100% at 50% 120%, rgba(5,6,10,0.95) 18%, rgba(5,6,10,0.4) 45%, transparent 70%)" }} />
+      <div aria-hidden className="pointer-events-none absolute inset-0" style={{ background: "radial-gradient(90% 70% at 50% 42%, rgba(5,6,10,0.55) 0%, rgba(5,6,10,0.25) 55%, transparent 80%)" }} />
 
       <div className="relative z-10 mx-auto flex min-h-[92svh] w-full max-w-[75rem] flex-col items-center justify-center px-[var(--sp-gutter)] py-[var(--sp-section)] text-center">
         <p data-sc className="mb-6 font-mono text-[length:var(--t-micro)] uppercase tracking-[0.28em] text-[#9AA6B4]">
