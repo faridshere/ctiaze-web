@@ -13,6 +13,15 @@ import { localizedMeta } from "@/lib/seo";
 
 export const revalidate = 180;
 
+// Honest sync label: derived from the newest published story at render time,
+// never hardcoded. Helper lives outside the component for react-hooks/purity.
+function syncLabel(newestIso: string | undefined, en: boolean): string {
+  if (!newestIso) return en ? "syncing" : "sinxronlaşır";
+  const m = Math.max(1, Math.round((Date.now() - new Date(newestIso).getTime()) / 60_000));
+  const r = m < 60 ? `${m}${en ? "m" : "d"}` : m < 1440 ? `${Math.round(m / 60)}${en ? "h" : "s"}` : `${Math.round(m / 1440)}${en ? "d" : "g"}`;
+  return en ? `synced ${r} ago` : `sinxron ${r} əvvəl`;
+}
+
 export async function generateMetadata(
   { searchParams }: { searchParams: Promise<{ dil?: string }> },
 ): Promise<Metadata> {
@@ -37,6 +46,7 @@ export default async function HomePage() {
     getDoStats(),
   ]);
   const regionCount = stories.filter((s) => s.region).length;
+  const syncedLabel = syncLabel(stories[0]?.publishedAt, en);
 
   const orgLd = {
     "@context": "https://schema.org",
@@ -62,7 +72,7 @@ export default async function HomePage() {
     <div className="flex min-h-screen flex-col">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLdSafe(orgLd) }} />
       <Header />
-      <Hero archive={stats.total} kevCount={stats.kevCount} regionCount={regionCount} en={en} />
+      <Hero archive={stats.total} kevCount={stats.kevCount} regionCount={regionCount} en={en} syncedLabel={syncedLabel} />
       <main id="main" className="flex-1">
         <TheWire stories={stories} en={en} />
         <HomeIntel en={en} snapshot={snapshot} doStats={doStats} />

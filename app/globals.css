@@ -327,6 +327,31 @@ html.motion-ok [data-sc="3"] { transition-delay: 0.2s; }
 }
 .signal-dot { animation: signal-beat 2s ease-out infinite; }
 
+/* Ambient triad motif (CTA band): the whole mark floats almost imperceptibly;
+   the detection node breathes. Both die under prefers-reduced-motion via the
+   global kill-switch below. */
+/* Aurora silk streaks (hero): slow lateral drift, killed by reduced-motion. */
+.aurora-streak { animation: aurora-drift 26s ease-in-out infinite alternate; }
+@keyframes aurora-drift {
+  from { translate: -40px 0; }
+  to { translate: 40px 0; }
+}
+
+.triad-ambient { animation: triad-drift 16s ease-in-out infinite alternate; }
+@keyframes triad-drift {
+  from { transform: translateY(calc(-50% - 7px)); }
+  to { transform: translateY(calc(-50% + 7px)); }
+}
+.triad-pulse {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: triad-node 3.4s cubic-bezier(0.22, 0.61, 0.36, 1) infinite;
+}
+@keyframes triad-node {
+  0%, 100% { transform: scale(1); opacity: 0.75; }
+  45% { transform: scale(1.3); opacity: 1; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

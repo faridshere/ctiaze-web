@@ -13,13 +13,24 @@ function sourceName(url: string): string {
   }
 }
 
-function Row({ s, en }: { s: Story; en: boolean }) {
-  const time = s.publishedAt.slice(11, 16); // HH:MM (UTC, deterministic)
+function relTime(iso: string, en: boolean): string {
+  const ms = Date.now() - new Date(iso).getTime();
+  const m = Math.max(1, Math.round(ms / 60_000));
+  if (m < 60) return `${m}${en ? "m" : "d"}`;
+  const h = Math.round(m / 60);
+  if (h < 24) return `${h}${en ? "h" : "s"}`;
+  return `${Math.round(h / 24)}${en ? "d" : "g"}`;
+}
+
+function Row({ s, en, i }: { s: Story; en: boolean; i: number }) {
+  const time = relTime(s.publishedAt, en); // server-rendered, revalidates with the page
   const src = sourceName(s.sourceUrl);
   const cve = s.cveIds[0];
   return (
     <Link
       href={`/xeber/${s.slug}`}
+      data-sc
+      style={{ transitionDelay: `${Math.min(i * 45, 400)}ms` }}
       className="group grid grid-cols-[auto_1fr] items-start gap-3.5 border-b border-hairline py-[15px]"
     >
       <span className="whitespace-nowrap pt-0.5 font-mono text-[length:var(--t-micro)] tabular-nums text-[#79838F]">{time}</span>
@@ -51,7 +62,7 @@ export function TheWire({ stories, en }: { stories: Story[]; en: boolean }) {
   const rows = stories.slice(0, 12);
   return (
     <section id="wire" className="mx-auto w-full max-w-[75rem] px-[var(--sp-gutter)] py-[clamp(46px,7vw,82px)]">
-      <div className="mb-6 flex flex-wrap items-baseline justify-between gap-4 border-b border-hairline pb-4">
+      <div data-sc className="mb-6 flex flex-wrap items-baseline justify-between gap-4 border-b border-hairline pb-4">
         <h2 className="font-display text-[clamp(1.5rem,2.6vw,2.1rem)] font-semibold tracking-[-0.02em] text-[#EDF1F6]">
           {en ? "On the wire, right now" : "Xəttin üstündə, indi"}
         </h2>
@@ -61,11 +72,11 @@ export function TheWire({ stories, en }: { stories: Story[]; en: boolean }) {
         </div>
       </div>
       <div className="grid grid-cols-1 gap-x-[clamp(24px,4vw,56px)] md:grid-cols-2">
-        {rows.map((s) => (
-          <Row key={s.id} s={s} en={en} />
+        {rows.map((s, i) => (
+          <Row key={s.id} s={s} en={en} i={i} />
         ))}
       </div>
-      <div className="mt-6 flex flex-wrap items-center gap-3.5">
+      <div data-sc className="mt-6 flex flex-wrap items-center gap-3.5">
         <Link href="/" className="inline-flex items-center gap-2 rounded-[3px] border border-white/[0.15] bg-[rgba(11,13,19,0.55)] px-4 py-2 font-display text-[length:var(--t-meta)] text-[#EDF1F6] transition-colors hover:border-[#4b5563]">
           {en ? "Open the full feed" : "Tam lenti aç"} →
         </Link>
