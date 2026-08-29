@@ -4,7 +4,7 @@ import { Footer } from "@/components/Footer";
 import { ActorSearch } from "@/components/ActorSearch";
 import { ActorDossier } from "@/components/ActorDossier";
 import Link from "next/link";
-import { getTopActors, getRegionalActors, getActorStats, getActorIndex } from "@/lib/threatactors";
+import { getActorsPageData } from "@/lib/threatactors";
 import { getDict } from "@/lib/i18n";
 import { getLocale } from "@/lib/i18n-server";
 
@@ -42,8 +42,7 @@ function SectionHead({ title, note, brand }: { title: string; note?: string; bra
 export default async function ActorsPage() {
   const locale = await getLocale();
   const t = getDict(locale).actors;
-  const [regional, stats, index] = await Promise.all([getRegionalActors(6), getActorStats(), getActorIndex()]);
-  const top = await getTopActors(24, new Set(regional.map((a) => a._id)));
+  const { regional, top, stats, index } = await getActorsPageData();
   const en = locale === "en";
 
   return (

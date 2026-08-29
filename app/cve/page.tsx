@@ -7,7 +7,7 @@ import { SpektrStrip } from "@/components/SpektrStrip";
 import { GlyphChip } from "@/components/GlyphChip";
 import { getCveIndex } from "@/lib/cve";
 import { getStories } from "@/lib/stories";
-import { kevSet, epssMap, nvdLookup } from "@/lib/cveintel";
+import { kevSet, epssMap, nvdLookup, type NvdInfo } from "@/lib/cveintel";
 import { cveIntelIdSet } from "@/lib/cveintel-page";
 import { getLocale } from "@/lib/i18n-server";
 import { localizedMeta } from "@/lib/seo";
@@ -38,6 +38,40 @@ const nvdCached = unstable_cache(async (cve: string) => nvdLookup(cve), ["cve-nv
 const WINDOW = 150;
 const NVD_CAP = 24; // enrich the highest-priority CVEs with CVSS/description
 
+// The locale cookie makes this route dynamic, so the 6h route ISR above never
+// applies. Everything expensive — the 150-story Mongo window, the multi-MB CISA
+// KEV file, batched EPSS, and the NVD enrichment fan-out — is computed once and
+// stored as ONE JSON-safe entry in Vercel's shared data cache. This is what took
+// a cold /cve render from ~23s to cache-read speed.
+const getCvePageData = unstable_cache(
+  async () => {
+    const [index, stories] = await Promise.all([getCveIndex(WINDOW), getStories(WINDOW).catch(() => [])]);
+    const cveBearing = stories.filter((s) => s.cveIds.length > 0);
+    const cves = index.map((x) => x.cve);
+    const [kev, epss, intelIds] = await Promise.all([
+      kevSet(),
+      epssMap(cves),
+      cveIntelIdSet(cves).catch(() => new Set<string>()),
+    ]);
+    const ranked = [...index].sort(
+      (a, b) =>
+        Number(kev.has(b.cve)) - Number(kev.has(a.cve)) ||
+        (epss.get(b.cve) ?? -1) - (epss.get(a.cve) ?? -1) ||
+        b.latest.localeCompare(a.latest)
+    );
+    const nvdTargets = ranked.slice(0, NVD_CAP).map((x) => x.cve);
+    const nvdResults = await Promise.allSettled(nvdTargets.map((c) => nvdCached(c)));
+    const nvd: Record<string, NvdInfo> = {};
+    nvdTargets.forEach((c, i) => {
+      const r = nvdResults[i];
+      if (r.status === "fulfilled" && r.value) nvd[c] = r.value;
+    });
+    return { ranked, cveBearing, kevIds: [...kev], epss: Object.fromEntries(epss), intelIds: [...intelIds], nvd };
+  },
+  ["cve-page-v1"],
+  { revalidate: 21600 },
+);
+
 function pct(epss: number | null): string | null {
   if (epss == null) return null;
   const p = epss * 100;
@@ -46,31 +80,13 @@ function pct(epss: number | null): string | null {
 
 export default async function CvePage() {
   const en = (await getLocale()) === "en";
-  const [index, stories] = await Promise.all([getCveIndex(WINDOW), getStories(WINDOW).catch(() => [])]);
-  const cveBearing = stories.filter((s) => s.cveIds.length > 0);
-  const cves = index.map((x) => x.cve);
-  // Which listed ids have a /cve/[id] explainer page (one indexed $in query) —
-  // only those become links, so the registry never points into a 404.
-  const [kev, epss, intelIds] = await Promise.all([
-    kevSet(),
-    epssMap(cves),
-    cveIntelIdSet(cves).catch(() => new Set<string>()),
-  ]);
-
-  // Priority order for NVD enrichment + display: KEV first, then EPSS, then recency.
-  const ranked = [...index].sort(
-    (a, b) =>
-      Number(kev.has(b.cve)) - Number(kev.has(a.cve)) ||
-      (epss.get(b.cve) ?? -1) - (epss.get(a.cve) ?? -1) ||
-      b.latest.localeCompare(a.latest)
-  );
-  const nvdTargets = ranked.slice(0, NVD_CAP).map((x) => x.cve);
-  const nvdResults = await Promise.allSettled(nvdTargets.map((c) => nvdCached(c)));
-  const nvd = new Map<string, Awaited<ReturnType<typeof nvdLookup>>>();
-  nvdTargets.forEach((c, i) => {
-    const r = nvdResults[i];
-    if (r.status === "fulfilled" && r.value) nvd.set(c, r.value);
-  });
+  const data = await getCvePageData();
+  const { ranked, cveBearing } = data;
+  const index = ranked;
+  const kev = new Set(data.kevIds);
+  const epss = new Map(Object.entries(data.epss));
+  const intelIds = new Set(data.intelIds);
+  const nvd = new Map(Object.entries(data.nvd));
 
   return (
     <div className="flex min-h-screen flex-col">

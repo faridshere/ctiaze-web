@@ -3,6 +3,7 @@ import { Hero } from "@/components/Hero";
 import { Footer } from "@/components/Footer";
 import { TheWire } from "@/components/TheWire";
 import { HomeIntel } from "@/components/HomeIntel";
+import { unstable_cache } from "next/cache";
 import { getStories, getStats } from "@/lib/stories";
 import { getDoStats } from "@/lib/dostats";
 import { getLatestSnapshot } from "@/lib/exposure";
@@ -12,6 +13,23 @@ import { jsonLdSafe } from "@/lib/format";
 import { localizedMeta } from "@/lib/seo";
 
 export const revalidate = 180;
+
+// The locale cookie makes this page dynamic, so route-level ISR never applies.
+// All Mongo work therefore rides Vercel's shared data cache: one blob, five
+// minutes, warm for every lambda — a cold instance renders from cache instantly.
+const getHomeData = unstable_cache(
+  async () => {
+    const [stories, stats, snapshot, doStats] = await Promise.all([
+      getStories(24),
+      getStats(),
+      getLatestSnapshot().catch(() => null),
+      getDoStats(),
+    ]);
+    return { stories, stats, snapshot, doStats };
+  },
+  ["home-data-v1"],
+  { revalidate: 300 },
+);
 
 // Honest sync label: derived from the newest published story at render time,
 // never hardcoded. Helper lives outside the component for react-hooks/purity.
@@ -39,12 +57,7 @@ export async function generateMetadata(
 export default async function HomePage() {
   const locale = await getLocale();
   const en = locale === "en";
-  const [stories, stats, snapshot, doStats] = await Promise.all([
-    getStories(60),
-    getStats(),
-    getLatestSnapshot().catch(() => null),
-    getDoStats(),
-  ]);
+  const { stories, stats, snapshot, doStats } = await getHomeData();
   const regionCount = stories.filter((s) => s.region).length;
   const syncedLabel = syncLabel(stories[0]?.publishedAt, en);
 

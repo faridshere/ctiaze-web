@@ -6,7 +6,7 @@ import { Footer } from "@/components/Footer";
 import { ActorDossier } from "@/components/ActorDossier";
 import { ActorPlaybook } from "@/components/ActorPlaybook";
 import { AttackRose } from "@/components/AttackRose";
-import { getActorById, originLabel } from "@/lib/threatactors";
+import { getActorByIdCached as getActorById, originLabel } from "@/lib/threatactors";
 import { getLocale } from "@/lib/i18n-server";
 import { jsonLdSafe } from "@/lib/format";
 import { getQaForActor } from "@/lib/qa";

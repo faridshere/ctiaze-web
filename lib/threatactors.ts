@@ -1,3 +1,4 @@
+import { unstable_cache } from "next/cache";
 import { getDb } from "./db";
 import type { Locale } from "./i18n";
 
@@ -180,6 +181,31 @@ export async function getRegionalActors(n = 6): Promise<ThreatActor[]> {
 // The general "leading actors" grid — the best-documented, most-active actors
 // (richness first, so thin stubs never lead), with an optional exclude set so it
 // doesn't repeat the regional section shown above it.
+// Everything the /actors index page needs, as ONE entry in Vercel's shared data
+// cache. The locale cookie keeps the route dynamic, so this — not route ISR —
+// is what saves a cold lambda from refetching the roster ("can't access /actors").
+export const getActorsPageData = unstable_cache(
+  async () => {
+    const [regional, stats, index] = await Promise.all([
+      getRegionalActors(6),
+      getActorStats(),
+      getActorIndex(),
+    ]);
+    const top = await getTopActors(24, new Set(regional.map((a) => a._id)));
+    return { regional, top, stats, index };
+  },
+  ["actors-page-v2"],
+  { revalidate: 3600 },
+);
+
+// Per-dossier shared cache — Date fields JSON-round-trip to strings, which every
+// consumer (fmtDay etc.) already accepts.
+export const getActorByIdCached = unstable_cache(
+  async (id: string) => getActorById(id),
+  ["actor-by-id-v1"],
+  { revalidate: 3600 },
+);
+
 export async function getTopActors(n = 12, exclude?: Set<string>): Promise<ThreatActor[]> {
   const docs = await leanActors();
   return [...docs]
