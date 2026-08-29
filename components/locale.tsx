@@ -16,7 +16,7 @@ export function useLocale(): Locale {
 }
 
 export function setLocale(next: Locale) {
-  document.cookie = `locale=${next}; path=/; max-age=${60 * 60 * 24 * 365}; samesite=lax`;
+  document.cookie = `locale=${next}; path=/; max-age=${60 * 60 * 24 * 365}; samesite=lax${location.protocol === "https:" ? "; secure" : ""}`;
   window.location.reload();
 }
 

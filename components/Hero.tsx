@@ -44,6 +44,9 @@ export function Hero({
               {en ? "Read the docs" : "Sənədləri oxu"}
             </Link>
           </div>
+          <p className="mt-3.5 font-mono text-[length:var(--t-micro)] text-[#8A94A2]">
+            {en ? "First 1,000 calls free · no signup wall · cancel in one click" : "İlk 1,000 sorğu pulsuz · qeydiyyat divarı yoxdur · bir kliklə ləğv"}
+          </p>
           <div className="mt-8 flex flex-wrap gap-x-6 gap-y-2 font-mono text-[length:var(--t-micro)] text-[#79838F]">
             <span><span className="mr-1.5 inline-block size-1.5 rounded-full bg-[var(--brand)] align-middle motion-safe:animate-pulse" /><span className="text-[var(--brand)]">{en ? "live" : "canlı"}</span> · {en ? "synced 2h ago" : "2s əvvəl sinxron"}</span>
             <span><b className="font-normal tabular-nums text-[#EDF1F6]">{nf(archive)}</b> {en ? "briefings" : "brifinq"}</span>
