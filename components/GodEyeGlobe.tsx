@@ -39,7 +39,7 @@ export function GodEyeGlobe() {
     const prog = (vs: string, fs: string) => { const p = GL.createProgram()!; GL.attachShader(p, shd(GL.VERTEX_SHADER, vs)); GL.attachShader(p, shd(GL.FRAGMENT_SHADER, fs)); GL.linkProgram(p); return p; };
 
     const earthVS = "attribute vec3 position;attribute vec3 normal;attribute vec2 uv;uniform mat4 uP,uV,uM;uniform mat3 uN;varying vec3 vN;varying vec2 vUv;varying vec3 vVP;void main(){vec4 vp=uV*uM*vec4(position,1.0);vVP=vp.xyz;vN=uN*normal;vUv=uv;gl_Position=uP*vp;}";
-    const earthFS = "precision highp float;varying vec3 vN;varying vec2 vUv;varying vec3 vVP;uniform sampler2D day;uniform sampler2D night;uniform vec3 sun;uniform float time;void main(){vec3 N=normalize(vN);float s=dot(N,normalize(sun));vec3 d=texture2D(day,vUv).rgb;vec3 nl=texture2D(night,vUv).rgb;float df=smoothstep(-0.14,0.20,s);vec3 col=mix(nl*1.5,d,df)+d*0.05;vec3 cam=normalize(-vVP);float fres=pow(1.0-max(dot(N,cam),0.0),3.0);col+=vec3(0.22,0.5,0.72)*fres*0.9;float lon=vUv.x*360.0-180.0;float lat=90.0-vUv.y*180.0;float a=(lat-41.0)/11.0;float b=(lon-56.0)/33.0;float rf=clamp(1.0-(a*a+b*b),0.0,1.0);float pulse=0.6+0.4*sin(time*1.6);col+=vec3(1.0,0.38,0.14)*rf*(0.42+0.34*pulse);gl_FragColor=vec4(col,1.0);}";
+    const earthFS = "precision highp float;varying vec3 vN;varying vec2 vUv;varying vec3 vVP;uniform sampler2D day;uniform sampler2D night;uniform vec3 sun;uniform float time;void main(){vec3 N=normalize(vN);float s=dot(N,normalize(sun));vec3 d=texture2D(day,vUv).rgb;vec3 nl=texture2D(night,vUv).rgb;float df=smoothstep(-0.10,0.26,s);vec3 col=mix(nl*1.68,d*0.92,df);vec3 cam=normalize(-vVP);float fres=pow(1.0-max(dot(N,cam),0.0),3.0);col+=vec3(0.20,0.46,0.70)*fres*0.82;col+=vec3(0.92,0.44,0.20)*pow(max(df,0.0),2.0)*0.06;float lon=vUv.x*360.0-180.0;float lat=90.0-vUv.y*180.0;float a=(lat-41.0)/11.0;float b=(lon-56.0)/33.0;float rf=clamp(1.0-(a*a+b*b),0.0,1.0);float pulse=0.6+0.4*sin(time*1.6);col+=vec3(1.0,0.40,0.16)*rf*(0.16+0.12*pulse);gl_FragColor=vec4(col,1.0);}";
     const ptVS = "attribute vec3 position;attribute float aSize;attribute float aAge;uniform mat4 uP,uV,uM;varying float vAge;void main(){vec4 vp=uV*uM*vec4(position*1.008,1.0);gl_Position=uP*vp;gl_PointSize=aSize;vAge=aAge;}";
     const ptFS = "precision highp float;varying float vAge;uniform vec3 uCol;void main(){vec2 c=gl_PointCoord-0.5;float d=length(c);if(d>0.5)discard;float g=smoothstep(0.5,0.0,d);gl_FragColor=vec4(uCol,g*(1.0-vAge*0.8));}";
 
@@ -85,7 +85,7 @@ export function GodEyeGlobe() {
       GL.uniformMatrix4fv(eL.uV, false, new Float32Array(Vv));
       GL.uniformMatrix4fv(eL.uM, false, new Float32Array(Mm));
       GL.uniformMatrix3fv(eL.uN, false, new Float32Array(Nm));
-      GL.uniform3f(eL.sun, 0.55, 0.35, 0.75); GL.uniform1f(eL.time, tsec);
+      GL.uniform3f(eL.sun, -0.52, 0.26, -0.81); GL.uniform1f(eL.time, tsec);
       GL.activeTexture(GL.TEXTURE0); GL.bindTexture(GL.TEXTURE_2D, texDay); GL.uniform1i(eL.day, 0);
       GL.activeTexture(GL.TEXTURE1); GL.bindTexture(GL.TEXTURE_2D, texNight); GL.uniform1i(eL.night, 1);
       GL.bindBuffer(GL.ELEMENT_ARRAY_BUFFER, ibo); GL.drawElements(GL.TRIANGLES, geo.idx.length, GL.UNSIGNED_SHORT, 0);

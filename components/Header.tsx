@@ -28,8 +28,8 @@ export function Header() {
         <div className="mx-auto flex h-12 max-w-[75rem] items-center gap-5 px-[var(--sp-gutter)]">
           <Link href="/" className="group flex shrink-0 items-center gap-2">
             <CtiazeMark className="size-5 text-ink-primary transition-all group-hover:scale-105 group-hover:drop-shadow-[0_0_6px_rgba(255,90,31,0.55)]" />
-            <span className="font-headline text-lg font-semibold tracking-tight text-ink-primary">
-              skopnix
+            <span className="font-display text-lg font-semibold tracking-[-0.015em] text-ink-primary">
+              skop<span className="text-brand">nix</span>
             </span>
           </Link>
 

@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Chakra_Petch, Exo_2, JetBrains_Mono } from "next/font/google";
+import { Chakra_Petch, Exo_2, JetBrains_Mono, Schibsted_Grotesk } from "next/font/google";
 import { Analytics } from "@vercel/analytics/next";
 import { CommandPalette } from "@/components/CommandPalette";
 import { MotionRoot } from "@/components/MotionRoot";
@@ -32,6 +32,15 @@ const mono = JetBrains_Mono({
   variable: "--font-mono",
   subsets: ["latin", "latin-ext"],
   weight: ["400", "700"],
+  display: "swap",
+});
+
+// Schibsted Grotesk — the skopnix brand voice (English hero + wordmark). Scoped
+// via font-display so the Azerbaijani content pages keep the ə-audited stack.
+const display = Schibsted_Grotesk({
+  variable: "--font-display",
+  subsets: ["latin"],
+  weight: ["500", "600", "700"],
   display: "swap",
 });
 
@@ -75,7 +84,7 @@ export default async function RootLayout({
   return (
     <html
       lang={locale}
-      className={`${headline.variable} ${body.variable} ${mono.variable}`}
+      className={`${headline.variable} ${body.variable} ${mono.variable} ${display.variable}`}
     >
       <body className="min-h-screen bg-surface text-ink-primary font-body antialiased">
         <a

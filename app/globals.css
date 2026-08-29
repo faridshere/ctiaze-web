@@ -114,6 +114,7 @@
   --font-headline: var(--font-headline);
   --font-body: var(--font-body);
   --font-mono: var(--font-mono);
+  --font-display: var(--font-display);
 }
 
 /* Day-print register — PRINT ONLY (a CISO forwards/prints a briefing and it
