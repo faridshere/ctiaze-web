@@ -25,7 +25,14 @@ const getHomeData = unstable_cache(
       getLatestSnapshot().catch(() => null),
       getDoStats(),
     ]);
-    return { stories, stats, snapshot, doStats };
+    // The wire renders titles + flags only — never ship 24 full article bodies
+    // in the RSC payload (they were the multi-second transfer weight on "/").
+    const wire = stories.map((s) => ({
+      id: s.id, slug: s.slug, titleEn: s.titleEn, titleAz: s.titleAz,
+      sourceUrl: s.sourceUrl, kev: s.kev, region: s.region,
+      severity: s.severity, cveIds: s.cveIds.slice(0, 1), publishedAt: s.publishedAt,
+    }));
+    return { wire, stats, snapshot, doStats };
   },
   ["home-data-v1"],
   { revalidate: 300 },
@@ -57,9 +64,9 @@ export async function generateMetadata(
 export default async function HomePage() {
   const locale = await getLocale();
   const en = locale === "en";
-  const { stories, stats, snapshot, doStats } = await getHomeData();
-  const regionCount = stories.filter((s) => s.region).length;
-  const syncedLabel = syncLabel(stories[0]?.publishedAt, en);
+  const { wire, stats, snapshot, doStats } = await getHomeData();
+  const regionCount = wire.filter((s) => s.region).length;
+  const syncedLabel = syncLabel(wire[0]?.publishedAt, en);
 
   const orgLd = {
     "@context": "https://schema.org",
@@ -87,7 +94,7 @@ export default async function HomePage() {
       <Header />
       <Hero archive={stats.total} kevCount={stats.kevCount} regionCount={regionCount} en={en} syncedLabel={syncedLabel} />
       <main id="main" className="flex-1">
-        <TheWire stories={stories} en={en} />
+        <TheWire stories={wire} en={en} />
         <HomeIntel en={en} snapshot={snapshot} doStats={doStats} />
       </main>
       <Footer />

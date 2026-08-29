@@ -1,5 +1,13 @@
 import Link from "next/link";
-import type { Story } from "@/lib/types";
+
+// The lean wire row — exactly the fields the wire renders, nothing else. The
+// homepage maps full stories down to this before caching, so article bodies
+// never ride the RSC payload.
+export type WireItem = {
+  id: string; slug: string; titleEn: string; titleAz: string;
+  sourceUrl: string; kev: boolean; region: boolean;
+  severity: string | null; cveIds: string[]; publishedAt: string;
+};
 
 // "On the wire, right now" — the real published feed, rendered as a dense
 // intelligence wire. Every row is a real story (→ /xeber/{slug}) with its real
@@ -22,7 +30,7 @@ function relTime(iso: string, en: boolean): string {
   return `${Math.round(h / 24)}${en ? "d" : "g"}`;
 }
 
-function Row({ s, en, i }: { s: Story; en: boolean; i: number }) {
+function Row({ s, en, i }: { s: WireItem; en: boolean; i: number }) {
   const time = relTime(s.publishedAt, en); // server-rendered, revalidates with the page
   const src = sourceName(s.sourceUrl);
   const cve = s.cveIds[0];
@@ -58,7 +66,7 @@ function Flag({ children, className = "" }: { children: React.ReactNode; classNa
   );
 }
 
-export function TheWire({ stories, en }: { stories: Story[]; en: boolean }) {
+export function TheWire({ stories, en }: { stories: WireItem[]; en: boolean }) {
   const rows = stories.slice(0, 12);
   return (
     <section id="wire" className="mx-auto w-full max-w-[75rem] px-[var(--sp-gutter)] py-[clamp(46px,7vw,82px)]">
