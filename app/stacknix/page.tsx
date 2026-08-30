@@ -36,9 +36,8 @@ export default async function StacknixPage() {
         {STREAKS.map((st, i) => (
           <div key={i} aria-hidden className="aurora-streak pointer-events-none absolute rounded-full" style={{ ...st, filter: "blur(70px)", transform: "rotate(-24deg)", mixBlendMode: "screen", animationDelay: `${i * -6}s` }} />
         ))}
-        <div className="relative z-10 mx-auto w-full max-w-[64rem] px-[var(--sp-gutter)] pb-10 pt-16 text-center sm:pb-12 sm:pt-24">
-          <p data-sc className="font-mono text-xs uppercase tracking-[0.28em] text-[#9AA6B4]">stacknix</p>
-          <h1 className="mx-auto mt-4 max-w-2xl text-balance font-display text-[clamp(2rem,4.4vw,3.2rem)] font-semibold leading-[1.05] tracking-[-0.025em] text-ink-primary">
+        <div className="relative z-10 mx-auto w-full max-w-[64rem] px-[var(--sp-gutter)] pb-8 pt-12 text-center sm:pb-10 sm:pt-16">
+          <h1 className="mx-auto max-w-2xl text-balance font-display text-[clamp(2rem,4.4vw,3.2rem)] font-semibold leading-[1.05] tracking-[-0.025em] text-ink-primary">
             {en ? "Is your stack already exploitable?" : "Stekin artıq istismar oluna bilər?"}
           </h1>
           <p data-sc className="mx-auto mt-5 max-w-2xl leading-relaxed text-ink-secondary">
@@ -48,7 +47,7 @@ export default async function StacknixPage() {
           </p>
         </div>
       </section>
-      <main id="main" className="flex-1 pb-16">
+      <main id="main" className="pb-16">
         <StacknixTool en={en} />
       </main>
       <Footer />

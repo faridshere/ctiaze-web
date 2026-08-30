@@ -54,7 +54,7 @@ type DomainResult = {
 type ScanResult = EmailResult | DomainResult;
 type PwState = { state: "pwned" | "clean" | "unavailable"; count?: number } | null;
 
-const EXAMPLES = ["namiq@example.az", "example.az"];
+const EXAMPLES = ["you@company.com", "company.com"];
 
 const DATA_LABEL_AZ: Record<string, string> = {
   passwords: "Parollar", "email addresses": "E-poçt", names: "Adlar", usernames: "İstifadəçi adları",
@@ -562,7 +562,7 @@ function DomainView({ r, t }: { r: DomainResult; t: ScanDict }) {
               ) : (
                 <p className="mt-2 text-[13px] text-ink-secondary">{t.noCoverage}</p>
               )}
-              <Source><b className="text-ink-secondary">ctiaze items</b></Source>
+              <Source><b className="text-ink-secondary">skopnix items</b></Source>
             </>
           ) : (
             <p className="text-[13px] leading-relaxed text-ink-secondary">{t.intelUnavail}</p>

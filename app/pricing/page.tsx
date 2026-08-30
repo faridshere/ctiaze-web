@@ -70,11 +70,8 @@ export default async function PricingPage() {
   return (
     <div className="flex min-h-screen flex-col">
       <Header />
-      <main id="main" className="mx-auto w-full max-w-[75rem] flex-1 px-[var(--sp-gutter)] py-[var(--sp-section)]">
+      <main id="main" className="mx-auto w-full max-w-[75rem] flex-1 px-[var(--sp-gutter)] pt-[var(--sp-section)] pb-8">
         <div className="max-w-[42rem]">
-          <div className="mb-4 font-mono text-[length:var(--t-micro)] uppercase tracking-[0.18em] text-[var(--brand)]">
-            Pricing
-          </div>
           <h1 className="font-headline text-[clamp(2rem,4.5vw,3rem)] font-semibold leading-[1.05] tracking-tight text-ink-primary">
             Start free. Pay when the data earns its keep.
           </h1>
@@ -128,14 +125,11 @@ export default async function PricingPage() {
         </div>
 
         <div className="mt-8 border border-hairline bg-[var(--surface-raised)] p-6">
-          <div className="font-mono text-[length:var(--t-micro)] uppercase tracking-[0.14em] text-[var(--brand)]">
-            The honest fine print
-          </div>
-          <p className="mt-3 max-w-[46rem] text-[length:var(--t-meta)] leading-relaxed text-ink-secondary">
-            Built and run by one person. No sales calls, cancel in one click, and if the data ever goes
-            stale the status page will tell you before we do. The regional sensor grid is in private beta —
-            paid tiers open as coverage lands. <b className="text-ink-primary">Prices may change while in beta;</b>{" "}
-            early keys keep their rate.
+          <p className="max-w-[46rem] text-[length:var(--t-meta)] leading-relaxed text-ink-secondary">
+            <b className="text-ink-primary">The honest fine print.</b> Built and run by one person. No sales
+            calls, cancel in one click, and if the data ever goes stale the status page will tell you before
+            we do. The regional sensor grid is in private beta — paid tiers open as coverage lands.{" "}
+            <b className="text-ink-primary">Prices may change while in beta;</b> early keys keep their rate.
           </p>
         </div>
       </main>

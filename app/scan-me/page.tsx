@@ -33,9 +33,8 @@ export default async function ScanMePage() {
       <section className="relative isolate overflow-hidden border-b border-hairline bg-[#05060a]">
         <div aria-hidden className="aurora-streak pointer-events-none absolute rounded-full" style={{ width: 1400, height: 240, left: -220, top: -60, background: "linear-gradient(100deg, transparent 6%, rgba(38,90,150,0.4) 32%, rgba(111,211,230,0.32) 55%, transparent 92%)", filter: "blur(70px)", transform: "rotate(-24deg)", mixBlendMode: "screen" }} />
         <div aria-hidden className="aurora-streak pointer-events-none absolute rounded-full" style={{ width: 1000, height: 140, right: -160, top: 110, background: "linear-gradient(100deg, transparent, rgba(255,90,31,0.10) 45%, rgba(111,211,230,0.14) 68%, transparent)", filter: "blur(70px)", transform: "rotate(-24deg)", mixBlendMode: "screen", animationDelay: "-6s" }} />
-        <div className="relative z-10 mx-auto w-full max-w-3xl px-4 pb-10 pt-16 text-center sm:pb-12 sm:pt-24">
-          <p data-sc className="font-mono text-xs uppercase tracking-[0.28em] text-[#9AA6B4]">{t.eyebrow}</p>
-          <h1 className="mx-auto mt-4 max-w-2xl text-balance font-display text-[clamp(2rem,4.4vw,3.1rem)] font-semibold leading-[1.05] tracking-[-0.025em] text-ink-primary">{t.h1}</h1>
+        <div className="relative z-10 mx-auto w-full max-w-3xl px-4 pb-10 pt-14 text-center sm:pb-12 sm:pt-20">
+          <h1 className="mx-auto max-w-2xl text-balance font-display text-[clamp(2rem,4.4vw,3.1rem)] font-semibold leading-[1.05] tracking-[-0.025em] text-ink-primary">{t.h1}</h1>
           <p data-sc className="mx-auto mt-5 max-w-xl leading-relaxed text-ink-secondary">
             {t.leadPre}
             <span className="text-ink-primary">{t.leadMid}</span>
@@ -59,7 +58,7 @@ export default async function ScanMePage() {
           <ScanMe locale={locale} />
         </div>
 
-        <p className="mt-14 border-t border-hairline pt-8 font-mono text-xs leading-relaxed text-ink-muted">
+        <p className="mt-10 border-t border-hairline pt-6 font-mono text-xs leading-relaxed text-ink-muted">
           {t.sources}
         </p>
       </main>

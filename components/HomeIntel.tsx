@@ -16,11 +16,11 @@ const Check = () => (
 function StacknixSection({ en }: { en: boolean }) {
   return (
     <section id="stacknix" className="border-t border-hairline">
-      <div className="mx-auto grid w-full max-w-[75rem] grid-cols-1 items-center gap-[clamp(28px,4vw,52px)] px-[var(--sp-gutter)] py-[clamp(44px,7vw,84px)] md:grid-cols-[1.02fr_0.98fr]">
+      <div className="mx-auto grid w-full max-w-[75rem] grid-cols-1 items-center gap-[clamp(28px,4vw,52px)] px-[var(--sp-gutter)] py-[clamp(36px,6vw,68px)] md:grid-cols-[1.02fr_0.98fr]">
         <div data-sc>
-          <div className="mb-3 inline-flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.14em] text-[var(--brand)]">stacknix <span className="rounded-full border border-white/[0.15] px-1.5 py-0.5 text-[9px] text-[#79838F]">{en ? "paid" : "ödənişli"}</span></div>
           <h2 className="font-display text-[clamp(1.7rem,3vw,2.5rem)] font-semibold leading-[1.08] tracking-[-0.025em] text-[#EDF1F6] text-balance">
             {en ? "Tell us your stack. We tell you what's exploitable." : "Stekini de. Nəyin istismar oluna biləcəyini deyək."}
+            <span className="ml-3 inline-flex translate-y-[-2px] items-center rounded-full border border-white/[0.15] px-1.5 py-0.5 align-middle font-mono text-[9px] uppercase tracking-[0.14em] text-[#79838F]">{en ? "paid" : "ödənişli"}</span>
           </h2>
           <p className="mt-4 max-w-[32rem] text-[1.05rem] text-[#9AA6B4]">
             {en ? <>Paste the product and version your admins and developers actually run. stacknix returns the CVEs that hit it — which are <b className="font-medium text-[#EDF1F6]">exploited in the wild</b> per CISA KEV, the EPSS odds, and whether your <b className="font-medium text-[#EDF1F6]">exact version</b> is in the vulnerable range. NVD gives you 2,700 unranked rows; stacknix gives you the adjudication.</> : <>İşlətdiyin məhsul və versiyanı yapışdır. stacknix ona dəyən CVE-ləri qaytarır — hansı <b className="font-medium text-[#EDF1F6]">vəhşidə istismar</b> olunur, EPSS ehtimalı və sənin <b className="font-medium text-[#EDF1F6]">dəqiq versiyanın</b> zəif diapazonda olub-olmadığı.</>}
@@ -53,8 +53,8 @@ function StacknixSection({ en }: { en: boolean }) {
 function ApiSection({ en, doStats }: { en: boolean; doStats: DoStats }) {
   return (
     <section id="api" className="border-t border-hairline bg-[linear-gradient(180deg,transparent,rgba(255,255,255,0.012),transparent)]">
-      <div className="mx-auto grid w-full max-w-[75rem] grid-cols-1 items-center gap-[clamp(30px,5vw,64px)] px-[var(--sp-gutter)] py-[clamp(46px,7vw,90px)] md:grid-cols-[1.05fr_1.15fr]">
-        <div data-sc>
+      <div className="mx-auto grid w-full max-w-[75rem] grid-cols-1 items-center gap-[clamp(30px,5vw,64px)] px-[var(--sp-gutter)] py-[clamp(38px,6vw,72px)] md:grid-cols-[1.15fr_1.05fr]">
+        <div data-sc className="md:order-2">
           <H>{en ? "Every line on the wire is one API call away." : "Xəttin hər sətri bir API sorğusu uzaqlıqdadır."}</H>
           <p className="mt-4 max-w-[32rem] text-[1.06rem] text-[#9AA6B4]">
             {en ? <>The same intelligence, structured. Query actors, CVEs, IOCs and exposure over a clean REST <b className="font-medium text-[#EDF1F6]">API</b>, or let your agents pull it over the <b className="font-medium text-[#EDF1F6]">MCP server</b> — no glue code.</>
@@ -70,7 +70,7 @@ function ApiSection({ en, doStats }: { en: boolean; doStats: DoStats }) {
             <Link href="/developers" className="inline-flex items-center gap-2 rounded-[3px] border border-white/[0.15] bg-[rgba(11,13,19,0.55)] px-5 py-3 font-display text-[length:var(--t-meta)] text-[#EDF1F6] transition-colors hover:border-[#4b5563]">MCP {en ? "quickstart" : "sürətli başlanğıc"}</Link>
           </div>
         </div>
-        <div data-sc="2" className="overflow-hidden rounded-[12px] border border-white/[0.15] bg-[linear-gradient(180deg,#0F121A,#0B0D13)] shadow-[0_40px_90px_-50px_rgba(0,0,0,0.9)]">
+        <div data-sc="2" className="overflow-hidden rounded-[12px] border border-white/[0.15] bg-[linear-gradient(180deg,#0F121A,#0B0D13)] shadow-[0_40px_90px_-50px_rgba(0,0,0,0.9)] md:order-1">
           <div className="flex items-center gap-2 border-b border-hairline bg-white/[0.015] px-3.5 py-3">
             <span className="size-[9px] rounded-full bg-[#2a303b]" /><span className="size-[9px] rounded-full bg-[#2a303b]" /><span className="size-[9px] rounded-full bg-[var(--brand)]" />
             <span className="ml-1.5 font-mono text-[0.72rem] text-[#79838F]">api.skopnix.io</span>
@@ -101,7 +101,7 @@ function EdgeSection({ en, snapshot, doStats }: { en: boolean; snapshot: Exposur
   const maxCt = Math.max(1, ...services.map((s) => s.count));
   return (
     <section id="edge" className="border-t border-hairline">
-      <div className="mx-auto grid w-full max-w-[75rem] grid-cols-1 items-center gap-[clamp(30px,5vw,60px)] px-[var(--sp-gutter)] py-[clamp(46px,7vw,90px)] md:grid-cols-[1.15fr_0.85fr]">
+      <div className="mx-auto grid w-full max-w-[75rem] grid-cols-1 items-center gap-[clamp(30px,5vw,60px)] px-[var(--sp-gutter)] py-[clamp(38px,6vw,72px)] md:grid-cols-[1.15fr_0.85fr]">
         <div data-sc>
           <H>{en ? <>See the whole board — <span className="text-[var(--brand)]">especially the corners no one else watches.</span></> : <>Bütün lövhəni gör — <span className="text-[var(--brand)]">xüsusən heç kimin baxmadığı guşələri.</span></>}</H>
           <p className="mt-4 max-w-[33rem] text-[1.05rem] text-[#9AA6B4]">
@@ -154,8 +154,8 @@ function AdversariesSection({ en, adversaries, total }: { en: boolean; adversari
   if (!adversaries.length) return null;
   return (
     <section className="border-t border-hairline">
-      <div className="mx-auto grid w-full max-w-[75rem] grid-cols-1 items-center gap-[clamp(26px,4vw,48px)] px-[var(--sp-gutter)] py-[clamp(40px,6vw,72px)] md:grid-cols-[0.95fr_1.05fr]">
-        <div data-sc>
+      <div className="mx-auto grid w-full max-w-[75rem] grid-cols-1 items-center gap-[clamp(26px,4vw,48px)] px-[var(--sp-gutter)] py-[clamp(34px,5vw,58px)] md:grid-cols-[1.05fr_0.95fr]">
+        <div data-sc className="md:order-2">
           <h2 className="font-display text-[clamp(1.6rem,2.7vw,2.2rem)] font-semibold leading-[1.1] tracking-[-0.02em] text-[#EDF1F6] text-balance">
             {en ? "Know who's on the other side." : "Qarşı tərəfdə kimin olduğunu tanı."}
           </h2>
@@ -168,7 +168,7 @@ function AdversariesSection({ en, adversaries, total }: { en: boolean; adversari
             {en ? "Open the dossiers" : "Dosyeleri aç"} <span className="text-[var(--brand)]">→</span>
           </Link>
         </div>
-        <div data-sc="2">
+        <div data-sc="2" className="md:order-1">
           {adversaries.map((a) => (
             <Link key={a.id} href={`/actors/${a.id}`} className="group grid grid-cols-[auto_1fr_auto] items-center gap-x-3.5 border-b border-hairline py-3 first:border-t">
               <span className="grid size-9 place-items-center rounded-sm border border-hairline bg-[#0B0D13] text-[#9AA6B4]">
@@ -193,7 +193,7 @@ function AdversariesSection({ en, adversaries, total }: { en: boolean; adversari
 function ScanSection({ en }: { en: boolean }) {
   return (
     <section className="border-t border-hairline">
-      <div className="mx-auto grid w-full max-w-[75rem] grid-cols-1 items-center gap-[clamp(26px,4vw,48px)] px-[var(--sp-gutter)] py-[clamp(40px,6vw,72px)] md:grid-cols-[1.1fr_0.9fr]">
+      <div className="mx-auto grid w-full max-w-[75rem] grid-cols-1 items-center gap-[clamp(26px,4vw,48px)] px-[var(--sp-gutter)] py-[clamp(34px,5vw,58px)] md:grid-cols-[1.1fr_0.9fr]">
         <div data-sc>
           <h2 className="font-display text-[clamp(1.6rem,2.7vw,2.2rem)] font-semibold leading-[1.1] tracking-[-0.02em] text-[#EDF1F6] text-balance">
             {en ? "Your inbox. Your company's domain. Already exposed?" : "Poçtun. Şirkətinin domeni. Artıq ifşa olunub?"}
@@ -228,13 +228,15 @@ function ScanSection({ en }: { en: boolean }) {
 function WatchSection({ en }: { en: boolean }) {
   return (
     <section id="watch" className="border-t border-hairline">
-      <div className="mx-auto grid w-full max-w-[75rem] grid-cols-1 items-center gap-[clamp(28px,4vw,50px)] px-[var(--sp-gutter)] py-[clamp(46px,7vw,90px)] md:grid-cols-[1.3fr_0.9fr]">
+      <div className="mx-auto grid w-full max-w-[75rem] grid-cols-1 items-center gap-[clamp(28px,4vw,50px)] px-[var(--sp-gutter)] py-[clamp(38px,6vw,72px)] md:grid-cols-[1.3fr_0.9fr]">
         <div data-sc className="sweepable group relative aspect-video cursor-pointer overflow-hidden rounded-[12px] border border-white/[0.15]" style={{ background: "radial-gradient(80% 110% at 18% 0%, rgba(111,211,230,0.10), transparent 55%), radial-gradient(90% 120% at 85% 100%, rgba(255,90,31,0.22), transparent 60%), linear-gradient(160deg,#131019,#07080c)" }}>
           {/* designed title-card: the film IS the artwork (judge fix: no empty poster) */}
           <div className="absolute inset-0 opacity-40" style={{ backgroundImage: "repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(0,0,0,0.16) 4px)" }} />
           <div className="absolute left-6 top-6">
-            <div className="font-mono text-[0.62rem] uppercase tracking-[0.3em] text-[#6FD3E6]">HACKXANA {en ? "films" : "filmləri"}</div>
-            <div className="mt-2 font-display text-[clamp(1.8rem,3.4vw,2.9rem)] font-semibold leading-[0.98] tracking-[-0.02em] text-[#EDF1F6]">CARBANAK</div>
+            <div className="flex items-baseline gap-2.5">
+              <div className="font-display text-[clamp(1.8rem,3.4vw,2.9rem)] font-semibold leading-[0.98] tracking-[-0.02em] text-[#EDF1F6]">CARBANAK</div>
+              <span className="font-mono text-[0.62rem] uppercase tracking-[0.3em] text-[#6FD3E6]">HACKXANA {en ? "films" : "filmləri"}</span>
+            </div>
             <div className="mt-1.5 font-mono text-[0.72rem] tracking-[0.06em] text-[#9AA6B4]">{en ? "the billion-dollar heist" : "milyard dollarlıq soyğun"}</div>
           </div>
           <div className="absolute left-1/2 top-1/2 flex size-16 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border border-white/[0.15] bg-[rgba(6,7,11,0.6)] backdrop-blur-sm transition-transform group-hover:scale-105 group-hover:bg-[var(--brand)]">

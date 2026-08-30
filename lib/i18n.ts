@@ -324,7 +324,7 @@ const en: Dict = {
     watchlistNoMatch: "no match",
     watchlistNoMatchDesc: "This domain doesn't name one of the tracked mass-exploit products.",
     invalidDomainTitle: "Enter a valid domain", invalidDomainText: "That isn't a valid domain. Example: example.com",
-    sources: "Sources: XposedOrNot + LeakCheck (breach), HIBP Pwned Passwords (k-anonymity), Hudson Rock (infostealer), certspotter + crt.sh, MX/SPF/DMARC (DNS), Shodan InternetDB, ctiaze coverage, and the weekly Shodan AZ snapshot. All keyless/free — your email and password are never stored.",
+    sources: "Sources: XposedOrNot + LeakCheck (breach), HIBP Pwned Passwords (k-anonymity), Hudson Rock (infostealer), certspotter + crt.sh, MX/SPF/DMARC (DNS), Shodan InternetDB, skopnix coverage, and the weekly Shodan AZ snapshot. All keyless/free — your email and password are never stored.",
     stealerTitle: "Your device was infostealer-infected",
     stealerBadge: "critical",
     stealerDesc: "This address is tied to a computer infected by an info-stealer. That's more serious than a breach: every password, cookie and token saved in the browser was stolen.",
