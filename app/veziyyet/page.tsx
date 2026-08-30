@@ -60,9 +60,9 @@ export async function generateMetadata(
     azTitle: "Kibertəhlükə vəziyyəti — aylıq hesabat",
     enTitle: "Cyber threat situation — monthly report",
     azDesc:
-      "ctiaze arxivinə əsaslanan aylıq kibertəhlükə vəziyyəti: ən çox rast gəlinən hücum növləri, aktiv təhdid aktorları və Azərbaycan təşkilatları üçün prioritet müdafiə addımları.",
+      "skopnix arxivinə əsaslanan aylıq kibertəhlükə vəziyyəti: ən çox rast gəlinən hücum növləri, aktiv təhdid aktorları və Azərbaycan təşkilatları üçün prioritet müdafiə addımları.",
     enDesc:
-      "Monthly cyber threat situation from the ctiaze archive: the most common attack types, the most active threat actors, and prioritized defensive actions for organizations in Azerbaijan.",
+      "Monthly cyber threat situation from the skopnix archive: the most common attack types, the most active threat actors, and prioritized defensive actions for organizations in Azerbaijan.",
   });
 }
 
@@ -100,8 +100,8 @@ export default async function VeziyyetPage() {
     "@type": "Article",
     headline: en ? "Cyber threat situation — monthly report" : "Kibertəhlükə vəziyyəti — aylıq hesabat",
     description: en
-      ? "Monthly threat situation from the ctiaze archive: attack types, active actors, and prioritized defenses."
-      : "ctiaze arxivinə əsaslanan aylıq təhdid vəziyyəti: hücum növləri, aktiv aktorlar və prioritet müdafiələr.",
+      ? "Monthly threat situation from the skopnix archive: attack types, active actors, and prioritized defenses."
+      : "skopnix arxivinə əsaslanan aylıq təhdid vəziyyəti: hücum növləri, aktiv aktorlar və prioritet müdafiələr.",
     inLanguage: en ? "en" : "az",
     datePublished: period.generatedAt ?? undefined,
     dateModified: period.generatedAt ?? undefined,
@@ -109,8 +109,8 @@ export default async function VeziyyetPage() {
     mainEntityOfPage: `${BASE}/veziyyet`,
     isAccessibleForFree: true,
     keywords: trends.attackTypes.slice(0, 8).map((a) => a.name).join(", ") || undefined,
-    author: { "@type": "Organization", name: "ctiaze", url: BASE },
-    publisher: { "@type": "Organization", name: "ctiaze", url: BASE },
+    author: { "@type": "Organization", name: "skopnix", url: BASE },
+    publisher: { "@type": "Organization", name: "skopnix", url: BASE },
   };
   const datasetClean =
     trends.monthly.length >= 2 && trends.attackTypes.length > 0 && !!period.from && !!period.to;
@@ -120,13 +120,13 @@ export default async function VeziyyetPage() {
         "@type": "Dataset",
         name: en ? "Azerbaijan cyber-incident trends" : "Azərbaycan kiber-hadisə trendləri",
         description: en
-          ? `Monthly frequency of attack types across the ctiaze threat-intel archive, ${period.from} to ${period.to}.`
-          : `ctiaze kəşfiyyat arxivində hücum növlərinin aylıq tezliyi, ${period.from} — ${period.to}.`,
+          ? `Monthly frequency of attack types across the skopnix threat-intel archive, ${period.from} to ${period.to}.`
+          : `skopnix kəşfiyyat arxivində hücum növlərinin aylıq tezliyi, ${period.from} — ${period.to}.`,
         inLanguage: en ? "en" : "az",
         temporalCoverage: `${period.from}/${period.to}`,
         isAccessibleForFree: true,
         url: `${BASE}/veziyyet`,
-        creator: { "@type": "Organization", name: "ctiaze", url: BASE },
+        creator: { "@type": "Organization", name: "skopnix", url: BASE },
         variableMeasured: trends.attackTypes.slice(0, 10).map((a) => a.name),
         measurementTechnique: en
           ? "Count of attack-type mentions across curated threat-intel items"
@@ -406,20 +406,20 @@ export default async function VeziyyetPage() {
         {/* honesty footer — grounded in the archive; no economics, no providers */}
         <p className="mt-14 border-t border-hairline pt-8 font-mono text-xs leading-relaxed text-ink-muted">
           {en
-            ? `Every figure is drawn straight from the ctiaze archive${
+            ? `Every figure is drawn straight from the skopnix archive${
                 landscape.totalItems ? ` — ${nf(landscape.totalItems)} curated items` : ""
               }${period.months ? ` over ${period.months} months` : ""}. ${
                 priorities.totalMitigations
                   ? `Defensive steps are selected from ${priorities.totalMitigations} canonical mitigation records; nothing is invented.`
                   : "Nothing is invented."
-              }${period.generatedAt ? ` Updated ${fmtDate(period.generatedAt, true)}.` : ""} Part of ctiaze — Azerbaijan's cyber-threat intelligence.`
-            : `Bütün rəqəmlər birbaşa ctiaze arxivindən götürülüb${
+              }${period.generatedAt ? ` Updated ${fmtDate(period.generatedAt, true)}.` : ""} Part of skopnix — global cyber-threat intelligence.`
+            : `Bütün rəqəmlər birbaşa skopnix arxivindən götürülüb${
                 landscape.totalItems ? ` — ${nf(landscape.totalItems)} kurasiya olunmuş hadisə` : ""
               }${period.months ? `, ${period.months} ay üzrə` : ""}. ${
                 priorities.totalMitigations
                   ? `Müdafiə addımları ${priorities.totalMitigations} kanonik mitigation qeydindən seçilib; heç nə uydurulmayıb.`
                   : "Heç nə uydurulmayıb."
-              }${period.generatedAt ? ` Yenilənmə: ${fmtDate(period.generatedAt, false)}.` : ""} ctiaze-nin bir hissəsi — Azərbaycan kiber-təhlükə kəşfiyyatı.`}
+              }${period.generatedAt ? ` Yenilənmə: ${fmtDate(period.generatedAt, false)}.` : ""} skopnix-nin bir hissəsi — Azərbaycan kiber-təhlükə kəşfiyyatı.`}
         </p>
       </main>
       <Footer />

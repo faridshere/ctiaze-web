@@ -1,7 +1,7 @@
 import { getDb } from "./db";
 
 // Read-only view of the engine's `vendor_intel` collection — ~373 grounded
-// per-vendor security hubs built by the DO enrichment pass from ctiaze's own CVE
+// per-vendor security hubs built by the DO enrichment pass from skopnix's own CVE
 // reporting. Each doc's `_id` IS already a clean, unique ASCII slug (verified:
 // all 373 match /^[a-z0-9-]+$/, zero collisions, identical in shape to
 // slugifyTerm's output — e.g. "fortinet", "bank-of-america"), so we reuse it

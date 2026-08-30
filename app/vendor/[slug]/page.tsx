@@ -98,7 +98,7 @@ export default async function VendorHubPage({
     about: { "@type": "Thing", name: v.name },
     description: (lead || "").slice(0, 300),
     inLanguage: en ? "en" : "az",
-    isPartOf: { "@type": "WebSite", name: "ctiaze", url: BASE },
+    isPartOf: { "@type": "WebSite", name: "skopnix", url: BASE },
     url,
     mainEntityOfPage: url,
   };
@@ -216,8 +216,8 @@ export default async function VendorHubPage({
         {/* (3) honesty footer — grounded provenance only */}
         <p className="mt-14 border-t border-hairline pt-8 font-mono text-[11px] leading-relaxed text-ink-muted">
           {en
-            ? `This hub is built from ctiaze's own reporting on ${v.name}: the overview is AI-written from that coverage and every CVE links to its grounded explainer. KEV status comes from CISA's Known Exploited Vulnerabilities catalog and EPSS from FIRST — vendor, version and score details are never invented.`
-            : `Bu səhifə ctiaze-nin ${v.name} üzrə öz reportajından qurulub: icmal həmin materiallar əsasında süni intellektlə yazılıb və hər CVE öz əsaslandırılmış izahına keçid verir. KEV statusu CISA-nın istismar olunan zəifliklər kataloqundan, EPSS isə FIRST-dən götürülür — vendor, versiya və bal detalları uydurulmur.`}
+            ? `This hub is built from skopnix's own reporting on ${v.name}: the overview is AI-written from that coverage and every CVE links to its grounded explainer. KEV status comes from CISA's Known Exploited Vulnerabilities catalog and EPSS from FIRST — vendor, version and score details are never invented.`
+            : `Bu səhifə skopnix-nin ${v.name} üzrə öz reportajından qurulub: icmal həmin materiallar əsasında süni intellektlə yazılıb və hər CVE öz əsaslandırılmış izahına keçid verir. KEV statusu CISA-nın istismar olunan zəifliklər kataloqundan, EPSS isə FIRST-dən götürülür — vendor, versiya və bal detalları uydurulmur.`}
         </p>
       </main>
       <Footer />

@@ -1,6 +1,6 @@
 import { ImageResponse } from "next/og";
 
-// Shared OpenGraph/Twitter card generator (1200×630) on the ctiaze "Ops-Black"
+// Shared OpenGraph/Twitter card generator (1200×630) on the skopnix "Ops-Black"
 // brand surface. Uses next/og (built into Next 16 — no dependency, no paid
 // service). Fonts are subset to the exact card text via Google's CSS `text=`
 // param, which guarantees the Azerbaijani ə (U+0259) glyph is present and keeps
@@ -40,7 +40,7 @@ type Meta = {
 };
 
 export async function ogCard(title: string, tagline: string, meta: Meta = {}) {
-  const allText = `${title}${tagline}ctiaze — Azərbaycan kiber-təhlükə kəşfiyyatı əsaslandırılıb KEV CVE ${meta.cve ?? ""} ${meta.category ?? ""}`;
+  const allText = `${title}${tagline}skopnix — global cyber-threat intelligence KEV CVE ${meta.cve ?? ""} ${meta.category ?? ""}`;
   const [bold, semi] = await Promise.all([loadFont(allText, 700), loadFont(allText, 600)]);
   const fonts = [
     bold && { name: "Archivo", data: bold, weight: 700 as const, style: "normal" as const },
@@ -62,7 +62,7 @@ export async function ogCard(title: string, tagline: string, meta: Meta = {}) {
         {/* wordmark */}
         <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
           <div style={{ width: 34, height: 34, borderRadius: 8, border: `2px solid ${BRAND}`, display: "flex" }} />
-          <div style={{ fontSize: 30, fontWeight: 700, letterSpacing: -0.5 }}>ctiaze</div>
+          <div style={{ fontSize: 30, fontWeight: 700, letterSpacing: -0.5 }}>skopnix</div>
           <div style={{ marginLeft: 8, fontSize: 20, color: DIM, letterSpacing: 4, textTransform: "uppercase" }}>
             {meta.cve ? "· Threat Intel" : "· CTI"}
           </div>

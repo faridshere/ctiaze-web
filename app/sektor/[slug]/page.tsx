@@ -98,7 +98,7 @@ export default async function SectorHubPage({
     about: { "@type": "Thing", name: `${name} sector` },
     description: (who || "").slice(0, 300),
     inLanguage: en ? "en" : "az",
-    isPartOf: { "@type": "WebSite", name: "ctiaze", url: BASE },
+    isPartOf: { "@type": "WebSite", name: "skopnix", url: BASE },
     url: `${BASE}/sektor/${s.slug}`,
   };
 

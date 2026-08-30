@@ -30,7 +30,7 @@ export async function GET() {
     <loc>${SITE}/xeber/${esc(s.slug)}</loc>
     <news:news>
       <news:publication>
-        <news:name>ctiaze</news:name>
+        <news:name>skopnix</news:name>
         <news:language>az</news:language>
       </news:publication>
       <news:publication_date>${new Date(s.publishedAt).toISOString()}</news:publication_date>

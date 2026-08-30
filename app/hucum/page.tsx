@@ -81,8 +81,8 @@ export default async function HucumIndexPage() {
 
         <p className="mt-12 border-t border-hairline pt-6 font-mono text-[11px] leading-relaxed text-ink-muted">
           {en
-            ? `${guides.length} guides · part of ctiaze — Azerbaijan's cyber-threat intelligence.`
-            : `${guides.length} bələdçi · ctiaze-nin bir hissəsi — Azərbaycan kiber-təhlükə kəşfiyyatı.`}
+            ? `${guides.length} guides · part of skopnix — global cyber-threat intelligence.`
+            : `${guides.length} bələdçi · skopnix-nin bir hissəsi — Azərbaycan kiber-təhlükə kəşfiyyatı.`}
         </p>
       </main>
       <Footer />

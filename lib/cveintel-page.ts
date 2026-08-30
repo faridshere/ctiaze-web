@@ -2,7 +2,7 @@ import { cache } from "react";
 import { getDb } from "./db";
 
 // Server-only. Reads the engine's `cve_intel` collection (~7.9k docs): grounded
-// AZ/EN explainers written from ctiaze's own reporting on each CVE, plus the
+// AZ/EN explainers written from skopnix's own reporting on each CVE, plus the
 // engine's closed-set triage `priority` (kev > exploited > high > standard —
 // derived ONLY from the real KEV flag and wording in our own coverage), a CWE
 // mapping and same-weakness related CVEs. This module only reads and reshapes;

@@ -69,7 +69,7 @@ export default async function ActorPage({ params }: { params: Promise<{ slug: st
     about: { "@type": "Thing", name: a.name, alternateName: (a.aliases || []).slice(0, 8) },
     description: desc(a, en),
     inLanguage: en ? "en" : "az",
-    isPartOf: { "@type": "WebSite", name: "ctiaze", url: BASE },
+    isPartOf: { "@type": "WebSite", name: "skopnix", url: BASE },
     url: `${BASE}/actors/${a._id}`,
     ...(a.last_refreshed ? { dateModified: new Date(a.last_refreshed).toISOString() } : {}),
   };

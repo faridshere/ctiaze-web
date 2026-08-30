@@ -83,7 +83,7 @@ export async function GET(req: Request) {
   const xml = `<?xml version="1.0" encoding="UTF-8"?>
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
-    <title>${esc(`ctiaze — ${en ? "Azerbaijan CTI" : "Azərbaycan CTI"}${suffix ? ` (${suffix})` : ""}`)}</title>
+    <title>${esc(`skopnix — ${en ? "Azerbaijan CTI" : "Azərbaycan CTI"}${suffix ? ` (${suffix})` : ""}`)}</title>
     <link>${SITE}</link>
     <atom:link href="${esc(self)}" rel="self" type="application/rss+xml"/>
     <description>${esc(en ? "Automated Azerbaijani cybersecurity threat intelligence." : "Azərbaycan dilində avtomatlaşdırılmış kibertəhlükəsizlik threat intelligence.")}</description>

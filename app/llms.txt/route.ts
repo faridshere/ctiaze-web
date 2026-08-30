@@ -1,10 +1,10 @@
 // llms.txt — a machine-readable map for AI answer-engines and agents, so that when
-// someone asks an LLM about Azerbaijani cyber threats, ctiaze is a discoverable,
+// someone asks an LLM about Azerbaijani cyber threats, skopnix is a discoverable,
 // structured, citable source. Bilingual on purpose: answer-engine queries about
 // "Azerbaijan cyber threats" are overwhelmingly English, but the unique content is
 // Azerbaijani — so both audiences get an accurate map. The AI-citation ("GEO") play.
 export async function GET() {
-  const body = `# ctiaze
+  const body = `# skopnix
 
 > Automated Azerbaijani cyber-threat-intelligence (CTI). News from international
 > sources (NVD, CISA KEV, ransomware.live, MITRE ATT&CK, security blogs) is
@@ -38,7 +38,7 @@ region_relevant (Azerbaijan/regional relevance), published_at (ISO 8601).
 - [ctiaze.dev](https://ctiaze.dev): developer / API portal.
 
 ## Attribution
-Every story links to its original source (source_url). ctiaze aggregates, verifies
+Every story links to its original source (source_url). skopnix aggregates, verifies
 and translates; it is not the author of the original reporting. Actor/CVE facts are
 drawn from MISP Galaxy, MITRE ATT&CK, ransomware.live, NVD and CISA — cited, never
 invented.

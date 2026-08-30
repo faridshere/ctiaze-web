@@ -16,9 +16,9 @@ export async function generateMetadata(
   return localizedMeta({
     path: "/haqqinda", dil, en,
     azTitle: "Haqqında · About",
-    enTitle: "About ctiaze",
-    azDesc: "ctiaze necə işləyir — ~60 qlobal təhlükəsizlik mənbəyi avtomatik toplanır, AI ilə süzülür, mənbəyə qarşı yoxlanılır və Azərbaycan dilinə tərcümə olunur, 24/7, insan müdaxiləsi olmadan.",
-    enDesc: "How ctiaze works — ~60 global cybersecurity sources auto-collected, AI-filtered, fact-checked against source, and translated into Azerbaijani, 24/7 with no human in the loop.",
+    enTitle: "About skopnix",
+    azDesc: "skopnix necə işləyir — ~60 qlobal təhlükəsizlik mənbəyi avtomatik toplanır, AI ilə süzülür, mənbəyə qarşı yoxlanılır və Azərbaycan dilinə tərcümə olunur, 24/7, insan müdaxiləsi olmadan.",
+    enDesc: "How skopnix works — ~60 global cybersecurity sources auto-collected, AI-filtered, fact-checked against source, and translated into Azerbaijani, 24/7 with no human in the loop.",
   });
 }
 
@@ -54,7 +54,7 @@ export default async function AboutPage() {
         </h1>
 
         <p className="mt-6 text-lg leading-relaxed text-ink-secondary">
-          <span className="text-ink-primary">ctiaze</span>
+          <span className="text-ink-primary">skopnix</span>
           {en
             ? " is an autonomous Azerbaijani-language cyber threat-intelligence (CTI) service. It collects news from ~60 global sources, picks what matters, fact-checks it against source, and translates it into Azerbaijani — 24/7, with no human in the loop."
             : " — Azərbaycan dilində avtomatlaşdırılmış kiber-təhlükə kəşfiyyatı (CTI) xidmətidir. Təxminən 60 qlobal mənbədən xəbərləri toplayır, əhəmiyyətli olanları seçir, mənbəyə qarşı yoxlayır və Azərbaycan dilinə tərcümə edir — 24/7, insan müdaxiləsi olmadan."}

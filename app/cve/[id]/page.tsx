@@ -107,7 +107,7 @@ export default async function CveIntelPage({ params }: { params: Promise<{ id: s
     about: { "@type": "Thing", name: doc.id },
     url,
     mainEntityOfPage: url,
-    isPartOf: { "@type": "WebSite", name: "ctiaze", url: BASE },
+    isPartOf: { "@type": "WebSite", name: "skopnix", url: BASE },
   };
   const faqLd = qa.length ? faqPageJsonLd(qa) : null;
 
@@ -237,8 +237,8 @@ export default async function CveIntelPage({ params }: { params: Promise<{ id: s
           </div>
           <p className="mt-3 font-mono text-[11px] leading-relaxed text-ink-muted">
             {en
-              ? "This explainer is AI-written from source data — ctiaze's own reporting on this CVE; CVSS scores, vendors and versions are never invented. See NVD for the official record."
-              : "Bu izah süni intellekt tərəfindən mənbə məlumatları — ctiaze-nin bu CVE üzrə öz reportajı — əsasında yazılıb; CVSS balı, vendor və versiya detalları uydurulmur. Rəsmi qeyd üçün NVD-yə baxın."}
+              ? "This explainer is AI-written from source data — skopnix's own reporting on this CVE; CVSS scores, vendors and versions are never invented. See NVD for the official record."
+              : "Bu izah süni intellekt tərəfindən mənbə məlumatları — skopnix-nin bu CVE üzrə öz reportajı — əsasında yazılıb; CVSS balı, vendor və versiya detalları uydurulmur. Rəsmi qeyd üçün NVD-yə baxın."}
           </p>
         </div>
       </main>

@@ -117,7 +117,7 @@ export default async function StoryPage({ params }: { params: Promise<Params> })
     dateModified: story.publishedAt,
     inLanguage: loc,
     author: { "@type": "Organization", name: "Hackxana" },
-    publisher: { "@type": "Organization", name: "ctiaze" },
+    publisher: { "@type": "Organization", name: "skopnix" },
     mainEntityOfPage: storyUrl,
     ...(story.bodyAz ? { description: story.bodyAz.slice(0, 200) } : {}),
     ...(story.cveIds.length

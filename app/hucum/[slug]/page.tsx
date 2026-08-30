@@ -76,7 +76,7 @@ export default async function GuidePage({
     about: { "@type": "Thing", name: g.attackType },
     description: c.what,
     inLanguage: en ? "en" : "az",
-    isPartOf: { "@type": "WebSite", name: "ctiaze", url: BASE },
+    isPartOf: { "@type": "WebSite", name: "skopnix", url: BASE },
     url: `${BASE}/hucum/${g.slug}`,
   };
   const howTo = c.checklist.length
@@ -262,8 +262,8 @@ export default async function GuidePage({
         {/* HONESTY FOOTER — AI-written from the cited source items, nothing invented */}
         <p className="mt-10 font-mono text-[11px] leading-relaxed text-ink-muted">
           {en
-            ? "This guide is AI-written from the real incident sources ctiaze collected — the examples above are drawn from those cited items, nothing is invented."
-            : "Bu bələdçi ctiaze-nin topladığı real hadisə mənbələrindən AI ilə yazılıb — yuxarıdakı nümunələr göstərilən mənbələrdən götürülüb, heç nə uydurulmayıb."}
+            ? "This guide is AI-written from the real incident sources skopnix collected — the examples above are drawn from those cited items, nothing is invented."
+            : "Bu bələdçi skopnix-nin topladığı real hadisə mənbələrindən AI ilə yazılıb — yuxarıdakı nümunələr göstərilən mənbələrdən götürülüb, heç nə uydurulmayıb."}
         </p>
       </main>
       <Footer />

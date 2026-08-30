@@ -11,7 +11,7 @@ export const revalidate = 3600;
 
 // Makes the /xeber/[slug] stories AND the /actors/[slug] dossiers discoverable to
 // search + AI answer engines — the per-CVE Azerbaijani long-tail and the only
-// Azerbaijani threat-actor dossier set in existence, where ctiaze can rank #1.
+// Azerbaijani threat-actor dossier set in existence, where skopnix can rank #1.
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const base = "https://ctiaze.tech";
   const [stories, actorIds, cveIds, guideSlugs, sectorSlugs, vendorSlugs] = await Promise.all([

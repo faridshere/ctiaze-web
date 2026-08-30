@@ -26,8 +26,8 @@ export async function generateMetadata(
   const dil = (await searchParams)?.dil;
   return localizedMeta({
     path: `/lugat/${g.slug}`, dil, en,
-    azTitle: `${g.term} nədir? — ctiaze lüğət`,
-    enTitle: `What is ${g.term}? — ctiaze glossary`,
+    azTitle: `${g.term} nədir? — skopnix lüğət`,
+    enTitle: `What is ${g.term}? — skopnix glossary`,
     azDesc: g.az.slice(0, 160),
     enDesc: (g.en || g.az).slice(0, 160),
   });

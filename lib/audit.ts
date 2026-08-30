@@ -2,7 +2,7 @@ import { cache } from "react";
 import { getDb } from "./db";
 
 // Server-only. Reads the engine's `content_audit` collection — an independent,
-// automated groundedness audit over ctiaze's AI-written knowledge-base explainers.
+// automated groundedness audit over skopnix's AI-written knowledge-base explainers.
 // Each document is one audit verdict for one explainer:
 //   _id:       "<type>:<id>"                    (e.g. "actor:apt1", "malware:…")
 //   type:      "actor" | "malware" | "guide"

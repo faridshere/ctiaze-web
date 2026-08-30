@@ -5,7 +5,7 @@ import { cveBadges, type CveBadge } from "@/lib/cveintel";
 
 export const size = OG_SIZE;
 export const contentType = OG_CONTENT_TYPE;
-export const alt = "ctiaze — CVE izahı";
+export const alt = "skopnix — CVE izahı";
 
 // Branded share card for /cve/[id] (the CVE explainer pages). A shared link used
 // to fall back to the generic site card; this surfaces the CVE's KEV / EPSS / CWE
@@ -78,7 +78,7 @@ async function renderCard(opts: {
   grounded: boolean;
 }) {
   const { eyebrow, headline, suffix, chips, lead, grounded } = opts;
-  const allText = `ctiaze ${suffix} ${eyebrow} ${headline} ${chips.map((c) => c.text).join(" ")} ${lead ?? ""} əsaslandırılıb ctiaze.tech`;
+  const allText = `skopnix ${suffix} ${eyebrow} ${headline} ${chips.map((c) => c.text).join(" ")} ${lead ?? ""} əsaslandırılıb ctiaze.tech`;
   const [bold, semi] = await Promise.all([loadFont(allText, 700), loadFont(allText, 600)]);
   const fonts = [
     bold && { name: "Archivo", data: bold, weight: 700 as const, style: "normal" as const },
@@ -100,7 +100,7 @@ async function renderCard(opts: {
         {/* wordmark */}
         <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
           <div style={{ width: 34, height: 34, borderRadius: 8, border: `2px solid ${SIGNAL}`, display: "flex" }} />
-          <div style={{ fontSize: 30, fontWeight: 700, letterSpacing: -0.5 }}>ctiaze</div>
+          <div style={{ fontSize: 30, fontWeight: 700, letterSpacing: -0.5 }}>skopnix</div>
           <div style={{ marginLeft: 8, fontSize: 20, color: DIM, letterSpacing: 4, textTransform: "uppercase" }}>{suffix}</div>
         </div>
 
@@ -161,15 +161,15 @@ export default async function Image({ params }: { params: Promise<{ id: string }
   const { id } = await params;
   const doc = await getCveIntel(id).catch(() => null);
 
-  // Unknown / malformed id, or the DB was unreachable → generic ctiaze card,
+  // Unknown / malformed id, or the DB was unreachable → generic skopnix card,
   // never a crash and never a fabricated triage (mirrors the sibling handlers).
   if (!doc) {
     return renderCard({
       eyebrow: "",
-      headline: "ctiaze",
+      headline: "skopnix",
       suffix: "· CTI",
       chips: [],
-      lead: "Azərbaycan kiber-təhlükə kəşfiyyatı",
+      lead: "Global cyber-threat intelligence",
       grounded: false,
     });
   }

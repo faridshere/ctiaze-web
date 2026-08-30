@@ -147,7 +147,7 @@ const az: Dict = {
     watchlistNoMatch: "uyğunluq yox",
     watchlistNoMatchDesc: "Bu domain izlənən kütləvi-istismar product-larından birini adlandırmır.",
     invalidDomainTitle: "Düzgün domain yaz", invalidDomainText: "Bu, düzgün domain deyil. Nümunə: example.az",
-    sources: "Mənbələr: XposedOrNot + LeakCheck (breach), HIBP Pwned Passwords (k-anonymity), Hudson Rock (info-stealer), certspotter + crt.sh, MX/SPF/DMARC (DNS), Shodan InternetDB, ctiaze coverage, və həftəlik Shodan AZ snapshot. Hamısı açarsız/pulsuz — e-poçt və parolun heç yerdə saxlanmır.",
+    sources: "Mənbələr: XposedOrNot + LeakCheck (breach), HIBP Pwned Passwords (k-anonymity), Hudson Rock (info-stealer), certspotter + crt.sh, MX/SPF/DMARC (DNS), Shodan InternetDB, skopnix coverage, və həftəlik Shodan AZ snapshot. Hamısı açarsız/pulsuz — e-poçt və parolun heç yerdə saxlanmır.",
     stealerTitle: "Cihaz info-stealer ilə yoluxub",
     stealerBadge: "kritik",
     stealerDesc: "Bu ünvan info-stealer ilə yoluxmuş bir kompüterlə bağlıdır. Bu, adi breach-dən daha ağırdır: brauzerdə saxlanan bütün parollar, cookie və token-lər oğurlanıb.",

@@ -91,8 +91,8 @@ export default async function VendorIndex() {
 
         <p className="mt-14 border-t border-hairline pt-8 font-mono text-[11px] leading-relaxed text-ink-muted">
           {en
-            ? "Each hub is built from ctiaze's own CVE reporting: a bilingual overview plus the vendor's tracked CVEs, known-exploited first, each linking to a grounded explainer. KEV comes from CISA and EPSS from FIRST — nothing is invented."
-            : "Hər səhifə ctiaze-nin öz CVE reportajından qurulur: iki dilli icmal və vendorun izlənən CVE-ləri, aktiv istismar olunanlar önə çıxır, hər biri əsaslandırılmış izaha keçidlə. KEV CISA-dan, EPSS FIRST-dən götürülür — heç nə uydurulmayıb."}
+            ? "Each hub is built from skopnix's own CVE reporting: a bilingual overview plus the vendor's tracked CVEs, known-exploited first, each linking to a grounded explainer. KEV comes from CISA and EPSS from FIRST — nothing is invented."
+            : "Hər səhifə skopnix-nin öz CVE reportajından qurulur: iki dilli icmal və vendorun izlənən CVE-ləri, aktiv istismar olunanlar önə çıxır, hər biri əsaslandırılmış izaha keçidlə. KEV CISA-dan, EPSS FIRST-dən götürülür — heç nə uydurulmayıb."}
         </p>
       </main>
       <Footer />

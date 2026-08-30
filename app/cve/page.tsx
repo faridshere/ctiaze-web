@@ -23,8 +23,8 @@ export async function generateMetadata(
     path: "/cve", dil, en,
     azTitle: "CVE reyestri — aktiv istismar, EPSS, CVSS",
     enTitle: "CVE registry — active exploitation, EPSS, CVSS",
-    azDesc: "ctiaze arxivində adı çəkilən bütün CVE-lər — CISA KEV aktiv istismar statusu, FIRST EPSS istismar ehtimalı, NVD CVSS və təsvir, hər biri əlaqəli dispaça bağlı.",
-    enDesc: "Every CVE mentioned in the ctiaze archive — CISA KEV active-exploitation status, FIRST EPSS exploit probability, NVD CVSS and description, each linked to its story.",
+    azDesc: "skopnix arxivində adı çəkilən bütün CVE-lər — CISA KEV aktiv istismar statusu, FIRST EPSS istismar ehtimalı, NVD CVSS və təsvir, hər biri əlaqəli dispaça bağlı.",
+    enDesc: "Every CVE mentioned in the skopnix archive — CISA KEV active-exploitation status, FIRST EPSS exploit probability, NVD CVSS and description, each linked to its story.",
   });
 }
 
