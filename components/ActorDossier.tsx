@@ -1,4 +1,9 @@
 import Link from "next/link";
+import { ActorSigil, actorIsLive } from "@/components/ActorSigil";
+
+// Module-load epoch keeps the 90-day liveness check out of render (purity rule);
+// a lambda lives minutes, the window is months — staleness is irrelevant.
+const RENDER_EPOCH = Date.now();
 import {
   actorInitials,
   flagEmoji,
@@ -107,9 +112,9 @@ export function ActorDossier({ a, locale, standalone }: { a: ThreatActor; locale
 
   return (
     <article className="flex flex-col rounded-md border border-hairline bg-surface-raised/40">
-      <div className="flex items-start gap-3 p-4 pb-3">
-        <span className="grid size-10 shrink-0 place-items-center rounded-sm border border-hairline bg-surface font-mono text-sm font-semibold text-ink-secondary">
-          {actorInitials(a.name)}
+      <div className="flex flex-wrap items-start gap-x-3 gap-y-2 p-4 pb-3">
+        <span className="grid size-10 shrink-0 place-items-center rounded-sm border border-hairline bg-surface text-ink-secondary" title={actorInitials(a.name)}>
+          <ActorSigil a={a} size={34} />
         </span>
         <div className="min-w-0">
           <h3 className="font-headline text-lg font-semibold leading-tight text-ink-primary">
@@ -125,8 +130,16 @@ export function ActorDossier({ a, locale, standalone }: { a: ThreatActor; locale
             </div>
           )}
         </div>
-        <span className={`ml-auto shrink-0 rounded-full border px-2 py-0.5 font-mono text-[10px] uppercase tracking-wider ${TYPE_CHIP[a.type] ?? TYPE_CHIP.unknown}`}>
-          {typeLabel}
+        <span className="ml-auto flex shrink-0 items-center gap-1.5">
+          {actorIsLive(a, RENDER_EPOCH) && (
+            <span className="flex items-center gap-1 rounded-full border border-brand/40 bg-brand/10 px-2 py-0.5 font-mono text-[10px] uppercase tracking-wider text-brand">
+              <span className="signal-dot size-1.5 rounded-full bg-brand" />
+              {locale === "en" ? "active" : "aktiv"}
+            </span>
+          )}
+          <span className={`rounded-full border px-2 py-0.5 font-mono text-[10px] uppercase tracking-wider ${TYPE_CHIP[a.type] ?? TYPE_CHIP.unknown}`}>
+            {typeLabel}
+          </span>
         </span>
       </div>
 

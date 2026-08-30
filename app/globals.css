@@ -327,6 +327,21 @@ html.motion-ok [data-sc="3"] { transition-delay: 0.2s; }
 }
 .signal-dot { animation: signal-beat 2s ease-out infinite; }
 
+/* Per-actor sigil pulses: a signal travels each spoke (CSS motion path). */
+.sigil-pulse {
+  offset-rotate: 0deg;
+  animation-name: sigil-travel;
+  animation-timing-function: cubic-bezier(0.22, 0.61, 0.36, 1);
+  animation-iteration-count: infinite;
+  opacity: 0;
+}
+@keyframes sigil-travel {
+  0% { offset-distance: 0%; opacity: 0; }
+  12% { opacity: 0.9; }
+  58% { offset-distance: 100%; opacity: 0.9; }
+  70%, 100% { offset-distance: 100%; opacity: 0; }
+}
+
 /* Ambient triad motif (CTA band): the whole mark floats almost imperceptibly;
    the detection node breathes. Both die under prefers-reduced-motion via the
    global kill-switch below. */

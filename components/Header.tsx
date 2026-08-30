@@ -14,6 +14,7 @@ const NAV: [string, keyof ReturnType<typeof getDict>["nav"]][] = [
   ["/cve", "cve"],
   ["/ioc", "ioc"],
   ["/actors", "actors"],
+  ["/scan-me", "scanme"],
   ["/developers", "api"],
   ["/pricing", "pricing"],
   ["/haqqinda", "about"],

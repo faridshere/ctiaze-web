@@ -29,15 +29,22 @@ export default async function ScanMePage() {
   return (
     <div className="ops flex min-h-screen flex-col">
       <Header />
-      <main id="main" className="mx-auto w-full max-w-3xl flex-1 px-4 py-14 sm:py-20">
-        <p className="font-mono text-xs uppercase tracking-[0.2em] text-brand">{t.eyebrow}</p>
-        <h1 className="mt-3 text-balance font-headline text-3xl text-ink-primary sm:text-4xl">{t.h1}</h1>
-        <p className="mt-4 max-w-xl leading-relaxed text-ink-secondary">
-          {t.leadPre}
-          <span className="text-ink-primary">{t.leadMid}</span>
-          {t.leadEnd}
-        </p>
-        <p className="mt-4 inline-flex items-center gap-2 rounded-sm border border-hairline bg-surface-raised/40 px-3 py-1.5 text-[13px] text-ink-secondary">
+      {/* Core-register header: the same aurora world as home and /actors. */}
+      <section className="relative isolate overflow-hidden border-b border-hairline bg-[#05060a]">
+        <div aria-hidden className="aurora-streak pointer-events-none absolute rounded-full" style={{ width: 1400, height: 240, left: -220, top: -60, background: "linear-gradient(100deg, transparent 6%, rgba(38,90,150,0.4) 32%, rgba(111,211,230,0.32) 55%, transparent 92%)", filter: "blur(70px)", transform: "rotate(-24deg)", mixBlendMode: "screen" }} />
+        <div aria-hidden className="aurora-streak pointer-events-none absolute rounded-full" style={{ width: 1000, height: 140, right: -160, top: 110, background: "linear-gradient(100deg, transparent, rgba(255,90,31,0.10) 45%, rgba(111,211,230,0.14) 68%, transparent)", filter: "blur(70px)", transform: "rotate(-24deg)", mixBlendMode: "screen", animationDelay: "-6s" }} />
+        <div className="relative z-10 mx-auto w-full max-w-3xl px-4 pb-10 pt-16 text-center sm:pb-12 sm:pt-24">
+          <p data-sc className="font-mono text-xs uppercase tracking-[0.28em] text-[#9AA6B4]">{t.eyebrow}</p>
+          <h1 className="mx-auto mt-4 max-w-2xl text-balance font-display text-[clamp(2rem,4.4vw,3.1rem)] font-semibold leading-[1.05] tracking-[-0.025em] text-ink-primary">{t.h1}</h1>
+          <p data-sc className="mx-auto mt-5 max-w-xl leading-relaxed text-ink-secondary">
+            {t.leadPre}
+            <span className="text-ink-primary">{t.leadMid}</span>
+            {t.leadEnd}
+          </p>
+        </div>
+      </section>
+      <main id="main" className="mx-auto w-full max-w-3xl flex-1 px-4 py-10">
+        <p className="inline-flex items-center gap-2 rounded-sm border border-hairline bg-surface-raised/40 px-3 py-1.5 text-[13px] text-ink-secondary">
           <span className="relative flex size-1.5">
             <span className="absolute inline-flex size-full animate-ping rounded-full bg-accent-good opacity-60" />
             <span className="relative inline-flex size-1.5 rounded-full bg-accent-good" />

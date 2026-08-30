@@ -73,19 +73,7 @@ export default async function ActorsPage() {
       </section>
 
       <main id="main" className="mx-auto w-full max-w-5xl flex-1 px-4 pb-14">
-        {regional.length > 0 && (
-          <>
-            <SectionHead title={t.regionalTitle} note={t.regionalNote} brand />
-            <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {regional.map((a, i) => (
-                <div key={a._id} data-sc style={{ transitionDelay: `${Math.min(i * 60, 240)}ms` }}>
-                  <ActorDossier a={a} locale={locale} />
-                </div>
-              ))}
-            </div>
-          </>
-        )}
-
+        {/* International scope leads; the regional lens follows as a specialty. */}
         <SectionHead title={t.leadingTitle} note={t.leadingNote} />
         {top.length > 0 ? (
           <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -97,6 +85,19 @@ export default async function ActorsPage() {
           </div>
         ) : (
           <p className="mt-6 text-sm text-ink-muted">{t.rosterEmpty}</p>
+        )}
+
+        {regional.length > 0 && (
+          <>
+            <SectionHead title={t.regionalTitle} note={t.regionalNote} brand />
+            <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {regional.map((a, i) => (
+                <div key={a._id} data-sc style={{ transitionDelay: `${Math.min(i * 60, 240)}ms` }}>
+                  <ActorDossier a={a} locale={locale} />
+                </div>
+              ))}
+            </div>
+          </>
         )}
 
         {/* Crawlable A–Z index: real internal links for the full dossier set. */}

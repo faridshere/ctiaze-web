@@ -107,6 +107,42 @@ function Fig({ n, l }: { n: string; l: string }) {
   );
 }
 
+// Scan yourself — the beloved exposure check, surfaced as a first-class strip:
+// email breaches, stealer logs, a company domain's subdomains and open ports.
+function ScanSection({ en }: { en: boolean }) {
+  return (
+    <section className="border-t border-hairline">
+      <div className="mx-auto grid w-full max-w-[75rem] grid-cols-1 items-center gap-[clamp(26px,4vw,48px)] px-[var(--sp-gutter)] py-[clamp(40px,6vw,72px)] md:grid-cols-[1.1fr_0.9fr]">
+        <div data-sc>
+          <h2 className="font-display text-[clamp(1.6rem,2.7vw,2.2rem)] font-semibold leading-[1.1] tracking-[-0.02em] text-[#EDF1F6] text-balance">
+            {en ? "Your inbox. Your company's domain. Already exposed?" : "Poçtun. Şirkətinin domeni. Artıq ifşa olunub?"}
+          </h2>
+          <p className="mt-4 max-w-[30rem] text-[1.02rem] text-[#9AA6B4]">
+            {en
+              ? "One check, no signup: breach history and stealer logs for any email, plus the subdomains and open ports the internet already sees on any company domain. Nothing you enter is stored."
+              : "Bir yoxlama, qeydiyyatsız: istənilən e-poçt üçün breach tarixi və stealer logları, üstəgəl istənilən şirkət domenində internetin artıq gördüyü subdomen və açıq portlar. Daxil etdiyin heç nə saxlanılmır."}
+          </p>
+          <Link href="/scan-me" className="mt-6 inline-flex items-center gap-2 rounded-[3px] border border-white/[0.15] bg-[rgba(11,13,19,0.55)] px-5 py-3 font-display text-[length:var(--t-meta)] text-[#EDF1F6] transition-colors hover:border-[#4b5563]">
+            {en ? "Scan yourself" : "Özünü yoxla"} <span className="text-[var(--brand)]">→</span>
+          </Link>
+        </div>
+        <div data-sc="2" className="overflow-hidden rounded-[12px] border border-white/[0.15] bg-[linear-gradient(180deg,#0F121A,#0B0D13)]">
+          <div className="flex items-center gap-2 border-b border-hairline bg-white/[0.015] px-3.5 py-3">
+            <span className="size-[9px] rounded-full bg-[#2a303b]" /><span className="size-[9px] rounded-full bg-[#2a303b]" /><span className="size-[9px] rounded-full bg-[var(--brand)]" />
+            <span className="ml-1.5 font-mono text-[0.72rem] text-[#79838F]">scan · {en ? "sample" : "nümunə"}</span>
+          </div>
+          <div className="px-[18px] py-[16px] font-mono text-[0.78rem] leading-[1.95] text-[#9AA6B4]">
+            <div><span className="text-[var(--brand)]">$</span> <span className="text-[#EDF1F6]">scan you@company.com</span></div>
+            <div className="text-[#79838F]">→ 3 {en ? "breaches" : "breach"} · <span className="text-[#FF5A4D]">{en ? "stealer log: 1" : "stealer log: 1"}</span> · {en ? "password reuse risk" : "parol təkrarı riski"}</div>
+            <div className="mt-1"><span className="text-[var(--brand)]">$</span> <span className="text-[#EDF1F6]">scan company.com</span></div>
+            <div className="text-[#79838F]">→ 14 {en ? "subdomains" : "subdomen"} · <span className="text-[#6FD3E6]">RDP 3389 {en ? "open" : "açıq"}</span> · 2 {en ? "expiring certs" : "bitən sertifikat"}</div>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
 // The funnel — the documentary. Marketing, not a product line.
 function WatchSection({ en }: { en: boolean }) {
   return (
@@ -166,6 +202,7 @@ export function HomeIntel({ en, snapshot, doStats }: { en: boolean; snapshot: Ex
     <>
       <ApiSection en={en} doStats={doStats} />
       <EdgeSection en={en} snapshot={snapshot} doStats={doStats} />
+      <ScanSection en={en} />
       <WatchSection en={en} />
       <CtaSection en={en} />
     </>
