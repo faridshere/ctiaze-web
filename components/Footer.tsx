@@ -13,7 +13,7 @@ export function Footer() {
         <div className="max-w-md">
           <p className="text-sm text-ink-secondary">{t.tagline}</p>
           <p className="mt-3 font-mono text-[11px] text-ink-muted">
-            © {new Date().getFullYear()} ctiaze · Hackxana
+            © {new Date().getFullYear()} skopnix · Hackxana
           </p>
         </div>
         <nav className="flex flex-wrap gap-x-6 gap-y-2 font-mono text-[11px] uppercase tracking-wider text-ink-muted">

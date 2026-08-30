@@ -9,11 +9,10 @@ import "./globals.css";
 
 // "Ink & signal" type system (2026-08 redesign, matched to /radar.html):
 // Chakra Petch — squared display voice for headlines/HUD labels; Exo 2 — techy
-// humanist for Azerbaijani prose; JetBrains Mono — ALL telemetry (timestamps,
-// glyph codes, tickers, CVE/IOC values). All three verified to carry full
-// Azerbaijani incl. ə (U+0259) in latin-ext — the trio was glyph-audited with
-// fontTools before adoption (Orbitron/Oxanium/Rajdhani fail on ə). next/font
-// self-hosts woff2 from our origin: no runtime CDN, no per-OS fallback drift.
+// humanist for long-form prose; JetBrains Mono — ALL telemetry (timestamps,
+// glyph codes, tickers, CVE/IOC values). latin-ext kept so actor names and
+// place names with diacritics render cleanly. next/font self-hosts woff2 from
+// our origin: no runtime CDN, no per-OS fallback drift.
 const headline = Chakra_Petch({
   variable: "--font-headline",
   subsets: ["latin", "latin-ext"],
@@ -35,8 +34,8 @@ const mono = JetBrains_Mono({
   display: "swap",
 });
 
-// Schibsted Grotesk — the skopnix brand voice (English hero + wordmark). Scoped
-// via font-display so the Azerbaijani content pages keep the ə-audited stack.
+// Schibsted Grotesk — the skopnix brand voice (hero + wordmark), applied via
+// font-display; the mono/body stack carries everything else.
 const display = Schibsted_Grotesk({
   variable: "--font-display",
   subsets: ["latin"],
@@ -47,14 +46,14 @@ const display = Schibsted_Grotesk({
 export const metadata: Metadata = {
   metadataBase: new URL("https://ctiaze.tech"),
   title: {
-    default: "ctiaze — Azərbaycan kiber-təhlükə kəşfiyyatı",
-    template: "%s — ctiaze",
+    default: "skopnix — global cyber-threat intelligence",
+    template: "%s — skopnix",
   },
   description:
-    "Avtomatlaşdırılmış kiber-təhlükə kəşfiyyatı jurnalı. Süni intellekt vasitəsilə seçilir, yoxlanılır və Azərbaycan dilinə tərcümə olunur — 24/7, insan müdaxiləsi olmadan.",
+    "Global cyber-threat intelligence as an API and MCP server. ~60 sources, AI-scored and verified, with sensor-backed coverage of the Caucasus and Central Asia — refreshed every couple of hours, no human in the loop.",
   openGraph: {
     type: "website",
-    siteName: "ctiaze",
+    siteName: "skopnix",
     locale: "en_US",
   },
   twitter: {
@@ -62,8 +61,8 @@ export const metadata: Metadata = {
   },
   alternates: {
     types: {
-      "application/rss+xml": [{ url: "/rss.xml", title: "ctiaze — RSS" }],
-      "application/feed+json": [{ url: "/feed.json", title: "ctiaze — JSON Feed" }],
+      "application/rss+xml": [{ url: "/rss.xml", title: "skopnix — RSS" }],
+      "application/feed+json": [{ url: "/feed.json", title: "skopnix — JSON Feed" }],
     },
   },
 };
@@ -91,7 +90,7 @@ export default async function RootLayout({
           href="#main"
           className="sr-only focus:not-sr-only focus:absolute focus:left-3 focus:top-3 focus:z-[100] focus:rounded-sm focus:bg-brand focus:px-3 focus:py-2 focus:font-mono focus:text-xs focus:font-semibold focus:text-[#07110e]"
         >
-          {locale === "en" ? "Skip to content" : "Əsas məzmuna keç"}
+          Skip to content
         </a>
         <LocaleProvider value={locale}>
           <MotionRoot />

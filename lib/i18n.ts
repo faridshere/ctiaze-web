@@ -254,7 +254,7 @@ const az: Dict = {
 
 const en: Dict = {
   nav: { feed: "Feed", radar: "Radar", cve: "CVE", ioc: "IOC", exposure: "Exposure", actors: "Actors", apt: "APT Atlas", veziyyet: "Situation", scanme: "Scan me", stacknix: "stacknix", kripto: "Crypto", api: "API", pricing: "Pricing", about: "About" },
-  footer: { tagline: "~60 sources → AI scoring and verification → in Azerbaijani. 24/7, no human in the loop.", about: "about", glossary: "glossary", guides: "attack types", sectors: "sectors", vendors: "vendors", methodology: "methodology" },
+  footer: { tagline: "~60 sources → AI-scored and verified → sensor-backed across the Caucasus. 24/7, no human in the loop.", about: "about", glossary: "glossary", guides: "attack types", sectors: "sectors", vendors: "vendors", methodology: "methodology" },
   common: { check: "Check", search: "Search", loadingScan: "scanning…", networkError: "Network error — try again", genericError: "Something went wrong" },
   scan: {
     eyebrow: "Personal exposure check",
@@ -379,7 +379,7 @@ const en: Dict = {
     refWord: (n) => `${n} refs →`,
     matchScore: "match_score",
     recentActivity: (n) => `recent activity: ${n}`,
-    sourcesLine: (t, a, az, d) => `Sources: MISP Galaxy + ransomware.live + MITRE ATT&CK, recent activity name-joined with our items. Roster ${t} actors (${a} active, ${az} in Azerbaijani)${d ? ` · updated ${d}` : ""}. Search covers the whole roster.`,
+    sourcesLine: (t, a, az, d) => `Sources: MISP Galaxy + ransomware.live + MITRE ATT&CK, recent activity name-joined with our items. Roster ${t} actors (${a} active, ${az} tracked in the Caucasus)${d ? ` · updated ${d}` : ""}. Search covers the whole roster.`,
     nameleum: "unknown",
     techniquesLabel: "techniques · ATT&CK",
     malwareLabel: "malware",

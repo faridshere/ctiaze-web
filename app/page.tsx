@@ -100,7 +100,7 @@ export default async function HomePage() {
     <div className="flex min-h-screen flex-col">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLdSafe(orgLd) }} />
       <Header />
-      <Hero archive={stats.total} kevCount={stats.kevCount} regionCount={regionCount} en={en} syncedLabel={syncedLabel} />
+      <Hero archive={stats.total} kevCount={stats.kevCount} regionCount={regionCount} syncedLabel={syncedLabel} />
       <main id="main" className="flex-1">
         <TheWire stories={wire} en={en} />
         <HomeIntel en={en} snapshot={snapshot} doStats={doStats} adversaries={adversaries} />
