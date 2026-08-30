@@ -510,7 +510,7 @@ async function scanMentions(domain: string) {
     hits.sort((a, b) => pubTime(b) - pubTime(a));
     const stories = hits.slice(0, MENTIONS_LIMIT).map((d) => {
       const s = toStory(d);
-      return { title: s.titleAz || s.titleEn, url: `/xeber/${s.slug}`, source: d.source ?? "", published: s.publishedAt };
+      return { title: s.titleAz || s.titleEn, url: `/news/${s.slug}`, source: d.source ?? "", published: s.publishedAt };
     });
     return { status: "ok", count: hits.length, stories, source: MENTIONS_SOURCE, fetched_at: nowIso() };
   } catch {

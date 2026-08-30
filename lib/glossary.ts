@@ -2,7 +2,7 @@ import data from "./data/glossary.json";
 
 // Azerbaijani + English cybersecurity glossary. Content generated once on the
 // DigitalOcean inference credit (deepseek-v4-pro) — see ops in the engine repo.
-// Each term is its own indexable page (/lugat/<slug>): programmatic long-tail SEO
+// Each term is its own indexable page (/glossary/<slug>): programmatic long-tail SEO
 // in a niche nobody serves in Azerbaijani.
 export type GlossaryTerm = { slug: string; term: string; az: string; en: string };
 

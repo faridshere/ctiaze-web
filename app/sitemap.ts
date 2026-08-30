@@ -9,7 +9,7 @@ import { GLOSSARY } from "@/lib/glossary";
 
 export const revalidate = 3600;
 
-// Makes the /xeber/[slug] stories AND the /actors/[slug] dossiers discoverable to
+// Makes the /news/[slug] stories AND the /actors/[slug] dossiers discoverable to
 // search + AI answer engines — the per-CVE Azerbaijani long-tail and the only
 // Azerbaijani threat-actor dossier set in existence, where skopnix can rank #1.
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
@@ -28,19 +28,19 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // Stamping new Date() on every URL every run teaches Google to ignore our lastmod.
   const staticUrls: MetadataRoute.Sitemap = [
     { url: `${base}`, lastModified: newest, changeFrequency: "hourly", priority: 1 },
-    ...["/cve", "/ioc", "/exposure", "/actors", "/sektor", "/vendor", "/veziyyet", "/hucum", "/scan-me", "/lugat", "/metodologiya", "/haqqinda"].map(
+    ...["/cve", "/ioc", "/exposure", "/actors", "/sectors", "/vendor", "/situation", "/attacks", "/scan-me", "/glossary", "/methodology", "/about"].map(
       (p) => ({ url: `${base}${p}`, changeFrequency: "daily" as const, priority: 0.8 })
     ),
   ];
 
   const guideUrls: MetadataRoute.Sitemap = guideSlugs.map((slug) => ({
-    url: `${base}/hucum/${slug}`,
+    url: `${base}/attacks/${slug}`,
     changeFrequency: "monthly",
     priority: 0.6,
   }));
 
   const sectorUrls: MetadataRoute.Sitemap = sectorSlugs.map((slug) => ({
-    url: `${base}/sektor/${slug}`,
+    url: `${base}/sectors/${slug}`,
     changeFrequency: "weekly",
     priority: 0.7,
   }));
@@ -52,13 +52,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   }));
 
   const glossaryUrls: MetadataRoute.Sitemap = GLOSSARY.map((g) => ({
-    url: `${base}/lugat/${g.slug}`,
+    url: `${base}/glossary/${g.slug}`,
     changeFrequency: "monthly",
     priority: 0.5,
   }));
 
   const storyUrls: MetadataRoute.Sitemap = stories.map((s) => ({
-    url: `${base}/xeber/${s.slug}`,
+    url: `${base}/news/${s.slug}`,
     lastModified: new Date(s.publishedAt),
     changeFrequency: "weekly",
     priority: 0.7,

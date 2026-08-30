@@ -2,7 +2,7 @@ import { getDb } from "./db";
 import { getActorById } from "./threatactors";
 
 // Read-only view of ctiaze-engine's monthly situation snapshots, assembled for the
-// /veziyyet ("Vəziyyət") report. Three collections, one current snapshot each:
+// /situation ("Vəziyyət") report. Three collections, one current snapshot each:
 //   • trends              — 18-month series (series:attack_types / :categories /
 //                           :threat_actors / :cves) + a bilingual `summary` doc.
 //   • threat_landscape    — section docs (top_actors, sectors, top_cves, …) + a

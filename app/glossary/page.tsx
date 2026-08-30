@@ -14,7 +14,7 @@ export async function generateMetadata(
   const en = (await getLocale()) === "en";
   const dil = (await searchParams)?.dil;
   return localizedMeta({
-    path: "/lugat", dil, en,
+    path: "/glossary", dil, en,
     azTitle: "Kibertəhlükəsizlik lüğəti — sadə izahlar",
     enTitle: "Cybersecurity glossary (Azerbaijani + English)",
     azDesc: "Kibertəhlükəsizlik terminlərinin sadə Azərbaycan dilində izahı: ransomware, phishing, CVE, APT, 2FA və daha çox — hər termin ayrıca səhifədə.",
@@ -87,7 +87,7 @@ export default async function GlossaryPage() {
               {groups.get(L)!.map((g) => (
                 <li key={g.slug}>
                   <Link
-                    href={`/lugat/${g.slug}`}
+                    href={`/glossary/${g.slug}`}
                     className="sweepable group block border border-hairline bg-surface-raised p-4 transition-colors hover:border-brand/50"
                     style={{ borderRadius: "var(--radius-chip)" }}
                   >

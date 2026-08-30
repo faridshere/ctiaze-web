@@ -27,7 +27,7 @@ export async function GET() {
     .map((s) => {
       const title = s.titleAz || s.titleEn;
       return `  <url>
-    <loc>${SITE}/xeber/${esc(s.slug)}</loc>
+    <loc>${SITE}/news/${esc(s.slug)}</loc>
     <news:news>
       <news:publication>
         <news:name>skopnix</news:name>

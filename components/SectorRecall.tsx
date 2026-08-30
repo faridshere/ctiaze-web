@@ -25,7 +25,7 @@ function getServerSnapshot(): string | null {
 }
 
 /**
- * Home personalization hook: once a reader picks their sector (on /sektor), we
+ * Home personalization hook: once a reader picks their sector (on /sectors), we
  * remember it and surface a one-tap path back to their hub — "who targets us,
  * what to fix". No accounts, no server state.
  */
@@ -42,7 +42,7 @@ export function SectorRecall({ en }: { en: boolean }) {
     }
   }
 
-  const href = saved ? `/sektor/${saved.slug}` : "/sektor";
+  const href = saved ? `/sectors/${saved.slug}` : "/sectors";
   const label = saved
     ? en
       ? "Your sector"

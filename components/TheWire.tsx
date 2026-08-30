@@ -10,7 +10,7 @@ export type WireItem = {
 };
 
 // "On the wire, right now" — the real published feed, rendered as a dense
-// intelligence wire. Every row is a real story (→ /xeber/{slug}) with its real
+// intelligence wire. Every row is a real story (→ /news/{slug}) with its real
 // KEV / region / CVE / source signal. This is the homepage's proof that the
 // product is live data, not a template.
 function sourceName(url: string): string {
@@ -36,7 +36,7 @@ function Row({ s, en, i }: { s: WireItem; en: boolean; i: number }) {
   const cve = s.cveIds[0];
   return (
     <Link
-      href={`/xeber/${s.slug}`}
+      href={`/news/${s.slug}`}
       data-sc
       style={{ transitionDelay: `${Math.min(i * 45, 400)}ms` }}
       className="group grid grid-cols-[auto_1fr] items-start gap-3.5 border-b border-hairline py-[15px]"

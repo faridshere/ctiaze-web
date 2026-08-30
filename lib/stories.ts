@@ -96,7 +96,7 @@ export async function getFeed(limit = 100): Promise<FeedItem[]> {
     title_en: s.titleEn,
     summary_az: s.bodyAz.slice(0, 300),
     summary_en: s.summaryEn.slice(0, 300),
-    url: `${SITE}/xeber/${s.slug}`,
+    url: `${SITE}/news/${s.slug}`,
     source_url: s.sourceUrl,
     category: s.category,
     severity: s.severity,

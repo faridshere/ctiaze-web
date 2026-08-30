@@ -181,7 +181,7 @@ export default async function CvePage() {
                       {row.stories.map((s) => (
                         <Link
                           key={s.slug}
-                          href={`/xeber/${s.slug}`}
+                          href={`/news/${s.slug}`}
                           className="text-ink-secondary transition-colors hover:text-brand"
                           title={en ? s.titleEn : s.titleAz}
                         >

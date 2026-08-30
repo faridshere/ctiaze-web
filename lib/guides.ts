@@ -25,7 +25,7 @@ export type Guide = {
   evidenceItemIds: string[];
 };
 
-// One resolved evidence source. `href` is an internal /xeber permalink ONLY when
+// One resolved evidence source. `href` is an internal /news permalink ONLY when
 // the referenced item is actually published+visible on the site; otherwise it is
 // null and the caller renders a plain source label instead of a broken link.
 export type EvidenceSource = {
@@ -100,7 +100,7 @@ export async function getGuideSlugs(): Promise<string[]> {
 }
 
 // Resolve a guide's evidence_item_ids against the `items` collection so the page
-// can (a) link the small published subset to their real /xeber permalinks and
+// can (a) link the small published subset to their real /news permalinks and
 // (b) still credit the rest as plain source labels. Order follows the guide's
 // own evidence_item_ids. One $in query; read-only; cache()-deduped per request.
 export const getGuideEvidence = cache(
@@ -150,7 +150,7 @@ export const getGuideEvidence = cache(
       // slugify(id, az_title||title) reproduces exactly the slug lib/types.ts
       // stamps on a published story, so the link resolves via getStoryBySlug.
       const href = isPublished
-        ? `/xeber/${slugify(id, d.az_title || d.title || "xeber")}`
+        ? `/news/${slugify(id, d.az_title || d.title || "xeber")}`
         : null;
       out.push({
         id,

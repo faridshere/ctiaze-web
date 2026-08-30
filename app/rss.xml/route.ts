@@ -61,7 +61,7 @@ export async function GET(req: Request) {
 
   const items = stories
     .map((s) => {
-      const link = `${SITE}/xeber/${s.slug}`;
+      const link = `${SITE}/news/${s.slug}`;
       // Fall back to AZ when an English field is missing (e.g. digest items) so a
       // single title-less doc can't 500 the whole feed via esc(undefined).
       const title = (en ? s.titleEn || s.titleAz : s.titleAz || s.titleEn) || "";

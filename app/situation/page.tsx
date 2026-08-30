@@ -56,7 +56,7 @@ export async function generateMetadata(
   const en = (await getLocale()) === "en";
   const dil = (await searchParams)?.dil;
   return localizedMeta({
-    path: "/veziyyet", dil, en,
+    path: "/situation", dil, en,
     azTitle: "Kibertəhlükə vəziyyəti — aylıq hesabat",
     enTitle: "Cyber threat situation — monthly report",
     azDesc:
@@ -105,8 +105,8 @@ export default async function VeziyyetPage() {
     inLanguage: en ? "en" : "az",
     datePublished: period.generatedAt ?? undefined,
     dateModified: period.generatedAt ?? undefined,
-    url: `${BASE}/veziyyet`,
-    mainEntityOfPage: `${BASE}/veziyyet`,
+    url: `${BASE}/situation`,
+    mainEntityOfPage: `${BASE}/situation`,
     isAccessibleForFree: true,
     keywords: trends.attackTypes.slice(0, 8).map((a) => a.name).join(", ") || undefined,
     author: { "@type": "Organization", name: "skopnix", url: BASE },
@@ -125,7 +125,7 @@ export default async function VeziyyetPage() {
         inLanguage: en ? "en" : "az",
         temporalCoverage: `${period.from}/${period.to}`,
         isAccessibleForFree: true,
-        url: `${BASE}/veziyyet`,
+        url: `${BASE}/situation`,
         creator: { "@type": "Organization", name: "skopnix", url: BASE },
         variableMeasured: trends.attackTypes.slice(0, 10).map((a) => a.name),
         measurementTechnique: en

@@ -143,7 +143,7 @@ export function CommandPalette() {
       const entry = results[activeIndex];
       if (entry) {
         close();
-        router.push(`/xeber/${entry.slug}`);
+        router.push(`/news/${entry.slug}`);
       }
     }
   }
@@ -218,7 +218,7 @@ export function CommandPalette() {
               onMouseEnter={() => setActiveIndex(i)}
               onClick={() => {
                 close();
-                router.push(`/xeber/${entry.slug}`);
+                router.push(`/news/${entry.slug}`);
               }}
               className={`block w-full text-left px-4 py-3 border-b border-hairline last:border-b-0 transition-colors ${
                 i === activeIndex ? "bg-surface" : ""

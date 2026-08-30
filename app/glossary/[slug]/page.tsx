@@ -25,7 +25,7 @@ export async function generateMetadata(
   const en = (await getLocale()) === "en";
   const dil = (await searchParams)?.dil;
   return localizedMeta({
-    path: `/lugat/${g.slug}`, dil, en,
+    path: `/glossary/${g.slug}`, dil, en,
     azTitle: `${g.term} nədir? — skopnix lüğət`,
     enTitle: `What is ${g.term}? — skopnix glossary`,
     azDesc: g.az.slice(0, 160),
@@ -45,8 +45,8 @@ export default async function TermPage({ params }: { params: Promise<{ slug: str
     "@type": "DefinedTerm",
     name: g.term,
     description: en ? g.en : g.az,
-    inDefinedTermSet: "https://ctiaze.tech/lugat",
-    url: `https://ctiaze.tech/lugat/${g.slug}`,
+    inDefinedTermSet: "https://ctiaze.tech/glossary",
+    url: `https://ctiaze.tech/glossary/${g.slug}`,
   };
 
   return (
@@ -55,7 +55,7 @@ export default async function TermPage({ params }: { params: Promise<{ slug: str
       <Header />
       <main id="main" className="mx-auto w-full max-w-2xl flex-1 px-4 py-14 sm:py-20">
         <nav className="font-mono text-[11px] uppercase tracking-[0.14em] text-ink-muted">
-          <Link href="/lugat" className="hover:text-brand">{en ? "Glossary" : "Lüğət"}</Link>
+          <Link href="/glossary" className="hover:text-brand">{en ? "Glossary" : "Lüğət"}</Link>
           <span className="mx-1.5">/</span>
           <span className="text-ink-secondary">{g.term}</span>
         </nav>
@@ -80,7 +80,7 @@ export default async function TermPage({ params }: { params: Promise<{ slug: str
             {siblings.map((s) => (
               <li key={s.slug}>
                 <Link
-                  href={`/lugat/${s.slug}`}
+                  href={`/glossary/${s.slug}`}
                   className="rounded-full border border-hairline bg-surface px-3 py-1 font-mono text-[12px] text-ink-secondary transition-colors hover:border-brand hover:text-brand"
                 >
                   {s.term}

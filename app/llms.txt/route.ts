@@ -21,7 +21,7 @@ export async function GET() {
   internet-exposed attack surface (a recurring, unique dataset).
 - [Scan-me](https://ctiaze.tech/scan-me): keyless email-breach + infostealer + domain
   attack-surface lookup.
-- [News](https://ctiaze.tech): the bilingual, grounded CTI feed; stories at /xeber/{slug}.
+- [News](https://ctiaze.tech): the bilingual, grounded CTI feed; stories at /news/{slug}.
 
 ## Feeds
 - [feed.json](https://ctiaze.tech/feed.json): JSON feed, last 100 stories.

@@ -42,7 +42,7 @@ export async function generateMetadata({
   const en = (await getLocale()) === "en";
   const dil = (await searchParams)?.dil;
   return localizedMeta({
-    path: `/hucum/${g.slug}`,
+    path: `/attacks/${g.slug}`,
     dil,
     en,
     azTitle: `${g.attackType} nədir? — necə işləyir və qorunma`,
@@ -77,7 +77,7 @@ export default async function GuidePage({
     description: c.what,
     inLanguage: en ? "en" : "az",
     isPartOf: { "@type": "WebSite", name: "skopnix", url: BASE },
-    url: `${BASE}/hucum/${g.slug}`,
+    url: `${BASE}/attacks/${g.slug}`,
   };
   const howTo = c.checklist.length
     ? {
@@ -106,7 +106,7 @@ export default async function GuidePage({
       <Header />
       <main id="main" className="mx-auto w-full max-w-2xl flex-1 px-4 py-14 sm:py-20">
         <nav className="font-mono text-[11px] uppercase tracking-[0.14em] text-ink-muted">
-          <Link href="/hucum" className="hover:text-brand">
+          <Link href="/attacks" className="hover:text-brand">
             {en ? "Attack types" : "Hücum növləri"}
           </Link>
           <span className="mx-1.5">/</span>
@@ -217,7 +217,7 @@ export default async function GuidePage({
                           </Link>
                         ) : (
                           // Not published on the site → plain source label, never a
-                          // broken /xeber link. (Most evidence items are raw ingested
+                          // broken /news link. (Most evidence items are raw ingested
                           // sources that never went through the AZ publish pipeline.)
                           <div
                             className="flex gap-2 border border-hairline border-dashed bg-surface p-3"
@@ -245,7 +245,7 @@ export default async function GuidePage({
               {siblings.map((s) => (
                 <li key={s.slug}>
                   <Link
-                    href={`/hucum/${s.slug}`}
+                    href={`/attacks/${s.slug}`}
                     className="rounded-full border border-hairline bg-surface px-3 py-1 font-mono text-[12px] text-ink-secondary transition-colors hover:border-brand hover:text-brand"
                   >
                     {s.attackType}

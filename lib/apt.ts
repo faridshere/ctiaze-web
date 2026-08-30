@@ -4,7 +4,7 @@ import type { Locale } from "./i18n";
 
 // Read-only, geopolitical view of the engine's `threat_actors` collection: the
 // nation-state groups grouped by ORIGIN COUNTRY — "who operates from where, and
-// who they hit". This is the one lens /actors (full roster) and /sektor (by
+// who they hit". This is the one lens /actors (full roster) and /sectors (by
 // industry) don't offer. `origin_country` is a plain ISO2 code (CN, IR, RU, …);
 // we group on it verbatim and only shape/guard/link the data. Nothing here is
 // invented — every group and every actor comes straight from the archive.

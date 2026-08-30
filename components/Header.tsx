@@ -17,7 +17,7 @@ const NAV: [string, keyof ReturnType<typeof getDict>["nav"]][] = [
   ["/scan-me", "scanme"],
   ["/developers", "api"],
   ["/pricing", "pricing"],
-  ["/haqqinda", "about"],
+  ["/about", "about"],
 ];
 
 export function Header() {

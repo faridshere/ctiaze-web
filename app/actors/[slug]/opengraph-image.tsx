@@ -7,7 +7,7 @@ export const alt = "skopnix — təhdid aktoru dossyesi";
 
 // Branded share card for /actors/[slug] — these dossiers are the only
 // Azerbaijani-language threat-actor pages anywhere, but a shared link rendered
-// the generic site card. Mirrors the story-page pattern (app/xeber/[slug]/).
+// the generic site card. Mirrors the story-page pattern (app/news/[slug]/).
 export default async function Image({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
   const a = await getActorById(slug);

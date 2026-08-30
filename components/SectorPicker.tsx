@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 type PickSector = { slug: string; name_az: string; name_en: string };
 
 /**
- * The picker on /sektor: choosing a sector remembers it (localStorage) AND
+ * The picker on /sectors: choosing a sector remembers it (localStorage) AND
  * navigates to its hub, so the home page can greet the reader with their sector
  * next time (see SectorRecall). The SEO-friendly <Link> card grid stays below
  * this band untouched — this only adds the "remember me" behavior.
@@ -20,7 +20,7 @@ export function SectorPicker({ sectors, en }: { sectors: PickSector[]; en: boole
     } catch {
       /* storage disabled — navigation still works */
     }
-    router.push(`/sektor/${s.slug}`);
+    router.push(`/sectors/${s.slug}`);
   }
 
   return (

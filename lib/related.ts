@@ -38,8 +38,8 @@ const MAX = 6;
  * sourceType is the kb_related source kind AND the `_id` prefix:
  *   cve      (page passes doc.id)  →  /cve/[id]
  *   actor    (page passes a._id)   →  /actors/[slug]
- *   concept  (page passes slug)    →  /hucum/[slug]
- *   glossary (page passes g.slug)  →  /lugat/[slug]
+ *   concept  (page passes slug)    →  /attacks/[slug]
+ *   glossary (page passes g.slug)  →  /glossary/[slug]
  *
  * cache()-wrapped so a page that reads it in both generateMetadata and the body
  * (or twice on one render) pays a single Mongo read. Returns [] on any miss.
@@ -107,7 +107,7 @@ export const getRelated = cache(
         }
         case "concept": {
           if (guideOk.has(c.id))
-            out.push({ type: "concept", href: `/hucum/${c.id}`, name: c.name });
+            out.push({ type: "concept", href: `/attacks/${c.id}`, name: c.name });
           break;
         }
         case "actor": {
@@ -117,7 +117,7 @@ export const getRelated = cache(
         }
         case "glossary": {
           const g = await getTermAny(c.id).catch(() => undefined);
-          if (g) out.push({ type: "glossary", href: `/lugat/${g.slug}`, name: c.name });
+          if (g) out.push({ type: "glossary", href: `/glossary/${g.slug}`, name: c.name });
           break;
         }
       }

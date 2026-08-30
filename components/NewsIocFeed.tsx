@@ -108,7 +108,7 @@ export function NewsIocFeed({
                             return (
                             <Link
                               key={s.slug}
-                              href={`/xeber/${s.slug}`}
+                              href={`/news/${s.slug}`}
                               title={st}
                               className="text-ink-secondary transition-colors hover:text-brand"
                             >

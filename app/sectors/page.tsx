@@ -17,7 +17,7 @@ export async function generateMetadata({
   const en = (await getLocale()) === "en";
   const dil = (await searchParams)?.dil;
   return localizedMeta({
-    path: "/sektor",
+    path: "/sectors",
     dil,
     en,
     azTitle: "Sənin sektorunu kim hədəf alır? — sektor kəşfiyyatı",
@@ -67,7 +67,7 @@ export default async function SectorsIndex() {
             {sectors.map((s) => (
               <li key={s.slug}>
                 <Link
-                  href={`/sektor/${s.slug}`}
+                  href={`/sectors/${s.slug}`}
                   className="sweepable group block h-full border border-hairline bg-surface-raised p-4 transition-colors hover:border-brand/50"
                   style={{ borderRadius: "var(--radius-chip)" }}
                 >

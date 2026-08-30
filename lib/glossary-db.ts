@@ -5,7 +5,7 @@ import { GLOSSARY, type GlossaryTerm } from "./glossary";
 // the DO-built `glossary_ext` catalogue (~292 bilingual definitions mined from
 // the corpus on the DigitalOcean credit). Static wins on term collisions.
 // Slugs for DB terms are derived deterministically so every term keeps a
-// stable, indexable /lugat/<slug> URL.
+// stable, indexable /glossary/<slug> URL.
 
 export function slugifyTerm(term: string): string {
   return term
@@ -67,7 +67,7 @@ const NOT_A_TERM_RE =
   /(termin(i)?\s+deyil|söz\s+deyil|qeyri-kafi\s+kontekst|kontekst\s+yox|ümumi\s+(bir\s+)?söz|işarə\s+əvəzliyi|mövcud\s+deyil|arxivdə\s+işlənmir|not\s+a\s+(real\s+|genuine\s+)?(term|word)|no\s+context|insufficient\s+context)/i;
 
 // Applies ONLY to DB-sourced terms. True when the entry is too degenerate to
-// render on /lugat. Drop if: definition is empty/too thin; OR the definition
+// render on /glossary. Drop if: definition is empty/too thin; OR the definition
 // self-admits it isn't a real term; OR the headword is non-technical filler
 // (denylist) and not a whitelisted real acronym.
 function isDegenerateDbTerm(term: string, az: string): boolean {

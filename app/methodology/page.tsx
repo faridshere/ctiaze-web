@@ -15,7 +15,7 @@ const BASE = "https://ctiaze.tech";
 const nf = (n: number) => n.toLocaleString("en-US");
 
 // The pipeline in plain language: sources → AI curation → grounded rewrite →
-// groundedness audit → publish. Kept honest and consistent with /haqqinda; the
+// groundedness audit → publish. Kept honest and consistent with /about; the
 // audit step is the one this page makes visible.
 const STEPS_AZ: [string, string][] = [
   ["Toplama", "~60 qlobal təhlükəsizlik mənbəyi hər 2 saatdan bir avtomatik oxunur."],
@@ -45,7 +45,7 @@ export async function generateMetadata(
   const en = (await getLocale()) === "en";
   const dil = (await searchParams)?.dil;
   return localizedMeta({
-    path: "/metodologiya", dil, en,
+    path: "/methodology", dil, en,
     azTitle: "Metodologiya — necə yoxlayırıq",
     enTitle: "Methodology — how we verify",
     azDesc:
@@ -70,8 +70,8 @@ export default async function MetodologiyaPage() {
       ? "How skopnix works and how it checks itself: every explainer is independently audited, claim by claim, against its sources."
       : "skopnix necə işləyir və özünü necə yoxlayır: hər izah müstəqil şəkildə, iddia-iddia, mənbələrə qarşı yoxlanılır.",
     inLanguage: en ? "en" : "az",
-    url: `${BASE}/metodologiya`,
-    mainEntityOfPage: `${BASE}/metodologiya`,
+    url: `${BASE}/methodology`,
+    mainEntityOfPage: `${BASE}/methodology`,
     isAccessibleForFree: true,
     author: { "@type": "Organization", name: "skopnix", url: BASE },
     publisher: { "@type": "Organization", name: "skopnix", url: BASE },
@@ -178,10 +178,10 @@ export default async function MetodologiyaPage() {
 
         {/* see also */}
         <div className="mt-14 flex flex-wrap gap-x-5 gap-y-2 font-mono text-[13px]">
-          <Link href="/haqqinda" className="text-brand hover:underline">
+          <Link href="/about" className="text-brand hover:underline">
             {en ? "About skopnix →" : "Haqqında →"}
           </Link>
-          <Link href="/veziyyet" className="text-brand hover:underline">
+          <Link href="/situation" className="text-brand hover:underline">
             {en ? "Threat situation →" : "Vəziyyət →"}
           </Link>
           <a href="https://t.me/ctiaze" target="_blank" rel="noopener noreferrer" className="text-brand hover:underline">
@@ -205,7 +205,7 @@ export default async function MetodologiyaPage() {
   );
 }
 
-// Stat band — the honest aggregates, animated like /veziyyet. Only figures the
+// Stat band — the honest aggregates, animated like /situation. Only figures the
 // content_audit collection provably supports: how much was audited, coverage, and
 // how many statements were flagged as reaching beyond source. Deliberately NO
 // "% verified" / accuracy score, which the data does not support.

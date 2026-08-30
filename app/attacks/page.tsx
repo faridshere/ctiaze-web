@@ -16,7 +16,7 @@ export async function generateMetadata({
   const en = (await getLocale()) === "en";
   const dil = (await searchParams)?.dil;
   return localizedMeta({
-    path: "/hucum",
+    path: "/attacks",
     dil,
     en,
     azTitle: "Hücum növləri — necə işləyir və necə qorunmaq",
@@ -57,7 +57,7 @@ export default async function HucumIndexPage() {
             return (
               <li key={g.slug}>
                 <Link
-                  href={`/hucum/${g.slug}`}
+                  href={`/attacks/${g.slug}`}
                   className="sweepable group flex h-full flex-col border border-hairline bg-surface-raised p-4 transition-colors hover:border-brand/50"
                   style={{ borderRadius: "var(--radius-chip)" }}
                 >

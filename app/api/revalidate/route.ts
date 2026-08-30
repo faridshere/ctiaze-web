@@ -13,6 +13,6 @@ export async function POST(req: Request) {
     return NextResponse.json({ revalidated: false, error: "rate_limited" }, { status: 429 });
   }
   revalidatePath("/");
-  revalidatePath("/haqqinda");
+  revalidatePath("/about");
   return NextResponse.json({ revalidated: true });
 }

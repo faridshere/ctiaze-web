@@ -40,12 +40,25 @@ const nextConfig: NextConfig = {
     return [{ source: "/:path*", headers: SECURITY_HEADERS }];
   },
   // /radar (static console) and /apt (redundant with /actors) removed in the
-  // skopnix cleanup — 301 old URLs to the closest live page.
+  // skopnix cleanup — 301 old URLs to the closest live page. Going global, the
+  // Azerbaijani route slugs were renamed to English; 301 the old ones so
+  // bookmarks, backlinks and indexed URLs keep resolving.
   async redirects() {
     return [
       { source: "/radar", destination: "/exposure", permanent: true },
       { source: "/radar.html", destination: "/exposure", permanent: true },
       { source: "/apt", destination: "/actors", permanent: true },
+      // AZ slug → English slug
+      { source: "/haqqinda", destination: "/about", permanent: true },
+      { source: "/hucum", destination: "/attacks", permanent: true },
+      { source: "/hucum/:slug", destination: "/attacks/:slug", permanent: true },
+      { source: "/sektor", destination: "/sectors", permanent: true },
+      { source: "/sektor/:slug", destination: "/sectors/:slug", permanent: true },
+      { source: "/lugat", destination: "/glossary", permanent: true },
+      { source: "/lugat/:slug", destination: "/glossary/:slug", permanent: true },
+      { source: "/metodologiya", destination: "/methodology", permanent: true },
+      { source: "/veziyyet", destination: "/situation", permanent: true },
+      { source: "/xeber/:slug", destination: "/news/:slug", permanent: true },
     ];
   },
 };

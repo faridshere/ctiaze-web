@@ -21,7 +21,7 @@ export function StoryLink({
 }) {
   return (
     <Link
-      href={`/xeber/${slug}`}
+      href={`/news/${slug}`}
       className={className}
       onClick={() => track("story_click", { slug, title })}
     >

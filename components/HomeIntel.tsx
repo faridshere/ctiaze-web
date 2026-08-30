@@ -273,7 +273,7 @@ function CtaSection({ en }: { en: boolean }) {
         <p data-sc="2" className="mx-auto mt-4 max-w-[34rem] text-[1.06rem] text-[#9AA6B4]">{en ? "A key takes a minute, the first 1,000 calls are free, and there's no sales call between you and the data." : "Açar bir dəqiqə çəkir, ilk 1,000 sorğu pulsuzdur və səninlə data arasında satış zəngi yoxdur."}</p>
         <div data-sc="3" className="mt-8 flex flex-wrap justify-center gap-3">
           <Link href="/developers" className="inline-flex items-center gap-2 rounded-[3px] bg-[var(--brand)] px-5 py-3 font-display text-[length:var(--t-meta)] font-medium text-[#170a03] transition-transform hover:-translate-y-0.5">{en ? "Get an API key" : "API açarı al"} →</Link>
-          <Link href="/haqqinda" className="inline-flex items-center gap-2 rounded-[3px] border border-white/[0.15] bg-[rgba(11,13,19,0.55)] px-5 py-3 font-display text-[length:var(--t-meta)] text-[#EDF1F6] transition-colors hover:border-[#4b5563]">{en ? "Talk to us" : "Bizimlə danış"}</Link>
+          <Link href="/about" className="inline-flex items-center gap-2 rounded-[3px] border border-white/[0.15] bg-[rgba(11,13,19,0.55)] px-5 py-3 font-display text-[length:var(--t-meta)] text-[#EDF1F6] transition-colors hover:border-[#4b5563]">{en ? "Talk to us" : "Bizimlə danış"}</Link>
         </div>
       </div>
     </section>

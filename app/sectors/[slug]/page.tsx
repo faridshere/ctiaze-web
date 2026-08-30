@@ -52,7 +52,7 @@ export async function generateMetadata({
   const dil = (await searchParams)?.dil;
   const who = en ? s.who.en || s.who.az : s.who.az || s.who.en;
   return localizedMeta({
-    path: `/sektor/${s.slug}`,
+    path: `/sectors/${s.slug}`,
     dil,
     en,
     azTitle: `${s.name_az} sektoru: təhdidlər və müdafiə`,
@@ -99,7 +99,7 @@ export default async function SectorHubPage({
     description: (who || "").slice(0, 300),
     inLanguage: en ? "en" : "az",
     isPartOf: { "@type": "WebSite", name: "skopnix", url: BASE },
-    url: `${BASE}/sektor/${s.slug}`,
+    url: `${BASE}/sectors/${s.slug}`,
   };
 
   return (
@@ -115,7 +115,7 @@ export default async function SectorHubPage({
         />
 
         <nav className="font-mono text-[11px] uppercase tracking-[0.14em] text-ink-muted">
-          <Link href="/sektor" className="hover:text-brand">
+          <Link href="/sectors" className="hover:text-brand">
             {en ? "Sectors" : "Sektorlar"}
           </Link>
           <span className="mx-1.5">/</span>

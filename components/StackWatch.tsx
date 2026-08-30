@@ -150,7 +150,7 @@ export function StackWatch({ stories }: { stories: Story[] }) {
                 const title = locale === "en" ? s.titleEn : s.titleAz;
                 return (
                   <li key={s.id}>
-                    <Link href={`/xeber/${s.slug}`} className="group block">
+                    <Link href={`/news/${s.slug}`} className="group block">
                       <div className="flex flex-wrap items-center gap-1.5">
                         {s.kev && (
                           <span className="rounded-sm border border-accent-critical/40 px-1 py-px font-mono text-[9px] uppercase tracking-wider text-accent-critical">KEV</span>
