@@ -55,7 +55,7 @@ export const metadata: Metadata = {
   openGraph: {
     type: "website",
     siteName: "ctiaze",
-    locale: "az_AZ",
+    locale: "en_US",
   },
   twitter: {
     card: "summary_large_image",

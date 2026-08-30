@@ -1,10 +1,11 @@
 import { cookies } from "next/headers";
-import { normalizeLocale, type Locale } from "./i18n";
+import { type Locale } from "./i18n";
 
-// Server-side current locale (from the cookie the proxy/toggle set). Reading it
-// opts a page into dynamic rendering — used only on the tool pages. Kept separate
-// from lib/i18n.ts so that (client-safe) dictionary can be imported anywhere.
+// English-only, globally (skopnix is a global product now). We still touch
+// cookies() so the tool pages keep their dynamic opt-in — their data sits behind
+// unstable_cache, and a static prerender at build would re-run Mongo/NVD and risk
+// the build timeout we hit before. The locale is fixed; there is no toggle.
 export async function getLocale(): Promise<Locale> {
-  const c = await cookies();
-  return normalizeLocale(c.get("locale")?.value);
+  await cookies();
+  return "en";
 }

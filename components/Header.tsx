@@ -5,7 +5,7 @@ import { LiveStatus } from "./LiveStatus";
 import { SearchTrigger } from "./SearchTrigger";
 import { CtiazeMark } from "./CtiazeMark";
 import { NavLink } from "./NavLink";
-import { LocaleToggle, useLocale } from "./locale";
+import { useLocale } from "./locale";
 import { getDict } from "@/lib/i18n";
 
 // Focused nav (Farid, 2026-08-30): /exposure, /cve, /ioc stay live but leave
@@ -50,7 +50,6 @@ export function Header() {
               </span>
               <LiveStatus />
             </span>
-            <LocaleToggle />
             <SearchTrigger />
           </div>
         </div>
