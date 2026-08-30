@@ -30,6 +30,7 @@ const TIERS: Tier[] = [
   {
     name: "Free", price: "$0", tagline: "For trying it and building on the public feed.",
     features: [
+      "stacknix — free exposure check (summary + worst finding, 5 components)",
       "1,000 API calls / month",
       "Public CVE + actor + IOC endpoints",
       "RSS · feed.json · llms.txt machine feeds",
@@ -40,13 +41,13 @@ const TIERS: Tier[] = [
   },
   {
     name: "Builder", price: "$49", per: "/ month", featured: true,
-    tagline: "For products and agents that need the regional data.",
+    tagline: "stacknix full reports + the regional data for products and agents.",
     features: [
+      "stacknix — full stack-exposure reports (KEV / EPSS / version-adjudicated), 15 components/scan, JSON export",
       "50,000 API calls / month, then metered",
       "Sensor-grid endpoints — enrich_ioc, regional exposure",
-      "MCP server (paid tools)",
+      "MCP server (paid tools) + weekly KEV-diff alerts",
       "Commercial use · versioned /v1 schema",
-      "Freshness status page + provenance on every record",
     ],
     cta: "Start Builder", href: "/developers",
   },
@@ -55,6 +56,7 @@ const TIERS: Tier[] = [
     tagline: "For teams monitoring the region for clients.",
     features: [
       "Everything in Builder, higher limits",
+      "stacknix — saved stacks, client-labeled reports",
       "Historical exposure snapshots + bulk export",
       "Priority data requests",
       "Seats for your analysts",

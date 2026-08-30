@@ -18,17 +18,25 @@ async function j<T>(url: string, ms: number): Promise<T | null> {
   }
 }
 
-// --- CISA KEV, fetched once/day, cached module-level (shared across warm calls) ---
-let kevCache: { at: number; set: Set<string> } | null = null;
-export async function kevSet(): Promise<Set<string>> {
-  if (kevCache && Date.now() - kevCache.at < 24 * 3600_000) return kevCache.set;
-  const d = await j<{ vulnerabilities?: { cveID: string }[] }>(
+// --- CISA KEV, fetched once/day, cached module-level (shared across warm calls).
+// kevMeta carries the ransomware flag too; kevSet derives from it (one download). ---
+export type KevRow = { ransomware: boolean; dateAdded: string | null };
+let kevCache: { at: number; map: Map<string, KevRow>; released: string | null } | null = null;
+export async function kevMeta(): Promise<Map<string, KevRow>> {
+  if (kevCache && Date.now() - kevCache.at < 24 * 3600_000) return kevCache.map;
+  const d = await j<{ dateReleased?: string; vulnerabilities?: { cveID: string; dateAdded?: string; knownRansomwareCampaignUse?: string }[] }>(
     "https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json",
-    8000
+    9000
   );
-  const set = new Set<string>((d?.vulnerabilities || []).map((v) => v.cveID.toUpperCase()));
-  if (set.size) kevCache = { at: Date.now(), set };
-  return kevCache?.set ?? new Set();
+  const map = new Map<string, KevRow>();
+  for (const v of d?.vulnerabilities || [])
+    map.set(v.cveID.toUpperCase(), { ransomware: (v.knownRansomwareCampaignUse || "").toLowerCase() === "known", dateAdded: v.dateAdded || null });
+  if (map.size) kevCache = { at: Date.now(), map, released: d?.dateReleased?.slice(0, 10) || null };
+  return kevCache?.map ?? new Map();
+}
+export function kevCatalogDate(): string | null { return kevCache?.released ?? null; }
+export async function kevSet(): Promise<Set<string>> {
+  return new Set((await kevMeta()).keys());
 }
 
 export async function epssFor(cve: string): Promise<number | null> {
@@ -49,6 +57,18 @@ export async function epssMap(cves: string[]): Promise<Map<string, number>> {
     8000
   );
   for (const row of d?.data || []) m.set(row.cve.toUpperCase(), parseFloat(row.epss));
+  return m;
+}
+
+// Batched EPSS with percentile, for the stack engine.
+export async function epssDetailed(cves: string[]): Promise<Map<string, { score: number; percentile: number | null }>> {
+  const m = new Map<string, { score: number; percentile: number | null }>();
+  if (!cves.length) return m;
+  const d = await j<{ data?: { cve: string; epss: string; percentile?: string }[] }>(
+    `https://api.first.org/data/v1/epss?cve=${cves.slice(0, 100).map(encodeURIComponent).join(",")}`,
+    8000
+  );
+  for (const row of d?.data || []) m.set(row.cve.toUpperCase(), { score: parseFloat(row.epss), percentile: row.percentile ? parseFloat(row.percentile) : null });
   return m;
 }
 

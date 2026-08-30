@@ -11,6 +11,44 @@ const Check = () => (
   <svg viewBox="0 0 16 16" className="mt-[3px] size-4 flex-none" fill="none" stroke="#6FD3E6" strokeWidth={1.8}><path d="M3 8.5l3.2 3.2L13 5" /></svg>
 );
 
+// stacknix — the paid flagship. Paste your stack, get its exploited-in-wild
+// exposure. Sample console (labeled) → the tool.
+function StacknixSection({ en }: { en: boolean }) {
+  return (
+    <section id="stacknix" className="border-t border-hairline">
+      <div className="mx-auto grid w-full max-w-[75rem] grid-cols-1 items-center gap-[clamp(28px,4vw,52px)] px-[var(--sp-gutter)] py-[clamp(44px,7vw,84px)] md:grid-cols-[1.02fr_0.98fr]">
+        <div data-sc>
+          <div className="mb-3 inline-flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.14em] text-[var(--brand)]">stacknix <span className="rounded-full border border-white/[0.15] px-1.5 py-0.5 text-[9px] text-[#79838F]">{en ? "paid" : "ödənişli"}</span></div>
+          <h2 className="font-display text-[clamp(1.7rem,3vw,2.5rem)] font-semibold leading-[1.08] tracking-[-0.025em] text-[#EDF1F6] text-balance">
+            {en ? "Tell us your stack. We tell you what's exploitable." : "Stekini de. Nəyin istismar oluna biləcəyini deyək."}
+          </h2>
+          <p className="mt-4 max-w-[32rem] text-[1.05rem] text-[#9AA6B4]">
+            {en ? <>Paste the product and version your admins and developers actually run. stacknix returns the CVEs that hit it — which are <b className="font-medium text-[#EDF1F6]">exploited in the wild</b> per CISA KEV, the EPSS odds, and whether your <b className="font-medium text-[#EDF1F6]">exact version</b> is in the vulnerable range. NVD gives you 2,700 unranked rows; stacknix gives you the adjudication.</> : <>İşlətdiyin məhsul və versiyanı yapışdır. stacknix ona dəyən CVE-ləri qaytarır — hansı <b className="font-medium text-[#EDF1F6]">vəhşidə istismar</b> olunur, EPSS ehtimalı və sənin <b className="font-medium text-[#EDF1F6]">dəqiq versiyanın</b> zəif diapazonda olub-olmadığı.</>}
+          </p>
+          <div className="mt-6 flex flex-wrap gap-3">
+            <Link href="/stacknix" className="inline-flex items-center gap-2 rounded-[3px] bg-[var(--brand)] px-5 py-3 font-display text-[length:var(--t-meta)] font-medium text-[#170a03] transition-transform hover:-translate-y-0.5">{en ? "Check your stack" : "Stekini yoxla"} →</Link>
+            <Link href="/pricing" className="inline-flex items-center gap-2 rounded-[3px] border border-white/[0.15] bg-[rgba(11,13,19,0.55)] px-5 py-3 font-display text-[length:var(--t-meta)] text-[#EDF1F6] transition-colors hover:border-[#4b5563]">{en ? "Pricing" : "Qiymət"}</Link>
+          </div>
+        </div>
+        <div data-sc="2" className="overflow-hidden rounded-[12px] border border-white/[0.15] bg-[linear-gradient(180deg,#0F121A,#0B0D13)]">
+          <div className="flex items-center gap-2 border-b border-hairline bg-white/[0.015] px-3.5 py-3">
+            <span className="size-[9px] rounded-full bg-[#2a303b]" /><span className="size-[9px] rounded-full bg-[#2a303b]" /><span className="size-[9px] rounded-full bg-[var(--brand)]" />
+            <span className="ml-1.5 font-mono text-[0.72rem] text-[#79838F]">stacknix · {en ? "sample" : "nümunə"}</span>
+          </div>
+          <div className="px-[18px] py-[16px] font-mono text-[0.76rem] leading-[1.75] text-[#9AA6B4]">
+            <div><span className="text-[#6FD3E6]">in</span> apache http_server <span className="text-[#EDF1F6]">2.4.49</span></div>
+            <div className="text-[#79838F]">→ CVE-2021-41773 · <span className="text-[#FF5A1F]">IN RANGE · KEV</span> · EPSS 0.94 · <span className="text-[#5FE0A8]">fix 2.4.51</span></div>
+            <div className="mt-1.5"><span className="text-[#6FD3E6]">in</span> log4j <span className="text-[#EDF1F6]">2.14.1</span></div>
+            <div className="text-[#79838F]">→ CVE-2021-44228 · <span className="text-[#FF5A1F]">IN RANGE · KEV</span> · EPSS 1.00 · <span className="text-[#EDF1F6]">2.14.1 ∈ [2.13.0, 2.15.0)</span></div>
+            <div className="mt-1.5"><span className="text-[#6FD3E6]">in</span> openssh <span className="text-[#EDF1F6]">9.6</span></div>
+            <div className="text-[#79838F]">→ 0 {en ? "in range" : "diapazonda"} · <span className="text-[#5FE0A8]">{en ? "clear" : "təmiz"}</span></div>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
 // The product — the API/MCP. Real endpoint, real ATT&CK data, real KB counts.
 function ApiSection({ en, doStats }: { en: boolean; doStats: DoStats }) {
   return (
@@ -243,6 +281,7 @@ function CtaSection({ en }: { en: boolean }) {
 export function HomeIntel({ en, snapshot, doStats, adversaries }: { en: boolean; snapshot: ExposureSnapshot | null; doStats: DoStats; adversaries: AdversaryTeaser[] }) {
   return (
     <>
+      <StacknixSection en={en} />
       <ApiSection en={en} doStats={doStats} />
       <EdgeSection en={en} snapshot={snapshot} doStats={doStats} />
       <AdversariesSection en={en} adversaries={adversaries} total={doStats.actors} />
