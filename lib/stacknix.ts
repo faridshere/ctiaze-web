@@ -231,8 +231,10 @@ const cvesForProduct = unstable_cache(
 export type Verdict = "vulnerable" | "not-affected" | "unconfirmed" | "version-unknown";
 
 // Evaluate the submitted version against a CVE's cpeMatch rules for our product,
-// and capture the evidence: which bound fired, and the fix version (smallest
-// versionEndExcluding across matches).
+// and capture the evidence: which bound fired, and the fix version. The fix we
+// report is the nearest patched release ABOVE the user's version (the end of the
+// branch they sit in) — not the global-min fix, which for a multi-branch CVE like
+// Log4Shell would tell a 2.14.1 user to "upgrade to 2.3.1", a downgrade.
 function evalMatch(version: string | null, matches: CpeMatch[]): { verdict: Verdict; bound: string | null; fixedVersion: string | null; matchedCpe: string | null } {
   if (!matches.length) return { verdict: "unconfirmed", bound: null, fixedVersion: null, matchedCpe: null };
   let fixedVersion: string | null = null;
@@ -240,6 +242,13 @@ function evalMatch(version: string | null, matches: CpeMatch[]): { verdict: Verd
     if (m.versionEndExcluding && (!fixedVersion || (cmpVersion(m.versionEndExcluding, fixedVersion) ?? 1) < 0)) fixedVersion = m.versionEndExcluding;
   }
   if (!version) return { verdict: "version-unknown", bound: null, fixedVersion, matchedCpe: matches[0].criteria };
+  // Nearest patched release above what the user runs: the smallest
+  // versionEndExcluding strictly greater than their version.
+  let fixAbove: string | null = null;
+  for (const m of matches) {
+    if (m.versionEndExcluding && (cmpVersion(m.versionEndExcluding, version) ?? -1) > 0
+        && (!fixAbove || (cmpVersion(m.versionEndExcluding, fixAbove) ?? 1) < 0)) fixAbove = m.versionEndExcluding;
+  }
   let sawRange = false, sawExact = false;
   for (const m of matches) {
     if (m.vulnerable === false) continue;
@@ -264,11 +273,11 @@ function evalMatch(version: string | null, matches: CpeMatch[]): { verdict: Verd
         const lo = m.versionStartIncluding ? `[${m.versionStartIncluding}` : m.versionStartExcluding ? `(${m.versionStartExcluding}` : "(−∞";
         const hi = m.versionEndExcluding ? `${m.versionEndExcluding})` : m.versionEndIncluding ? `${m.versionEndIncluding}]` : "∞)";
         const which = m.versionEndExcluding ? "versionEndExcluding" : m.versionEndIncluding ? "versionEndIncluding" : m.versionStartIncluding ? "versionStartIncluding" : "versionStartExcluding";
-        return { verdict: "vulnerable", bound: `${version} ∈ ${lo}, ${hi} · ${which}`, fixedVersion, matchedCpe: m.criteria };
+        return { verdict: "vulnerable", bound: `${version} ∈ ${lo}, ${hi} · ${which}`, fixedVersion: m.versionEndExcluding ?? fixAbove ?? fixedVersion, matchedCpe: m.criteria };
       }
     } else if (cpeVer && cpeVer !== "*" && cpeVer !== "-") {
       sawExact = true;
-      if (cmpVersion(version, cpeVer) === 0) return { verdict: "vulnerable", bound: `${version} = ${cpeVer} · exact`, fixedVersion, matchedCpe: m.criteria };
+      if (cmpVersion(version, cpeVer) === 0) return { verdict: "vulnerable", bound: `${version} = ${cpeVer} · exact`, fixedVersion: fixAbove ?? fixedVersion, matchedCpe: m.criteria };
     } else {
       return { verdict: "unconfirmed", bound: null, fixedVersion, matchedCpe: m.criteria };
     }
