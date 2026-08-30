@@ -249,6 +249,11 @@ function evalMatch(version: string | null, matches: CpeMatch[]): { verdict: Verd
     if (m.versionEndExcluding && (cmpVersion(m.versionEndExcluding, version) ?? -1) > 0
         && (!fixAbove || (cmpVersion(m.versionEndExcluding, fixAbove) ?? 1) < 0)) fixAbove = m.versionEndExcluding;
   }
+  // Never advise a "fix" at or below what the user runs — a downgrade doesn't
+  // remediate. When we can't name a concrete release above them (e.g. the range
+  // is versionEndIncluding), report null; the matched bound still shows the ceiling.
+  const safeFix = (cand: string | null): string | null =>
+    cand && (cmpVersion(cand, version) ?? -1) > 0 ? cand : null;
   let sawRange = false, sawExact = false;
   for (const m of matches) {
     if (m.vulnerable === false) continue;
@@ -273,11 +278,11 @@ function evalMatch(version: string | null, matches: CpeMatch[]): { verdict: Verd
         const lo = m.versionStartIncluding ? `[${m.versionStartIncluding}` : m.versionStartExcluding ? `(${m.versionStartExcluding}` : "(−∞";
         const hi = m.versionEndExcluding ? `${m.versionEndExcluding})` : m.versionEndIncluding ? `${m.versionEndIncluding}]` : "∞)";
         const which = m.versionEndExcluding ? "versionEndExcluding" : m.versionEndIncluding ? "versionEndIncluding" : m.versionStartIncluding ? "versionStartIncluding" : "versionStartExcluding";
-        return { verdict: "vulnerable", bound: `${version} ∈ ${lo}, ${hi} · ${which}`, fixedVersion: m.versionEndExcluding ?? fixAbove ?? fixedVersion, matchedCpe: m.criteria };
+        return { verdict: "vulnerable", bound: `${version} ∈ ${lo}, ${hi} · ${which}`, fixedVersion: safeFix(m.versionEndExcluding ?? fixAbove ?? fixedVersion), matchedCpe: m.criteria };
       }
     } else if (cpeVer && cpeVer !== "*" && cpeVer !== "-") {
       sawExact = true;
-      if (cmpVersion(version, cpeVer) === 0) return { verdict: "vulnerable", bound: `${version} = ${cpeVer} · exact`, fixedVersion: fixAbove ?? fixedVersion, matchedCpe: m.criteria };
+      if (cmpVersion(version, cpeVer) === 0) return { verdict: "vulnerable", bound: `${version} = ${cpeVer} · exact`, fixedVersion: safeFix(fixAbove ?? fixedVersion), matchedCpe: m.criteria };
     } else {
       return { verdict: "unconfirmed", bound: null, fixedVersion, matchedCpe: m.criteria };
     }
