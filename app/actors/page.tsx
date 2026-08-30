@@ -9,6 +9,7 @@ import { getDict } from "@/lib/i18n";
 import { getLocale } from "@/lib/i18n-server";
 
 export const revalidate = 3600;
+export const maxDuration = 60;
 
 export const metadata: Metadata = {
   title: "Təhdid aktorları — APT və crime qrupları · Threat actors",

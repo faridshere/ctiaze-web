@@ -56,12 +56,22 @@ async function collection() {
 let rosterCache: { at: number; docs: ThreatActor[] } | null = null;
 const ROSTER_TTL_MS = 60 * 60_000;
 
+let rosterInFlight: Promise<ThreatActor[]> | null = null;
+
 async function allActors(): Promise<ThreatActor[]> {
   if (rosterCache && Date.now() - rosterCache.at < ROSTER_TTL_MS) return rosterCache.docs;
-  const col = await collection();
-  const docs = await col.find({}).toArray();
-  rosterCache = { at: Date.now(), docs };
-  return docs;
+  if (rosterInFlight) return rosterInFlight; // in-flight guard: concurrent callers share one scan
+  rosterInFlight = (async () => {
+    try {
+      const col = await collection();
+      const docs = await col.find({}).toArray();
+      rosterCache = { at: Date.now(), docs };
+      return docs;
+    } finally {
+      rosterInFlight = null;
+    }
+  })();
+  return rosterInFlight;
 }
 
 // Lean roster for the index surfaces (/actors cards, stats, sorts): everything
@@ -69,14 +79,32 @@ async function allActors(): Promise<ThreatActor[]> {
 // fields. This is what keeps the /actors cold render inside the function budget
 // (the full fetch was the intermittent "can't access /actors" failure).
 let leanCache: { at: number; docs: ThreatActor[] } | null = null;
+let leanInFlight: Promise<ThreatActor[]> | null = null;
 
 async function leanActors(): Promise<ThreatActor[]> {
   if (rosterCache && Date.now() - rosterCache.at < ROSTER_TTL_MS) return rosterCache.docs;
   if (leanCache && Date.now() - leanCache.at < ROSTER_TTL_MS) return leanCache.docs;
-  const col = await collection();
-  const docs = (await col.find({}, { projection: { playbook: 0, intel: 0 } }).toArray()) as ThreatActor[];
-  leanCache = { at: Date.now(), docs };
-  return docs;
+  // In-flight guard: the /actors index fans out to getRegional/getStats/getIndex
+  // concurrently, each calling this — without the guard that raced THREE full
+  // scans at once and blew the cold render past the function budget ("can't
+  // access /actors"). Concurrent callers now share the one scan.
+  if (leanInFlight) return leanInFlight;
+  leanInFlight = (async () => {
+    try {
+      const col = await collection();
+      // Drop the dossier-only playbook/intel AND the `ml` search-embedding vector
+      // (~half the roster payload, never read on the index/cards/scoring path) —
+      // this is what pulls the 1,412-actor cold scan back under the function
+      // budget on the throttled tier (73s → ~34s), so getActorsPageData actually
+      // finishes and populates the shared cache instead of timing out.
+      const docs = (await col.find({}, { projection: { playbook: 0, intel: 0, ml: 0 } }).toArray()) as ThreatActor[];
+      leanCache = { at: Date.now(), docs };
+      return docs;
+    } finally {
+      leanInFlight = null;
+    }
+  })();
+  return leanInFlight;
 }
 
 // One dossier by its stable slug (_id) — powers the crawlable /actors/[slug] page
