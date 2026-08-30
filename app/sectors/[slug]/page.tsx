@@ -10,7 +10,7 @@ import { getLocale } from "@/lib/i18n-server";
 import { localizedMeta } from "@/lib/seo";
 import { jsonLdSafe } from "@/lib/format";
 
-export const revalidate = 86400;
+export const dynamic = "force-dynamic";
 
 const BASE = "https://ctiaze.tech";
 

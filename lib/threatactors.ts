@@ -79,10 +79,17 @@ async function leanActors(): Promise<ThreatActor[]> {
   return docs;
 }
 
-// One dossier by its stable slug (_id) — powers the crawlable /actors/[slug] page.
+// One dossier by its stable slug (_id) — powers the crawlable /actors/[slug] page
+// AND the sector hubs' top-actor resolution. Serve from the roster cache when it's
+// already warm; otherwise fetch just THIS dossier by its indexed _id. Never pull
+// the whole roster (with its multi-KB playbook+intel fields per actor) into memory
+// just to find one actor — that full fetch was the sector hubs' >2min cold render.
 export async function getActorById(id: string): Promise<ThreatActor | null> {
-  const docs = await allActors();
-  return docs.find((a) => a._id === id) ?? null;
+  if (rosterCache && Date.now() - rosterCache.at < ROSTER_TTL_MS) {
+    return rosterCache.docs.find((a) => a._id === id) ?? null;
+  }
+  const col = await collection();
+  return (await col.findOne({ _id: id })) as ThreatActor | null;
 }
 
 // Every actor slug, for the sitemap. Substantive actors first (a thin name-only

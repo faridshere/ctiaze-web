@@ -177,16 +177,19 @@ async function actorIdIndex(): Promise<Map<string, string>> {
 async function resolveActors(names: string[]): Promise<ThreatActor[]> {
   if (!names.length) return [];
   const idx = await actorIdIndex();
-  const out: ThreatActor[] = [];
+  // Resolve + de-dupe names → ids first (order-preserving), then fetch the
+  // dossiers in PARALLEL. Sequential await-in-loop meant one indexed findOne
+  // per top actor, back to back (~6s for a 15-actor sector); one wave is ~one.
+  const ids: string[] = [];
   const seen = new Set<string>();
   for (const nm of names) {
     const id = idx.get(norm(nm));
     if (!id || seen.has(id)) continue;
     seen.add(id);
-    const a = await getActorById(id);
-    if (a) out.push(a);
+    ids.push(id);
   }
-  return out;
+  const resolved = await Promise.all(ids.map((id) => getActorById(id)));
+  return resolved.filter((a): a is ThreatActor => Boolean(a));
 }
 
 export async function getSector(slug: string): Promise<SectorHub | null> {
