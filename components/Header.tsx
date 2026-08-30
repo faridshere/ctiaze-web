@@ -8,11 +8,10 @@ import { NavLink } from "./NavLink";
 import { LocaleToggle, useLocale } from "./locale";
 import { getDict } from "@/lib/i18n";
 
+// Focused nav (Farid, 2026-08-30): /exposure, /cve, /ioc stay live but leave
+// the nav for now — the product story is wire → adversaries → scan → API.
 const NAV: [string, keyof ReturnType<typeof getDict>["nav"]][] = [
   ["/", "feed"],
-  ["/exposure", "exposure"],
-  ["/cve", "cve"],
-  ["/ioc", "ioc"],
   ["/actors", "actors"],
   ["/scan-me", "scanme"],
   ["/developers", "api"],

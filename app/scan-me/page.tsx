@@ -44,7 +44,7 @@ export default async function ScanMePage() {
         </div>
       </section>
       <main id="main" className="mx-auto w-full max-w-3xl flex-1 px-4 py-10">
-        <p className="inline-flex items-center gap-2 rounded-sm border border-hairline bg-surface-raised/40 px-3 py-1.5 text-[13px] text-ink-secondary">
+        <p className="flex items-center gap-2.5 font-mono text-[12px] text-ink-secondary">
           <span className="relative flex size-1.5">
             <span className="absolute inline-flex size-full animate-ping rounded-full bg-accent-good opacity-60" />
             <span className="relative inline-flex size-1.5 rounded-full bg-accent-good" />

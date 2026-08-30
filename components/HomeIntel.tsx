@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ActorSigil } from "@/components/ActorSigil";
 import type { ExposureSnapshot } from "@/lib/exposure";
 import type { DoStats } from "@/lib/dostats";
 
@@ -107,6 +108,48 @@ function Fig({ n, l }: { n: string; l: string }) {
   );
 }
 
+// Adversaries teaser: four REAL leading actors from the dossier base, as
+// ledger lines with their live sigils — the door into /actors.
+export type AdversaryTeaser = { id: string; name: string; type: string; tech: number; origin: string | null; victims: number };
+
+function AdversariesSection({ en, adversaries, total }: { en: boolean; adversaries: AdversaryTeaser[]; total: number }) {
+  if (!adversaries.length) return null;
+  return (
+    <section className="border-t border-hairline">
+      <div className="mx-auto grid w-full max-w-[75rem] grid-cols-1 items-center gap-[clamp(26px,4vw,48px)] px-[var(--sp-gutter)] py-[clamp(40px,6vw,72px)] md:grid-cols-[0.95fr_1.05fr]">
+        <div data-sc>
+          <h2 className="font-display text-[clamp(1.6rem,2.7vw,2.2rem)] font-semibold leading-[1.1] tracking-[-0.02em] text-[#EDF1F6] text-balance">
+            {en ? "Know who's on the other side." : "Qarşı tərəfdə kimin olduğunu tanı."}
+          </h2>
+          <p className="mt-4 max-w-[28rem] text-[1.02rem] text-[#9AA6B4]">
+            {en
+              ? `${total.toLocaleString("en-US")} adversary dossiers — APTs and crime groups with their ATT&CK techniques, malware, victims and kill-chain playbooks, each tied to its source.`
+              : `${total.toLocaleString("en-US")} düşmən dosyesi — APT-lər və crime qrupları: ATT&CK texnikaları, zərərli proqramları, qurbanları və kill-chain playbook-ları, hər biri mənbəyə bağlı.`}
+          </p>
+          <Link href="/actors" className="mt-6 inline-flex items-center gap-2 rounded-[3px] border border-white/[0.15] bg-[rgba(11,13,19,0.55)] px-5 py-3 font-display text-[length:var(--t-meta)] text-[#EDF1F6] transition-colors hover:border-[#4b5563]">
+            {en ? "Open the dossiers" : "Dosyeleri aç"} <span className="text-[var(--brand)]">→</span>
+          </Link>
+        </div>
+        <div data-sc="2">
+          {adversaries.map((a) => (
+            <Link key={a.id} href={`/actors/${a.id}`} className="group grid grid-cols-[auto_1fr_auto] items-center gap-x-3.5 border-b border-hairline py-3 first:border-t">
+              <span className="grid size-9 place-items-center rounded-sm border border-hairline bg-[#0B0D13] text-[#9AA6B4]">
+                <ActorSigil a={{ _id: a.id, type: a.type, techniques: Array.from({ length: a.tech }) }} size={30} />
+              </span>
+              <span className="min-w-0">
+                <span className="block truncate font-display text-[0.98rem] font-semibold text-[#EDF1F6] transition-colors group-hover:text-[var(--brand)]">{a.name}</span>
+              </span>
+              <span className="text-right font-mono text-[10.5px] uppercase tracking-[0.06em] text-[#79838F]">
+                {a.type !== "unknown" ? a.type : ""}{a.victims > 0 ? `${a.type !== "unknown" ? " · " : ""}${a.victims} ${en ? "victims" : "qurban"}` : ""}
+              </span>
+            </Link>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
 // Scan yourself — the beloved exposure check, surfaced as a first-class strip:
 // email breaches, stealer logs, a company domain's subdomains and open ports.
 function ScanSection({ en }: { en: boolean }) {
@@ -197,11 +240,12 @@ function CtaSection({ en }: { en: boolean }) {
   );
 }
 
-export function HomeIntel({ en, snapshot, doStats }: { en: boolean; snapshot: ExposureSnapshot | null; doStats: DoStats }) {
+export function HomeIntel({ en, snapshot, doStats, adversaries }: { en: boolean; snapshot: ExposureSnapshot | null; doStats: DoStats; adversaries: AdversaryTeaser[] }) {
   return (
     <>
       <ApiSection en={en} doStats={doStats} />
       <EdgeSection en={en} snapshot={snapshot} doStats={doStats} />
+      <AdversariesSection en={en} adversaries={adversaries} total={doStats.actors} />
       <ScanSection en={en} />
       <WatchSection en={en} />
       <CtaSection en={en} />

@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { ActorSearch } from "@/components/ActorSearch";
-import { ActorDossier } from "@/components/ActorDossier";
+import { ActorRow } from "@/components/ActorRow";
 import Link from "next/link";
 import { getActorsPageData } from "@/lib/threatactors";
 import { getDict } from "@/lib/i18n";
@@ -73,14 +73,13 @@ export default async function ActorsPage() {
       </section>
 
       <main id="main" className="mx-auto w-full max-w-5xl flex-1 px-4 pb-14">
-        {/* International scope leads; the regional lens follows as a specialty. */}
+        {/* International scope leads; a ledger, not a card wall — the wire's
+            language. Full dossiers live one click in at /actors/[id]. */}
         <SectionHead title={t.leadingTitle} note={t.leadingNote} />
         {top.length > 0 ? (
-          <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="mt-2">
             {top.map((a, i) => (
-              <div key={a._id} data-sc style={{ transitionDelay: `${Math.min((i % 6) * 60, 240)}ms` }}>
-                <ActorDossier a={a} locale={locale} />
-              </div>
+              <ActorRow key={a._id} a={a} locale={locale} i={i} />
             ))}
           </div>
         ) : (
@@ -90,11 +89,9 @@ export default async function ActorsPage() {
         {regional.length > 0 && (
           <>
             <SectionHead title={t.regionalTitle} note={t.regionalNote} brand />
-            <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="mt-2">
               {regional.map((a, i) => (
-                <div key={a._id} data-sc style={{ transitionDelay: `${Math.min(i * 60, 240)}ms` }}>
-                  <ActorDossier a={a} locale={locale} />
-                </div>
+                <ActorRow key={a._id} a={a} locale={locale} i={i} />
               ))}
             </div>
           </>

@@ -1,5 +1,9 @@
 import type { ThreatActor } from "@/lib/threatactors";
 
+// The sigil only needs identity, type and documented depth — accept that
+// structural subset so lean teasers can render it without full dossiers.
+export type SigilSeed = { _id: string; type: string; techniques?: readonly unknown[] | null };
+
 // Every actor gets its own motion signature: a small sensor-constellation seeded
 // deterministically from the actor's id and real data — spoke count from its
 // documented ATT&CK depth, hue from its type, a signal pulse traveling each
@@ -16,7 +20,7 @@ const TYPE_STROKE: Record<string, string> = {
   crime: "#F6B44A",
 };
 
-export function ActorSigil({ a, size = 40 }: { a: ThreatActor; size?: number }) {
+export function ActorSigil({ a, size = 40 }: { a: SigilSeed; size?: number }) {
   const seed = hash(a._id);
   const spokes = 3 + (Math.min(a.techniques?.length ?? 0, 9) > 0 ? Math.min(2 + Math.floor((a.techniques!.length - 1) / 4), 3) : (seed % 2)); // 3–6, data-driven
   const rot = (seed % 360);

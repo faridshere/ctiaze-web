@@ -5,6 +5,7 @@ import { TheWire } from "@/components/TheWire";
 import { HomeIntel } from "@/components/HomeIntel";
 import { unstable_cache } from "next/cache";
 import { getStories, getStats } from "@/lib/stories";
+import { getTopActors } from "@/lib/threatactors";
 import { getDoStats } from "@/lib/dostats";
 import { getLatestSnapshot } from "@/lib/exposure";
 import type { Metadata } from "next";
@@ -19,12 +20,19 @@ export const revalidate = 180;
 // minutes, warm for every lambda — a cold instance renders from cache instantly.
 const getHomeData = unstable_cache(
   async () => {
-    const [stories, stats, snapshot, doStats] = await Promise.all([
+    const [stories, stats, snapshot, doStats, topActors] = await Promise.all([
       getStories(24),
       getStats(),
       getLatestSnapshot().catch(() => null),
       getDoStats(),
+      getTopActors(4).catch(() => []),
     ]);
+    const adversaries = topActors.map((a) => ({
+      id: a._id, name: a.name, type: a.type,
+      tech: a.techniques?.length ?? 0,
+      origin: a.origin_country ?? null,
+      victims: a.victim_count ?? 0,
+    }));
     // The wire renders titles + flags only — never ship 24 full article bodies
     // in the RSC payload (they were the multi-second transfer weight on "/").
     const wire = stories.map((s) => ({
@@ -32,9 +40,9 @@ const getHomeData = unstable_cache(
       sourceUrl: s.sourceUrl, kev: s.kev, region: s.region,
       severity: s.severity, cveIds: s.cveIds.slice(0, 1), publishedAt: s.publishedAt,
     }));
-    return { wire, stats, snapshot, doStats };
+    return { wire, stats, snapshot, doStats, adversaries };
   },
-  ["home-data-v1"],
+  ["home-data-v3"],
   { revalidate: 300 },
 );
 
@@ -64,7 +72,7 @@ export async function generateMetadata(
 export default async function HomePage() {
   const locale = await getLocale();
   const en = locale === "en";
-  const { wire, stats, snapshot, doStats } = await getHomeData();
+  const { wire, stats, snapshot, doStats, adversaries } = await getHomeData();
   const regionCount = wire.filter((s) => s.region).length;
   const syncedLabel = syncLabel(wire[0]?.publishedAt, en);
 
@@ -95,7 +103,7 @@ export default async function HomePage() {
       <Hero archive={stats.total} kevCount={stats.kevCount} regionCount={regionCount} en={en} syncedLabel={syncedLabel} />
       <main id="main" className="flex-1">
         <TheWire stories={wire} en={en} />
-        <HomeIntel en={en} snapshot={snapshot} doStats={doStats} />
+        <HomeIntel en={en} snapshot={snapshot} doStats={doStats} adversaries={adversaries} />
       </main>
       <Footer />
     </div>
