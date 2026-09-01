@@ -12,7 +12,7 @@ export const revalidate = 3600;
 export const maxDuration = 60;
 
 export const metadata: Metadata = {
-  title: "Təhdid aktorları — APT və crime qrupları · Threat actors",
+  title: "Threat actors — APT & crime groups",
   description:
     "Who's targeting you? Search by country, sector, or company for the APT and crime groups that target it. Every answer is tied to a source (MISP Galaxy, ransomware.live, MITRE ATT&CK).",
 };

@@ -71,7 +71,6 @@ export default async function VendorHubPage({
   const en = (await getLocale()) === "en";
 
   const lead = en ? v.en || v.az : v.az || v.en;
-  const other = en ? v.az : v.en;
   const url = `${BASE}/vendor/${v.slug}`;
 
   // Known-exploited first (CISA KEV, one cached file), preserving the lib's
@@ -131,18 +130,6 @@ export default async function VendorHubPage({
             {lead}
           </p>
         )}
-        {/* Show the other language too — bilingual reference value + indexable text.
-            Guard other !== lead so a doc missing one language (2 lack EN) doesn't
-            echo the same text twice when the lead has fallen back to it. */}
-        {other && other !== lead && (
-          <p className="mt-4 max-w-[62ch] border-l-2 border-hairline pl-4 text-[14px] leading-relaxed text-ink-secondary">
-            <span className="font-mono text-[10px] uppercase tracking-wider text-ink-muted">
-              {en ? "Azərbaycanca" : "English"}:{" "}
-            </span>
-            {other}
-          </p>
-        )}
-
         {/* (2) the vendor's CVEs — KEV-first, linked only when an explainer exists */}
         {shown.length > 0 && (
           <section data-sc className="mt-12">

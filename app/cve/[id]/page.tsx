@@ -88,7 +88,6 @@ export default async function CveIntelPage({ params }: { params: Promise<{ id: s
   const vendors = (await getVendorsForCve(doc.id).catch(() => [])).slice(0, 2);
 
   const lead = en ? doc.en || doc.az : doc.az || doc.en;
-  const other = en ? doc.az : doc.en;
   const url = `${BASE}/cve/${doc.id}`;
 
   // Grounded Q&A pairs for this CVE (bilingual, engine-authored) — powers both the
@@ -177,15 +176,6 @@ export default async function CveIntelPage({ params }: { params: Promise<{ id: s
         </div>
 
         <p className="mt-6 text-lg leading-relaxed text-ink-primary">{lead}</p>
-        {/* Show the other language too — bilingual reference value + more indexable text */}
-        {other ? (
-          <p className="mt-4 border-l-2 border-hairline pl-4 text-[15px] leading-relaxed text-ink-secondary">
-            <span className="font-mono text-[10px] uppercase tracking-wider text-ink-muted">
-              {en ? "Azərbaycanca" : "English"}:{" "}
-            </span>
-            {other}
-          </p>
-        ) : null}
 
         {doc.related.length > 0 && (
           <div data-sc className="mt-10 border-t border-hairline pt-6">

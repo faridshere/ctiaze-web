@@ -63,13 +63,6 @@ export default async function TermPage({ params }: { params: Promise<{ slug: str
         </h1>
 
         <p className="mt-6 text-lg leading-relaxed text-ink-primary">{en && g.en ? g.en : g.az}</p>
-        {/* Show the other language too — bilingual reference value + more indexable text */}
-        {(en ? g.az : g.en) ? (
-          <p className="mt-4 border-l-2 border-hairline pl-4 text-[15px] leading-relaxed text-ink-secondary">
-            <span className="font-mono text-[10px] uppercase tracking-wider text-ink-muted">{en ? "Azərbaycanca" : "English"}: </span>
-            {en ? g.az : g.en}
-          </p>
-        ) : null}
 
         <div className="mt-10 border-t border-hairline pt-6">
           <h2 className="font-mono text-[11px] uppercase tracking-[0.14em] text-ink-secondary">

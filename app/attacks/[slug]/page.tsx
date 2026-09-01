@@ -58,7 +58,6 @@ export default async function GuidePage({
   if (!g) notFound();
   const en = (await getLocale()) === "en";
   const c = en ? g.en : g.az;
-  const other = en ? g.az : g.en; // the other language, for the bilingual aside
   const evidence = await getGuideEvidence(slug);
   const siblings = await siblingGuides(slug);
   const evidenceProse = stripCitations(c.evidence);
@@ -113,16 +112,8 @@ export default async function GuidePage({
           {en ? `What is ${g.attackType}?` : `${g.attackType} nədir?`}
         </h1>
 
-        {/* WHAT — lead answer, plus the other language for bilingual reference value */}
+        {/* WHAT — lead answer */}
         <p className="mt-6 text-lg leading-relaxed text-ink-primary">{c.what}</p>
-        {other.what ? (
-          <p className="mt-4 border-l-2 border-hairline pl-4 text-[15px] leading-relaxed text-ink-secondary">
-            <span className="font-mono text-[10px] uppercase tracking-wider text-ink-muted">
-              {en ? "Azərbaycanca" : "English"}:{" "}
-            </span>
-            {other.what}
-          </p>
-        ) : null}
 
         {/* HOW IT WORKS */}
         {c.how ? (
