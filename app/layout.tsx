@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Chakra_Petch, Exo_2, JetBrains_Mono, Schibsted_Grotesk } from "next/font/google";
+import { Bricolage_Grotesque, Hanken_Grotesk, JetBrains_Mono } from "next/font/google";
 import { Analytics } from "@vercel/analytics/next";
 import { CommandPalette } from "@/components/CommandPalette";
 import { MotionRoot } from "@/components/MotionRoot";
@@ -8,22 +8,23 @@ import { getLocale } from "@/lib/i18n-server";
 import "./globals.css";
 
 // "Ink & signal" type system (2026-08 redesign, matched to /radar.html):
-// Chakra Petch — squared display voice for headlines/HUD labels; Exo 2 — techy
-// humanist for long-form prose; JetBrains Mono — ALL telemetry (timestamps,
+// Bricolage Grotesque — characterful editorial grotesque for headlines + the
+// wordmark (deliberately not a default sans); Hanken Grotesk — clean, warm body
+// workhorse; JetBrains Mono — ALL telemetry (timestamps,
 // glyph codes, tickers, CVE/IOC values). latin-ext kept so actor names and
 // place names with diacritics render cleanly. next/font self-hosts woff2 from
 // our origin: no runtime CDN, no per-OS fallback drift.
-const headline = Chakra_Petch({
+const headline = Bricolage_Grotesque({
   variable: "--font-headline",
   subsets: ["latin", "latin-ext"],
   weight: ["600", "700"],
   display: "swap",
 });
 
-const body = Exo_2({
+const body = Hanken_Grotesk({
   variable: "--font-body",
   subsets: ["latin", "latin-ext"],
-  weight: ["400", "600"],
+  weight: ["400", "500", "600"],
   display: "swap",
 });
 
@@ -34,9 +35,9 @@ const mono = JetBrains_Mono({
   display: "swap",
 });
 
-// Schibsted Grotesk — the skopnix brand voice (hero + wordmark), applied via
-// font-display; the mono/body stack carries everything else.
-const display = Schibsted_Grotesk({
+// Bricolage Grotesque again as the skopnix brand voice (hero + wordmark), applied
+// via font-display; one characterful display family unifies every headline.
+const display = Bricolage_Grotesque({
   variable: "--font-display",
   subsets: ["latin"],
   weight: ["500", "600", "700"],
