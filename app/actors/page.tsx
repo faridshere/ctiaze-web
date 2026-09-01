@@ -146,7 +146,7 @@ export default async function ActorsPage() {
           {stats.total.toLocaleString("en-US")} dossiers · {stats.active} active. Search covers the whole roster; nothing is invented.
         </p>
         <div className="mt-16 border-t border-hairline pt-12">
-          <Waitlist source="actors" />
+          <Waitlist source="actors:inline" />
         </div>
       </main>
       <Footer />

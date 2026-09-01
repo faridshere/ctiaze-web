@@ -6,7 +6,10 @@ import { useEffect } from "react";
  * One site-wide motion controller (mounted once in the root layout).
  * Progressive enhancement: content is visible by default; we stamp
  * `motion-ok` on <html>, and only then [data-sc] elements arm (CSS) and
- * reveal when they enter the viewport. Honors prefers-reduced-motion by
+ * reveal when they enter the viewport. The reveal is marked with a data-in
+ * ATTRIBUTE, never a class: React owns className on these nodes, so adding a
+ * class here produced a hydration mismatch and could strip the reveal (leaving
+ * content stuck at opacity 0) on the next re-render. Honors prefers-reduced-motion by
  * simply never arming. No per-element JS, one IntersectionObserver.
  */
 export function MotionRoot() {
@@ -21,7 +24,7 @@ export function MotionRoot() {
       (entries) => {
         for (const e of entries) {
           if (e.isIntersecting) {
-            e.target.classList.add("in");
+            (e.target as HTMLElement).dataset.in = "";
             io.unobserve(e.target);
           }
         }
@@ -31,7 +34,7 @@ export function MotionRoot() {
 
     const arm = () => {
       document
-        .querySelectorAll("[data-sc]:not(.in)")
+        .querySelectorAll("[data-sc]:not([data-in])")
         .forEach((el) => io.observe(el));
     };
     arm();

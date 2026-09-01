@@ -30,7 +30,12 @@ export function Waitlist({ source = "site", compact = false }: { source?: string
       const j = await r.json().catch(() => ({}));
       if (r.ok) {
         setState("done");
-        try { localStorage.setItem("skopnix.waitlist.seen", "1"); } catch { /* private mode */ }
+        // "done" is distinct from "seen": one means converted, the other means
+        // shown. Both suppress the modal; only this one means we have them.
+        try {
+          localStorage.setItem("skopnix.waitlist.done", "1");
+          localStorage.setItem("skopnix.waitlist.seen", "1");
+        } catch { /* private mode */ }
       }
       else { setState("error"); setMsg(j.error || "Something went wrong — try again."); }
     } catch {
@@ -44,7 +49,7 @@ export function Waitlist({ source = "site", compact = false }: { source?: string
       <div className={`mx-auto ${compact ? "max-w-xl" : "max-w-2xl"} rounded-md border border-accent-good/30 bg-accent-good/[0.06] px-5 py-4 text-center`}>
         <p className="font-display text-lg font-semibold text-ink-primary">You&apos;re on the list.</p>
         <p className="mt-1 text-[14px] leading-relaxed text-ink-secondary">
-          We&apos;ll email you when your free access is ready. No spam — just the invite.
+          One email when your free access is ready. Nothing else, ever — no tracking pixels, no reselling.
         </p>
       </div>
     );
@@ -60,7 +65,7 @@ export function Waitlist({ source = "site", compact = false }: { source?: string
           </h2>
           <p className="mx-auto mt-3 max-w-lg text-[15px] leading-relaxed text-ink-secondary">
             Drop your email for <b className="font-medium text-ink-primary">free early access</b> — more tools,
-            deeper data, and your own login when it opens. No spam, just the invite.
+            deeper data, and your own login when it opens. One email when it&apos;s ready. Nothing else, ever.
           </p>
         </>
       )}

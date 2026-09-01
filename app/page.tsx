@@ -78,7 +78,7 @@ export default async function HomePage() {
       <main id="main" className="flex-1">
         <TheWire stories={wire} en={en} />
         <section className="border-t border-hairline bg-[#070809] px-[var(--sp-gutter)] py-[clamp(48px,7vw,88px)]">
-          <Waitlist source="home" />
+          <Waitlist source="home:inline" />
         </section>
       </main>
       <Footer />

@@ -59,7 +59,7 @@ export default async function ScanMePage() {
         </div>
 
         <div className="mt-16 border-t border-hairline pt-12">
-          <Waitlist source="scan-me" />
+          <Waitlist source="scan-me:inline" />
         </div>
       </main>
       <Footer />

@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { rateLimit, clientIp, withinSharedDailyBudget } from "@/lib/ratelimit";
 import { verifyPow } from "@/lib/pow";
-import { generateLookalikes, brandMatch } from "@/lib/lookalikes";
+import { generateLookalikes, brandMatch, splitDomain } from "@/lib/lookalikes";
+import { RDAP_TLDS } from "@/lib/domain-data";
 import { getDb } from "@/lib/db";
 import { getLatestSnapshot } from "@/lib/exposure";
 import { toStory, type StoryDoc } from "@/lib/types";
@@ -71,7 +72,14 @@ type Breach = {
   verified: boolean; passwordRisk?: string; exposed: string[]; hasPassword: boolean;
 };
 type XonAnalytics = {
-  BreachMetrics?: { risk?: { risk_label?: string; risk_score?: number }[] } | null;
+  BreachMetrics?: {
+    risk?: { risk_label?: string; risk_score?: number }[];
+    // Same response, previously discarded. How the stolen passwords were STORED
+    // is the sharpest number on the page: "PlainText" means a breached site kept
+    // them readable, so that password is burned outright.
+    passwords_strength?: Record<string, number>[];
+    yearwise_details?: Record<string, number>[];
+  } | null;
   ExposedBreaches?: { breaches_details?: XonBreach[] } | null;
   ExposedPastes?: { pastes_details?: unknown[] } | null;
   PastesSummary?: { cnt?: number } | null;
@@ -104,11 +112,28 @@ function emailResult(status: string, extra: Record<string, unknown> = {}) {
 // never the leaked passwords/logins Hudson Rock returns.
 type HrEmailStealer = { date_compromised?: string; total_corporate_services?: number; total_user_services?: number };
 type HrEmail = { stealers?: HrEmailStealer[]; total_corporate_services?: number; total_user_services?: number };
+type HrPwStats = { totalPass?: number; too_weak?: { perc?: number }; weak?: { perc?: number } };
+type HrUrl = { url?: string; type?: string; occurrence?: number };
 type HrDomain = {
   total?: number; employees?: number; users?: number; third_parties?: number;
   last_employee_compromised?: string; last_user_compromised?: string;
   stealerFamilies?: Record<string, number>;
+  // Already present in the same (free) response — previously discarded. These are
+  // the most concrete findings the scan can show a domain owner: the exact login
+  // portals whose credentials were stolen, and how weak the stolen passwords were.
+  data?: { employees_urls?: HrUrl[]; clients_urls?: HrUrl[] };
+  employeePasswords?: HrPwStats;
+  thirdPartyDomains?: { domain?: string; occurrence?: number }[];
+  antiviruses?: { found?: number; not_found?: number };
 };
+
+function hrUrls(rows: HrUrl[] | undefined, limit: number) {
+  return (rows ?? [])
+    .filter((u) => typeof u.url === "string" && u.url)
+    .sort((a, b) => (b.occurrence ?? 0) - (a.occurrence ?? 0))
+    .slice(0, limit)
+    .map((u) => ({ url: (u.url as string).slice(0, 160), hits: u.occurrence ?? 0 }));
+}
 
 // Hudson Rock returns the Unix epoch (1970-01-01) as its "no data" date sentinel.
 function realDate(iso: string | undefined | null): string | null {
@@ -159,6 +184,11 @@ async function hudsonRockDomain(domain: string) {
           .slice(0, 4)
       : [];
   const total = d.total;
+  const pw = d.employeePasswords;
+  const weakPct =
+    pw && typeof pw.totalPass === "number" && pw.totalPass > 0
+      ? Math.round((pw.too_weak?.perc ?? 0) + (pw.weak?.perc ?? 0))
+      : null;
   return {
     status: "ok",
     found: total > 0,
@@ -169,6 +199,17 @@ async function hudsonRockDomain(domain: string) {
     lastEmployee: realDate(d.last_employee_compromised),
     lastUser: realDate(d.last_user_compromised),
     families,
+    // the concrete stuff (same response, no extra request)
+    employeeUrls: hrUrls(d.data?.employees_urls, 6),
+    userUrls: hrUrls(d.data?.clients_urls, 4),
+    passwordCount: pw?.totalPass ?? 0,
+    weakPasswordPct: weakPct,
+    thirdPartyDomains: (d.thirdPartyDomains ?? [])
+      .filter((t) => t.domain)
+      .sort((a, b) => (b.occurrence ?? 0) - (a.occurrence ?? 0))
+      .slice(0, 6)
+      .map((t) => (t.domain as string).slice(0, 60)),
+    noAvPct: d.antiviruses && typeof d.antiviruses.not_found === "number" ? d.antiviruses.not_found : null,
     source: HR_SOURCE,
   };
 }
@@ -316,8 +357,34 @@ async function scanEmail(email: string) {
   const exposedData = [...new Set([...merged.flatMap((r) => r.exposed), ...lc.fields])].sort();
   const risk = data?.BreachMetrics?.risk?.[0];
   const pastesCount = data?.PastesSummary?.cnt ?? data?.ExposedPastes?.pastes_details?.length ?? 0;
+  const pws = data?.BreachMetrics?.passwords_strength?.[0];
+  const passwordStorage = pws
+    ? {
+        plaintext: pws.PlainText ?? 0,
+        easyToCrack: pws.EasyToCrack ?? 0,
+        strongHash: pws.StrongHash ?? 0,
+        unknown: pws.Unknown ?? 0,
+      }
+    : null;
+  // Year -> count, oldest first, trimmed to years that actually had a breach.
+  const yw = data?.BreachMetrics?.yearwise_details?.[0];
+  const timeline = yw
+    ? Object.entries(yw)
+        .map(([k, v]) => ({ year: Number(String(k).replace(/^y/, "")), count: Number(v) || 0 }))
+        .filter((r) => Number.isFinite(r.year) && r.year > 1990)
+        .sort((a, b) => a.year - b.year)
+    : [];
+  const firstSeen = timeline.find((r) => r.count > 0)?.year ?? null;
+  const worstYear = timeline.reduce<{ year: number; count: number } | null>(
+    (best, r) => (r.count > 0 && (!best || r.count > best.count) ? r : best),
+    null
+  );
   return emailResult("ok", {
     count: merged.length,
+    passwordStorage,
+    timeline,
+    firstSeen,
+    worstYear,
     riskLabel: risk?.risk_label ?? null,
     riskScore: typeof risk?.risk_score === "number" ? risk.risk_score : null,
     // Aggregate signal: any row that individually leaked a password OR LeakCheck's
@@ -410,12 +477,13 @@ async function certspotterNames(domain: string): Promise<Set<string> | "not_supp
 type CrtRow = { name_value?: string; common_name?: string };
 async function crtshNames(domain: string): Promise<Set<string> | null> {
   // crt.sh is comprehensive but flaky — frequent 502s/timeouts on larger zones. One
-  // retry rescues the momentary 502s (they return fast); it runs inside a Promise.all
-  // alongside the ~15s exposure branch, so two bounded attempts stay within budget.
+  // retry rescues the momentary 502s (they return fast). Budgets are deliberately
+  // tight: when BOTH CT sources fail we now fall through to passive DNS, so a long
+  // retry here just eats the function budget before that fallback gets its turn.
   for (let attempt = 0; attempt < 2; attempt++) {
     const data = await fetchJson<CrtRow[]>(
       `${CRTSH_URL}?q=${encodeURIComponent("%." + domain)}&output=json`,
-      attempt === 0 ? 10000 : 6000
+      attempt === 0 ? 8000 : 3000
     );
     if (!Array.isArray(data)) continue;
     const names = new Set<string>();
@@ -431,17 +499,124 @@ async function crtshNames(domain: string): Promise<Set<string> | null> {
 
 // "ok" (real data), "not_supported" (public-registry domain that can't be enumerated),
 // or "unavailable" (both sources transiently failed) — never a false "0".
+// Fallback subdomain source, used ONLY when both CT sources fail. certspotter
+// rate-limits (HTTP 429) and crt.sh has long 502 outages — when they go down
+// together the flagship card goes blank, so this passive-DNS source (keyless,
+// anonymous tier) rescues it. Not used on the happy path: CT is more complete.
+const PDNS_URL = "https://api.mnemonic.no/pdns/v3/";
+
+type PdnsRow = { query?: string; rrtype?: string };
+
+async function passiveDnsNames(domain: string): Promise<Set<string> | null> {
+  const j = await fetchJson<{ responseCode?: number; data?: PdnsRow[] }>(
+    `${PDNS_URL}${encodeURIComponent(domain)}?limit=200`,
+    5000
+  );
+  if (!j || !Array.isArray(j.data)) return null;
+  const suffix = `.${domain.toLowerCase()}`;
+  const names = new Set<string>();
+  for (const row of j.data) {
+    const q = (row.query || "").toLowerCase().replace(/\.$/, "");
+    if (q && q.endsWith(suffix) && !q.includes("*")) names.add(q);
+  }
+  return names;
+}
+
 async function scanSubdomains(domain: string) {
   const [cs, crt] = await Promise.all([certspotterNames(domain), crtshNames(domain)]);
   const csNames = cs instanceof Set ? cs : null;
-  if (csNames === null && crt === null) {
+  let fallback: Set<string> | null = null;
+  if (csNames === null && crt === null && cs !== "not_supported") {
+    // Both CT sources are down (429 / 502). Try passive DNS before giving up.
+    fallback = await passiveDnsNames(domain);
+  }
+  if (csNames === null && crt === null && (fallback === null || fallback.size === 0)) {
     // Distinguish "can't enumerate this kind of domain" from "sources are down" so
     // the UI doesn't imply a retry would help a gov.az-class public-suffix domain.
     const status = cs === "not_supported" ? "not_supported" : "unavailable";
     return { status, count: 0, sample: [], source: CT_SOURCE, fetched_at: nowIso() };
   }
-  const names = [...new Set<string>([...(csNames ?? []), ...(crt ?? [])])].sort();
-  return { status: "ok", count: names.length, sample: names.slice(0, SUBDOMAIN_SAMPLE), source: CT_SOURCE, fetched_at: nowIso() };
+  const names = [...new Set<string>([...(csNames ?? []), ...(crt ?? []), ...(fallback ?? [])])].sort();
+  const hygiene = await subdomainHygiene(names);
+  return { status: "ok", count: names.length, sample: names.slice(0, SUBDOMAIN_SAMPLE), hygiene, source: CT_SOURCE, fetched_at: nowIso() };
+}
+
+// ---- Subdomain hygiene: dangling takeovers + leaked internal hosts ---------
+// Built on the CT names we already fetched — no new third-party call. Two of the
+// sharpest findings a domain owner can get:
+//   * a subdomain whose CNAME still points at a de-provisioned SaaS bucket, which
+//     anyone can re-register and then serve content from YOUR hostname;
+//   * an internal hostname published to the world in a certificate, resolving to
+//     a private RFC1918 address — free recon for an attacker.
+// Honesty rule: a takeover is only reported when the A lookup is AUTHORITATIVELY
+// absent (ENOTFOUND/ENODATA). A timeout or SERVFAIL is "unknown" and is never
+// reported as a finding.
+const TAKEOVER_TARGETS: { re: RegExp; service: string }[] = [
+  { re: /\.s3[.-][\w-]*amazonaws\.com$/i, service: "Amazon S3" },
+  { re: /\.cloudfront\.net$/i, service: "CloudFront" },
+  { re: /\.elasticbeanstalk\.com$/i, service: "Elastic Beanstalk" },
+  { re: /\.github\.io$/i, service: "GitHub Pages" },
+  { re: /\.herokuapp\.com$|\.herokudns\.com$/i, service: "Heroku" },
+  { re: /\.azurewebsites\.net$|\.cloudapp\.(net|azure\.com)$|\.trafficmanager\.net$|\.blob\.core\.windows\.net$/i, service: "Microsoft Azure" },
+  { re: /\.pages\.dev$/i, service: "Cloudflare Pages" },
+  { re: /\.netlify\.(app|com)$/i, service: "Netlify" },
+  { re: /\.vercel\.app$|\.vercel-dns\.com$/i, service: "Vercel" },
+  { re: /\.surge\.sh$/i, service: "Surge" },
+  { re: /\.wpengine\.com$/i, service: "WP Engine" },
+  { re: /\.zendesk\.com$/i, service: "Zendesk" },
+  { re: /\.readthedocs\.io$/i, service: "Read the Docs" },
+  { re: /\.ghost\.io$/i, service: "Ghost" },
+  { re: /\.myshopify\.com$/i, service: "Shopify" },
+  { re: /\.statuspage\.io$/i, service: "Statuspage" },
+  { re: /\.pantheonsite\.io$/i, service: "Pantheon" },
+  { re: /\.bitbucket\.io$/i, service: "Bitbucket" },
+  { re: /\.fastly\.net$/i, service: "Fastly" },
+  { re: /\.unbouncepages\.com$/i, service: "Unbounce" },
+];
+
+function privateIpClass(ip: string): string | null {
+  const m = ip.match(/^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/);
+  if (!m) return null;
+  const a = Number(m[1]), b = Number(m[2]);
+  if (a === 10) return "10.0.0.0/8";
+  if (a === 192 && b === 168) return "192.168.0.0/16";
+  if (a === 172 && b >= 16 && b <= 31) return "172.16.0.0/12";
+  if (a === 127) return "loopback";
+  if (a === 169 && b === 254) return "link-local";
+  if (a === 100 && b >= 64 && b <= 127) return "carrier-grade NAT";
+  return null;
+}
+
+async function subdomainHygiene(names: string[]) {
+  const targets = names.filter((n) => !n.includes("*")).slice(0, 24);
+  const dangling: { name: string; service: string; cname: string }[] = [];
+  const internal: { name: string; ip: string; range: string }[] = [];
+  if (targets.length === 0) return { checked: 0, dangling, internal };
+  const dns = await import("node:dns");
+  const CONC = 24; // one wave: keeps this bounded at ~2s no matter how many names
+  for (let i = 0; i < targets.length; i += CONC) {
+    await Promise.all(
+      targets.slice(i, i + CONC).map(async (name) => {
+        const [cn, a] = await Promise.all([
+          dnsResolve(dns.promises.resolveCname(name), 2000),
+          dnsResolve(dns.promises.resolve4(name), 2000),
+        ]);
+        if (a.status === "ok") {
+          for (const ip of a.value) {
+            const range = privateIpClass(ip);
+            if (range) { internal.push({ name, ip, range }); break; }
+          }
+          return;
+        }
+        if (a.status === "absent" && cn.status === "ok") {
+          const target = cn.value[0] ?? "";
+          const hit = TAKEOVER_TARGETS.find((t) => t.re.test(target));
+          if (hit) dangling.push({ name, service: hit.service, cname: target });
+        }
+      })
+    );
+  }
+  return { checked: targets.length, dangling: dangling.slice(0, 6), internal: internal.slice(0, 6) };
 }
 
 type IdbRow = { ports?: number[]; vulns?: string[]; hostnames?: string[]; tags?: string[] };
@@ -704,10 +879,15 @@ const RDAP_DOMAIN = "https://rdap.org/domain/";
 
 async function scanRegistration(domain: string) {
   const base = {
-    status: "unavailable" as "ok" | "unavailable",
+    status: "unavailable" as "ok" | "unavailable" | "no_rdap",
     created: null as string | null, ageDays: null as number | null,
     nrd: false, dnssec: null as boolean | null, registrar: null as string | null,
   };
+  // Be honest instead of shrugging: ~half the world's ccTLDs (.az .tr .ge .ru
+  // .kz .io …) publish no RDAP at all, so "unavailable" would read as a failure
+  // on our side rather than a fact about the registry.
+  const tld = (splitDomain(domain)?.tld ?? "").split(".").pop() ?? "";
+  if (tld && !RDAP_TLDS.has(tld)) return { ...base, status: "no_rdap" as const };
   const j = await fetchJson<Record<string, unknown>>(`${RDAP_DOMAIN}${encodeURIComponent(domain)}`, 9000).catch(() => null);
   if (!j) return base;
   const events = (j.events as { eventAction?: string; eventDate?: string }[]) || [];

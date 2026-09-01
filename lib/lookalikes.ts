@@ -1,3 +1,5 @@
+import { TWO_LABEL_SUFFIXES } from "./domain-data";
+
 // Typosquat / lookalike engine — a focused TypeScript port of the elceef/dnstwist
 // fuzzer (Apache-2.0, https://github.com/elceef/dnstwist). Keyless, zero external
 // data: the keyboard-adjacency and homoglyph tables are inline. Two uses:
@@ -57,7 +59,7 @@ const TLD_SWAP = [
   "xyz", "top", "live", "vip", "cc", "me", "cn", "ru", "org.uk", "co.uk",
   "de", "fr", "eu", "us", "shop", "store", "pro", "tech", "email", "click",
 ];
-const KNOWN_2LEVEL = new Set(["co.uk", "org.uk", "gov.uk", "ac.uk", "com.au", "co.nz", "com.br", "co.jp", "com.tr"]);
+
 
 export type DomainParts = { sld: string; tld: string };
 
@@ -66,7 +68,7 @@ export function splitDomain(domain: string): DomainParts | null {
   const labels = d.split(".");
   if (labels.length < 2) return null;
   const last2 = labels.slice(-2).join(".");
-  if (KNOWN_2LEVEL.has(last2) && labels.length >= 3) {
+  if (TWO_LABEL_SUFFIXES.has(last2) && labels.length >= 3) {
     return { sld: labels[labels.length - 3], tld: last2 };
   }
   return { sld: labels[labels.length - 2], tld: labels[labels.length - 1] };

@@ -265,11 +265,11 @@ select,
 /* ---------------------------------------------------------------------------
    Motion layer — "ink & signal" signature moves. All scroll-purposeful, all
    killed by prefers-reduced-motion. Elements opt in with data-sc (revealed by
-   the MotionRoot observer adding .in) — no per-element JS.
+   the MotionRoot observer setting data-in) — no per-element JS.
    ------------------------------------------------------------------------- */
 /* Progressive enhancement: content is VISIBLE by default (no-JS, crawlers,
    reader modes). MotionRoot stamps html.motion-ok on mount; only then do
-   [data-sc] elements arm and reveal via .in. */
+   [data-sc] elements arm and reveal via data-in. */
 html.motion-ok [data-sc] {
   opacity: 0;
   transform: translateY(22px);
@@ -277,7 +277,7 @@ html.motion-ok [data-sc] {
     opacity 0.65s cubic-bezier(0.22, 0.61, 0.36, 1),
     transform 0.65s cubic-bezier(0.22, 0.61, 0.36, 1);
 }
-html.motion-ok [data-sc].in {
+html.motion-ok [data-sc][data-in] {
   opacity: 1;
   transform: none;
 }

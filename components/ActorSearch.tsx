@@ -5,6 +5,7 @@ import { useState, useEffect } from "react";
 import { getDict, type Locale } from "@/lib/i18n";
 import { getPowToken, primePowToken } from "@/lib/pow-client";
 import { PowBadge } from "@/components/PowBadge";
+import { announceValueMoment } from "@/components/WaitlistModal";
 
 type Hit = {
   id: string; name: string; aliases: string[]; type: string;
@@ -43,7 +44,13 @@ export function ActorSearch({ locale }: { locale: Locale }) {
       const r = await fetch(`/api/actors?q=${encodeURIComponent(term)}`, { headers: { "x-pow": pow } });
       const j = await r.json();
       if (!r.ok) setError(j.error || c.genericError);
-      else setData(j as SearchResponse);
+      else {
+        const res = j as SearchResponse;
+        setData(res);
+        if (res.count > 0) {
+          announceValueMoment({ kind: "actor", subject: res.results[0]?.name });
+        }
+      }
     } catch {
       setError(c.networkError);
     } finally {

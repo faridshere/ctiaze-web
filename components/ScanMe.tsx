@@ -5,6 +5,7 @@ import { getDict, type Locale } from "@/lib/i18n";
 import { breachActions, riskLabel, type Risk } from "@/lib/breachactions";
 import { getPowToken, primePowToken } from "@/lib/pow-client";
 import { PowBadge } from "@/components/PowBadge";
+import { announceValueMoment } from "@/components/WaitlistModal";
 
 const RISK_CHIP: Record<Risk, string> = {
   critical: "border-accent-critical/40 bg-accent-critical/10 text-accent-critical",
@@ -27,6 +28,10 @@ type EmailResult = {
   riskLabel: string | null; riskScore: number | null; passwordsExposed: boolean;
   breaches: Breach[]; exposedData: string[]; pastesCount: number; hibp: boolean;
   infostealer: Infostealer; addressClass: AddressClass; source: string; fetched_at: string | null;
+  passwordStorage?: { plaintext: number; easyToCrack: number; strongHash: number; unknown: number } | null;
+  timeline?: { year: number; count: number }[];
+  firstSeen?: number | null;
+  worstYear?: { year: number; count: number } | null;
 };
 type RecStatus = "ok" | "absent" | "unknown";
 type SpoofGrade = { grade: "A" | "B" | "C" | "D" | "F"; spoofable: boolean } | null;
@@ -39,8 +44,19 @@ type EmailSecurity = {
 type DomainInfostealer = {
   status: "ok" | "unavailable"; found: boolean; employees: number; users: number; thirdParties: number;
   total: number; lastEmployee: string | null; lastUser: string | null; families: string[]; source: string;
+  employeeUrls?: { url: string; hits: number }[];
+  userUrls?: { url: string; hits: number }[];
+  passwordCount?: number;
+  weakPasswordPct?: number | null;
+  thirdPartyDomains?: string[];
+  noAvPct?: number | null;
 } | null;
-type SubBlock = { status: "ok" | "unavailable" | "not_supported"; count: number; sample: string[]; source: string; fetched_at: string };
+type SubHygiene = {
+  checked: number;
+  dangling: { name: string; service: string; cname: string }[];
+  internal: { name: string; ip: string; range: string }[];
+};
+type SubBlock = { status: "ok" | "unavailable" | "not_supported"; count: number; sample: string[]; hygiene?: SubHygiene; source: string; fetched_at: string };
 type ExposureBlock = {
   status: "ok" | "unavailable"; ip: string | null; found: boolean;
   ports: number[]; vulns: string[]; tags: string[]; source: string; fetched_at: string;
@@ -48,7 +64,7 @@ type ExposureBlock = {
 type MentionStory = { title: string; url: string; source: string; published: string | null };
 type MentionBlock = { status: "ok" | "unavailable"; count: number; stories: MentionStory[]; source: string; fetched_at: string };
 type WatchBlock = { product: string; az_exposed: number; as_of: string; source: string; fetched_at: string } | null;
-type RegistrationBlock = { status: "ok" | "unavailable"; created: string | null; ageDays: number | null; nrd: boolean; dnssec: boolean | null; registrar: string | null } | null;
+type RegistrationBlock = { status: "ok" | "unavailable" | "no_rdap"; created: string | null; ageDays: number | null; nrd: boolean; dnssec: boolean | null; registrar: string | null } | null;
 type IpIntelBlock = { status: "ok" | "unavailable"; ip: string | null; asn: string | null; org: string | null; country: string | null; hosting: boolean; proxy: boolean; greynoise: { noise: boolean; riot: boolean; classification: string | null; name: string | null; message: string | null } | null } | null;
 type LookalikesBlock = { status: "ok" | "unavailable"; checked: number; registered: { domain: string; ip: string; hasMx: boolean }[] } | null;
 type BrandImpersonation = { brand: string; type: "homoglyph" | "typo"; realDomain: string } | null;
@@ -144,6 +160,14 @@ export function ScanMe({ locale }: { locale: Locale }) {
       if (!r.ok) setError(data.error || c.genericError);
       else {
         setResult(data as ScanResult);
+        // The visitor now has the answer they came for — the one moment an
+        // early-access offer is useful rather than an interruption.
+        const res = data as ScanResult;
+        announceValueMoment(
+          res.kind === "domain"
+            ? { kind: "domain", subject: res.domain ?? undefined }
+            : { kind: "email" }
+        );
         // Keep the URL in sync so the result can be shared — DOMAIN scans only.
         // An email in a URL leaks into history/server logs when shared, so email
         // scans always strip ?q= (matches the route's never-stored privacy rule).
@@ -450,6 +474,66 @@ function EmailView({ r, t, locale }: { r: EmailResult; t: ScanDict; locale: Loca
           <p className="mt-3 font-mono text-[12px] text-ink-secondary">{t.pastesLine(r.pastesCount)}</p>
         )}
 
+        {r.passwordStorage && (r.passwordStorage.plaintext > 0 || r.passwordStorage.easyToCrack > 0) && (
+          <div className="mt-4 border-t border-hairline pt-3">
+            <div className="font-mono text-[10px] uppercase tracking-wider text-ink-muted">How those passwords were stored</div>
+            <div className="mt-1.5 flex flex-wrap gap-1.5 font-mono text-[11px]">
+              {r.passwordStorage.plaintext > 0 && (
+                <span className="rounded-sm border border-accent-critical/50 bg-accent-critical/10 px-1.5 py-0.5 text-accent-critical">
+                  {r.passwordStorage.plaintext} in plaintext
+                </span>
+              )}
+              {r.passwordStorage.easyToCrack > 0 && (
+                <span className="rounded-sm border border-accent-warning/40 px-1.5 py-0.5 text-accent-warning">
+                  {r.passwordStorage.easyToCrack} easy to crack
+                </span>
+              )}
+              {r.passwordStorage.strongHash > 0 && (
+                <span className="rounded-sm border border-hairline px-1.5 py-0.5 text-ink-muted">
+                  {r.passwordStorage.strongHash} strongly hashed
+                </span>
+              )}
+            </div>
+            {r.passwordStorage.plaintext > 0 && (
+              <p className="mt-2 text-[13px] leading-relaxed text-ink-secondary">
+                Plaintext means the site stored the password readable — anyone with the dump has it. If you reused it anywhere, change it there first.
+              </p>
+            )}
+          </div>
+        )}
+
+        {r.timeline && r.timeline.some((y) => y.count > 0) && (
+          <div className="mt-4 border-t border-hairline pt-3">
+            <div className="flex items-baseline justify-between gap-3">
+              <span className="font-mono text-[10px] uppercase tracking-wider text-ink-muted">Exposure over time</span>
+              {r.firstSeen && (
+                <span className="font-mono text-[10.5px] text-ink-muted">
+                  first seen {r.firstSeen}
+                  {r.worstYear ? ` · worst ${r.worstYear.year} (${r.worstYear.count})` : ""}
+                </span>
+              )}
+            </div>
+            <div className="mt-2 flex items-end gap-[3px]" aria-hidden>
+              {(() => {
+                const rows = r.timeline!.filter((y) => y.year >= 2007);
+                const max = Math.max(1, ...rows.map((y) => y.count));
+                return rows.map((y) => (
+                  <span
+                    key={y.year}
+                    title={`${y.year}: ${y.count}`}
+                    className={`w-full rounded-t-[1px] ${y.count > 0 ? "bg-accent-warning/70" : "bg-hairline"}`}
+                    style={{ height: `${y.count > 0 ? Math.max(4, (y.count / max) * 34) : 2}px` }}
+                  />
+                ));
+              })()}
+            </div>
+            <div className="mt-1 flex justify-between font-mono text-[9.5px] text-ink-muted">
+              <span>{r.timeline!.filter((y) => y.year >= 2007)[0]?.year}</span>
+              <span>{r.timeline![r.timeline!.length - 1]?.year}</span>
+            </div>
+          </div>
+        )}
+
         <Source>{r.hibp ? "HIBP + XposedOrNot + LeakCheck" : "XposedOrNot + LeakCheck"} · {fmtDate(r.fetched_at)}</Source>
       </StateCard>
     );
@@ -500,9 +584,11 @@ function DomainView({ r, t }: { r: DomainResult; t: ScanDict }) {
     <ResultCard label={<>{t.attackSurface} · <span className="font-mono text-ink-secondary">{r.domain}</span></>}>
       {r.brandImpersonation && <BrandBanner b={r.brandImpersonation} />}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <SubCard icon="◎" tone="brand" title={t.subTitle}
-          badge={r.subdomains?.status === "ok" ? "ok" : r.subdomains?.status === "not_supported" ? "n/a" : "unavailable"}
-          badgeTone={r.subdomains?.status === "ok" ? "brand" : "muted"}
+        <SubCard icon="◎"
+          tone={r.subdomains?.hygiene?.dangling?.length ? "critical" : "brand"}
+          title={t.subTitle}
+          badge={r.subdomains?.status === "ok" ? (r.subdomains.hygiene?.dangling?.length ? "takeover risk" : "ok") : r.subdomains?.status === "not_supported" ? "n/a" : "unavailable"}
+          badgeTone={r.subdomains?.status !== "ok" ? "muted" : r.subdomains.hygiene?.dangling?.length ? "critical" : "brand"}
           unavailable={r.subdomains?.status !== "ok"}
         >
           {r.subdomains?.status === "ok" ? (
@@ -515,6 +601,43 @@ function DomainView({ r, t }: { r: DomainResult; t: ScanDict }) {
                 ))}
                 {r.subdomains.count > 6 && <li className="font-mono text-[12px] text-ink-muted">{t.moreN(r.subdomains.count - 6)}</li>}
               </ul>
+              {r.subdomains.hygiene && r.subdomains.hygiene.dangling.length > 0 && (
+                <div className="mt-3 border-t border-hairline pt-2.5">
+                  <div className="font-mono text-[10px] uppercase tracking-wider text-accent-critical">
+                    Dangling — someone else could claim these
+                  </div>
+                  <ul className="mt-1.5 space-y-1 font-mono text-[11.5px]">
+                    {r.subdomains.hygiene.dangling.map((d) => (
+                      <li key={d.name} className="[overflow-wrap:anywhere]">
+                        <span className="text-accent-critical">{d.name}</span>
+                        <span className="text-ink-muted"> &rarr; {d.service} (unclaimed)</span>
+                      </li>
+                    ))}
+                  </ul>
+                  <p className="mt-1.5 text-[12.5px] leading-relaxed text-ink-secondary">
+                    The DNS record still points at a service that no longer hosts it. Anyone who registers that
+                    name serves content from your subdomain. Delete the record or reclaim the service.
+                  </p>
+                </div>
+              )}
+              {r.subdomains.hygiene && r.subdomains.hygiene.internal.length > 0 && (
+                <div className="mt-3 border-t border-hairline pt-2.5">
+                  <div className="font-mono text-[10px] uppercase tracking-wider text-accent-warning">
+                    Internal hostnames published publicly
+                  </div>
+                  <ul className="mt-1.5 space-y-1 font-mono text-[11.5px]">
+                    {r.subdomains.hygiene.internal.map((h) => (
+                      <li key={h.name} className="[overflow-wrap:anywhere] text-ink-secondary">
+                        {h.name} <span className="text-ink-muted">&rarr; {h.ip} ({h.range})</span>
+                      </li>
+                    ))}
+                  </ul>
+                  <p className="mt-1.5 text-[12.5px] leading-relaxed text-ink-secondary">
+                    These names are in public certificate logs but resolve to private addresses &mdash; a free map
+                    of your internal estate.
+                  </p>
+                </div>
+              )}
               <Source><b className="text-ink-secondary">certspotter + crt.sh</b></Source>
             </>
           ) : (
@@ -608,7 +731,7 @@ function DomainView({ r, t }: { r: DomainResult; t: ScanDict }) {
             icon="⧗"
             tone={r.registration.status !== "ok" ? "muted" : r.registration.nrd ? "warning" : "brand"}
             title="Domain age"
-            badge={r.registration.status !== "ok" ? "unavailable" : r.registration.nrd ? "new" : r.registration.ageDays != null ? `${Math.max(1, Math.floor(r.registration.ageDays / 365))}y` : "?"}
+            badge={r.registration.status === "no_rdap" ? "n/a" : r.registration.status !== "ok" ? "unavailable" : r.registration.nrd ? "new" : r.registration.ageDays != null ? `${Math.max(1, Math.floor(r.registration.ageDays / 365))}y` : "?"}
             badgeTone={r.registration.status !== "ok" ? "muted" : r.registration.nrd ? "warning" : "brand"}
             unavailable={r.registration.status !== "ok"}
           >
@@ -638,6 +761,11 @@ function DomainView({ r, t }: { r: DomainResult; t: ScanDict }) {
                   </div>
                 )}
               </>
+            ) : r.registration.status === "no_rdap" ? (
+              <p className="text-[13px] leading-relaxed text-ink-secondary">
+                This registry doesn&apos;t publish registration data (no RDAP), so we can&apos;t verify the domain&apos;s age.
+                That&apos;s a fact about the registry, not a finding about this domain.
+              </p>
             ) : (
               <p className="text-[13px] leading-relaxed text-ink-secondary">Registration data unavailable.</p>
             )}
@@ -732,6 +860,38 @@ function DomainView({ r, t }: { r: DomainResult; t: ScanDict }) {
                     {noBreakdown && inf.total > 0 && <li className="text-ink-muted">▸ {t.stealerDomFallback(inf.total)}</li>}
                   </ul>
                   <p className="mt-2 text-[13px] leading-relaxed text-ink-secondary">{t.stealerDomDesc}</p>
+                  {inf.employeeUrls && inf.employeeUrls.length > 0 && (
+                    <div className="mt-3 border-t border-hairline pt-2.5">
+                      <div className="font-mono text-[10px] uppercase tracking-wider text-accent-critical">
+                        Logins stolen from these portals
+                      </div>
+                      <ul className="mt-1.5 space-y-1 font-mono text-[11.5px]">
+                        {inf.employeeUrls.map((u) => (
+                          <li key={u.url} className="flex items-baseline gap-2">
+                            <span className="shrink-0 tabular-nums text-accent-critical">{u.hits}&times;</span>
+                            <span className="break-all text-ink-secondary [overflow-wrap:anywhere]">
+                              {u.url.replace(/^https?:\/\//, "")}
+                            </span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                  {(inf.weakPasswordPct != null || (inf.thirdPartyDomains && inf.thirdPartyDomains.length > 0)) && (
+                    <div className="mt-2.5 flex flex-wrap gap-1.5 font-mono text-[10.5px]">
+                      {inf.weakPasswordPct != null && inf.passwordCount ? (
+                        <span className="rounded-sm border border-accent-warning/40 px-1.5 py-0.5 text-accent-warning">
+                          {inf.weakPasswordPct}% of {inf.passwordCount} stolen passwords were weak
+                        </span>
+                      ) : null}
+                      {inf.noAvPct === 100 && (
+                        <span className="rounded-sm border border-hairline px-1.5 py-0.5 text-ink-muted">no antivirus on the infected machines</span>
+                      )}
+                      {(inf.thirdPartyDomains ?? []).slice(0, 4).map((d) => (
+                        <span key={d} className="rounded-sm border border-hairline px-1.5 py-0.5 text-ink-muted">{d}</span>
+                      ))}
+                    </div>
+                  )}
                   {inf.families.length > 0 && (
                     <div className="mt-2 flex flex-wrap gap-1.5">
                       {inf.families.map((f) => (
