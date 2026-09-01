@@ -29,10 +29,8 @@ export async function generateStaticParams() {
 
 export async function generateMetadata({
   params,
-  searchParams,
 }: {
   params: Promise<{ slug: string }>;
-  searchParams: Promise<{ dil?: string }>;
 }): Promise<Metadata> {
   const { slug } = await params;
   const g = await getGuide(slug);
@@ -40,10 +38,8 @@ export async function generateMetadata({
   // getGuide is cache()-wrapped, so the body's identical call is free.
   if (!g) notFound();
   const en = (await getLocale()) === "en";
-  const dil = (await searchParams)?.dil;
   return localizedMeta({
     path: `/attacks/${g.slug}`,
-    dil,
     en,
     azTitle: `${g.attackType} nədir? — necə işləyir və qorunma`,
     enTitle: `What is ${g.attackType}? — how it works and how to defend`,

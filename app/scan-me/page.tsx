@@ -6,15 +6,12 @@ import { getDict } from "@/lib/i18n";
 import { getLocale } from "@/lib/i18n-server";
 import { localizedMeta } from "@/lib/seo";
 
-export const revalidate = 0;
 
 export async function generateMetadata(
-  { searchParams }: { searchParams: Promise<{ dil?: string }> },
 ): Promise<Metadata> {
   const en = (await getLocale()) === "en";
-  const dil = (await searchParams)?.dil;
   return localizedMeta({
-    path: "/scan-me", dil, en,
+    path: "/scan-me", en,
     azTitle: "Özünü yoxla — breach və domain exposure · Scan me",
     enTitle: "Scan me — breach & domain exposure check",
     azDesc: "E-poçt, parol və iş domeninin ifşasını yoxla. Breach axtarışı (XposedOrNot), pwned-parol yoxlaması (k-anonymity), subdomain-lar (certspotter) və Shodan hücum səthi.",

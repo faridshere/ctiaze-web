@@ -15,12 +15,10 @@ import { localizedMeta } from "@/lib/seo";
 export const revalidate = 21600; // 6h — CVE authority data moves slowly
 
 export async function generateMetadata(
-  { searchParams }: { searchParams: Promise<{ dil?: string }> },
 ): Promise<Metadata> {
   const en = (await getLocale()) === "en";
-  const dil = (await searchParams)?.dil;
   return localizedMeta({
-    path: "/cve", dil, en,
+    path: "/cve", en,
     azTitle: "CVE reyestri — aktiv istismar, EPSS, CVSS",
     enTitle: "CVE registry — active exploitation, EPSS, CVSS",
     azDesc: "skopnix arxivində adı çəkilən bütün CVE-lər — CISA KEV aktiv istismar statusu, FIRST EPSS istismar ehtimalı, NVD CVSS və təsvir, hər biri əlaqəli dispaça bağlı.",

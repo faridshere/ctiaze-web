@@ -9,12 +9,10 @@ import { localizedMeta } from "@/lib/seo";
 export const revalidate = 300;
 
 export async function generateMetadata(
-  { searchParams }: { searchParams: Promise<{ dil?: string }> },
 ): Promise<Metadata> {
   const en = (await getLocale()) === "en";
-  const dil = (await searchParams)?.dil;
   return localizedMeta({
-    path: "/about", dil, en,
+    path: "/about", en,
     azTitle: "Haqqında · About",
     enTitle: "About skopnix",
     azDesc: "skopnix necə işləyir — ~60 qlobal təhlükəsizlik mənbəyi avtomatik toplanır, AI ilə süzülür, mənbəyə qarşı yoxlanılır və Azərbaycan dilinə tərcümə olunur, 24/7, insan müdaxiləsi olmadan.",

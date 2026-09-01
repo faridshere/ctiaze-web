@@ -27,10 +27,8 @@ export async function generateStaticParams() {
 
 export async function generateMetadata({
   params,
-  searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ dil?: string }>;
 }): Promise<Metadata> {
   const { id } = await params;
   const doc = await getCveIntel(id);
@@ -38,9 +36,8 @@ export async function generateMetadata({
   // getCveIntel is cache()-wrapped, so the body's identical call is free.
   if (!doc) notFound();
   const en = (await getLocale()) === "en";
-  const dil = (await searchParams)?.dil;
   return localizedMeta({
-    path: `/cve/${doc.id}`, dil, en,
+    path: `/cve/${doc.id}`, en,
     azTitle: `${doc.id} nədir? — izah və müdafiə`,
     enTitle: `What is ${doc.id}? — explainer & defense`,
     azDesc: (doc.az || doc.en).slice(0, 160),

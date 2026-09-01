@@ -5,15 +5,12 @@ import { StacknixTool } from "@/components/StacknixTool";
 import { getLocale } from "@/lib/i18n-server";
 import { localizedMeta } from "@/lib/seo";
 
-export const revalidate = 0;
 
 export async function generateMetadata(
-  { searchParams }: { searchParams: Promise<{ dil?: string }> },
 ): Promise<Metadata> {
   const en = (await getLocale()) === "en";
-  const dil = (await searchParams)?.dil;
   return localizedMeta({
-    path: "/stacknix", dil, en,
+    path: "/stacknix", en,
     azTitle: "stacknix — steküninin CVE məruzqalması",
     enTitle: "stacknix — your stack's CVE exposure",
     azDesc: "İşlətdiyin məhsul + versiyanı yapışdır, uyğun CVE-ləri al: CISA KEV, FIRST EPSS, CVSS və sənin versiyanın həqiqətən zəif diapazonda olub-olmadığı.",

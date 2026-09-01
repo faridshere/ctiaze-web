@@ -22,12 +22,10 @@ function tfKindOf(t: IocType): TfKind | null {
 export const revalidate = 1800; // the board refreshes ~2×/hour; the lib caches 1h
 
 export async function generateMetadata(
-  { searchParams }: { searchParams: Promise<{ dil?: string }> },
 ): Promise<Metadata> {
   const en = (await getLocale()) === "en";
-  const dil = (await searchParams)?.dil;
   return localizedMeta({
-    path: "/ioc", dil, en,
+    path: "/ioc", en,
     azTitle: "IOC / CVE yoxlama — təhdid reputasiyası",
     enTitle: "IOC / CVE lookup — threat reputation",
     azDesc: "İstənilən IP, domen, URL, hash və ya CVE-ni yoxlayın: abuse.ch ThreatFox reputasiyası, CISA KEV aktiv istismar statusu, FIRST EPSS və NVD triage-i.",

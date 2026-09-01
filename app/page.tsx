@@ -56,12 +56,10 @@ function syncLabel(newestIso: string | undefined, en: boolean): string {
 }
 
 export async function generateMetadata(
-  { searchParams }: { searchParams: Promise<{ dil?: string }> },
 ): Promise<Metadata> {
   const en = (await getLocale()) === "en";
-  const dil = (await searchParams)?.dil;
   return localizedMeta({
-    path: "/", dil, en,
+    path: "/", en,
     azTitle: "skopnix — qlobal kiber-təhlükə kəşfiyyatı API-si",
     enTitle: "skopnix — global cyber-threat intelligence, off the wire",
     azDesc: "Qlobal kibertəhlükə kəşfiyyatı — API və MCP server kimi. Mənbəyə qarşı yoxlanılır, hər 2 saatdan bir yenilənir, regionlarda sensor dərinliyi ilə.",

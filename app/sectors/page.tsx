@@ -10,15 +10,11 @@ import { localizedMeta } from "@/lib/seo";
 export const revalidate = 86400;
 
 export async function generateMetadata({
-  searchParams,
 }: {
-  searchParams: Promise<{ dil?: string }>;
 }): Promise<Metadata> {
   const en = (await getLocale()) === "en";
-  const dil = (await searchParams)?.dil;
   return localizedMeta({
     path: "/sectors",
-    dil,
     en,
     azTitle: "Sənin sektorunu kim hədəf alır? — sektor kəşfiyyatı",
     enTitle: "Who targets your sector? — sector threat intel",

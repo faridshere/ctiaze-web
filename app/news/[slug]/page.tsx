@@ -21,6 +21,13 @@ import { cveBadges } from "@/lib/cveintel";
 import { getLocale } from "@/lib/i18n-server";
 
 export const revalidate = 180;
+export const dynamicParams = true;
+// Render on demand and cache (ISR) rather than as a per-request function — there
+// are too many of these to prerender at build, but caching them keeps crawler
+// traffic off Fluid Active CPU.
+export async function generateStaticParams() {
+  return [];
+}
 
 type Params = { slug: string };
 
@@ -34,10 +41,8 @@ function tfKindOf(t: IocType): TfKind | null {
 
 export async function generateMetadata({
   params,
-  searchParams,
 }: {
   params: Promise<Params>;
-  searchParams: Promise<{ dil?: string }>;
 }): Promise<Metadata> {
   const { slug } = await params;
   const story = await getStoryBySlug(slug);
@@ -55,8 +60,7 @@ export async function generateMetadata({
   // long-tail never gets its own indexable URL. Bare URL keeps the bare canonical +
   // x-default; a forced ?dil=az|en canonicalizes to itself. Junk ?dil values fall
   // back to the bare canonical so they can't mint duplicates.
-  const dil = (await searchParams)?.dil;
-  const canonical = dil === "az" ? `${url}?dil=az` : dil === "en" ? `${url}?dil=en` : url;
+  const canonical = url;
   return {
     title,
     description: desc,

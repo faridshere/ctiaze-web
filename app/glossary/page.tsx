@@ -9,12 +9,10 @@ import { localizedMeta } from "@/lib/seo";
 export const revalidate = 86400; // reference content; full DO catalogue via ISR
 
 export async function generateMetadata(
-  { searchParams }: { searchParams: Promise<{ dil?: string }> },
 ): Promise<Metadata> {
   const en = (await getLocale()) === "en";
-  const dil = (await searchParams)?.dil;
   return localizedMeta({
-    path: "/glossary", dil, en,
+    path: "/glossary", en,
     azTitle: "Kibertəhlükəsizlik lüğəti — sadə izahlar",
     enTitle: "Cybersecurity glossary (Azerbaijani + English)",
     azDesc: "Kibertəhlükəsizlik terminlərinin sadə Azərbaycan dilində izahı: ransomware, phishing, CVE, APT, 2FA və daha çox — hər termin ayrıca səhifədə.",

@@ -1,11 +1,9 @@
-import { cookies } from "next/headers";
 import { type Locale } from "./i18n";
 
-// English-only, globally (skopnix is a global product now). We still touch
-// cookies() so the tool pages keep their dynamic opt-in — their data sits behind
-// unstable_cache, and a static prerender at build would re-run Mongo/NVD and risk
-// the build timeout we hit before. The locale is fixed; there is no toggle.
+// English-only, globally. The locale is fixed, so this needs no cookie read — and
+// crucially, NOT calling cookies() lets every page render statically / ISR instead
+// of as a per-request function. That's the difference between the site costing
+// Fluid Active CPU on every visit vs. being served from the CDN cache for ~free.
 export async function getLocale(): Promise<Locale> {
-  await cookies();
   return "en";
 }

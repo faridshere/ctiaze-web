@@ -9,15 +9,11 @@ import { localizedMeta } from "@/lib/seo";
 export const revalidate = 86400; // reference content — grounded guides change rarely
 
 export async function generateMetadata({
-  searchParams,
 }: {
-  searchParams: Promise<{ dil?: string }>;
 }): Promise<Metadata> {
   const en = (await getLocale()) === "en";
-  const dil = (await searchParams)?.dil;
   return localizedMeta({
     path: "/attacks",
-    dil,
     en,
     azTitle: "Hücum növləri — necə işləyir və necə qorunmaq",
     enTitle: "Attack types explained (Azerbaijani + English)",

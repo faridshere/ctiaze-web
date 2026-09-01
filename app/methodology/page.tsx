@@ -40,12 +40,10 @@ const TYPE_LABEL: Record<string, { az: string; en: string }> = {
 };
 
 export async function generateMetadata(
-  { searchParams }: { searchParams: Promise<{ dil?: string }> },
 ): Promise<Metadata> {
   const en = (await getLocale()) === "en";
-  const dil = (await searchParams)?.dil;
   return localizedMeta({
-    path: "/methodology", dil, en,
+    path: "/methodology", en,
     azTitle: "Metodologiya — necə yoxlayırıq",
     enTitle: "Methodology — how we verify",
     azDesc:

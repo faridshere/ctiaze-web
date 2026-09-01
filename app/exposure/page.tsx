@@ -14,12 +14,10 @@ import { AZ_MONTHS } from "@/lib/format";
 export const revalidate = 3600; // snapshot changes weekly; hourly ISR is ample
 
 export async function generateMetadata(
-  { searchParams }: { searchParams: Promise<{ dil?: string }> },
 ): Promise<Metadata> {
   const en = (await getLocale()) === "en";
-  const dil = (await searchParams)?.dil;
   return localizedMeta({
-    path: "/exposure", dil, en,
+    path: "/exposure", en,
     azTitle: "Ekspozisiya — Azərbaycan hücum səthi",
     enTitle: "Exposure — Azerbaijan's attack surface",
     azDesc: "Azərbaycanda internetə açıq host-ların həftəlik Shodan mənzərəsi: açıq RDP/SMB/Telnet, verilənlər bazaları və ICS/SCADA portları.",

@@ -9,15 +9,11 @@ import { localizedMeta } from "@/lib/seo";
 export const revalidate = 86400;
 
 export async function generateMetadata({
-  searchParams,
 }: {
-  searchParams: Promise<{ dil?: string }>;
 }): Promise<Metadata> {
   const en = (await getLocale()) === "en";
-  const dil = (await searchParams)?.dil;
   return localizedMeta({
     path: "/vendor",
-    dil,
     en,
     azTitle: "Vendor təhlükəsizlik mərkəzləri — CVE-lər azərbaycanca",
     enTitle: "Vendor security hubs — CVEs in Azerbaijani",

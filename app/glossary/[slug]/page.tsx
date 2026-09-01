@@ -17,15 +17,14 @@ export function generateStaticParams() {
 }
 
 export async function generateMetadata(
-  { params, searchParams }: { params: Promise<{ slug: string }>; searchParams: Promise<{ dil?: string }> },
+  { params }: { params: Promise<{ slug: string }> },
 ): Promise<Metadata> {
   const { slug } = await params;
   const g = await getTermAny(slug);
   if (!g) notFound();
   const en = (await getLocale()) === "en";
-  const dil = (await searchParams)?.dil;
   return localizedMeta({
-    path: `/glossary/${g.slug}`, dil, en,
+    path: `/glossary/${g.slug}`, en,
     azTitle: `${g.term} nədir? — skopnix lüğət`,
     enTitle: `What is ${g.term}? — skopnix glossary`,
     azDesc: g.az.slice(0, 160),

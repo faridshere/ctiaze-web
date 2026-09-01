@@ -51,12 +51,10 @@ function fmtDate(iso: string | null, en: boolean): string {
 const nf = (n: number) => n.toLocaleString("en-US");
 
 export async function generateMetadata(
-  { searchParams }: { searchParams: Promise<{ dil?: string }> },
 ): Promise<Metadata> {
   const en = (await getLocale()) === "en";
-  const dil = (await searchParams)?.dil;
   return localizedMeta({
-    path: "/situation", dil, en,
+    path: "/situation", en,
     azTitle: "Kibertəhlükə vəziyyəti — aylıq hesabat",
     enTitle: "Cyber threat situation — monthly report",
     azDesc:

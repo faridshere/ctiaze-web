@@ -10,12 +10,10 @@ export const revalidate = 86400;
 const EARLY = "mailto:hello@skopnix.io?subject=skopnix%20API%20early%20access";
 
 export async function generateMetadata(
-  { searchParams }: { searchParams: Promise<{ dil?: string }> },
 ): Promise<Metadata> {
   const en = (await getLocale()) === "en";
-  const dil = (await searchParams)?.dil;
   return localizedMeta({
-    path: "/developers", dil, en,
+    path: "/developers", en,
     azTitle: "Developers — API & MCP — skopnix",
     enTitle: "Developers — API & MCP — skopnix",
     azDesc: "Regional təhlükə kəşfiyyatını API və MCP server vasitəsilə sorğula. Mənbə göstərilən nəticələr, JSON, tər tər izlənə bilən.",

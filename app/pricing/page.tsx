@@ -8,12 +8,10 @@ import { localizedMeta } from "@/lib/seo";
 export const revalidate = 86400;
 
 export async function generateMetadata(
-  { searchParams }: { searchParams: Promise<{ dil?: string }> },
 ): Promise<Metadata> {
   const en = (await getLocale()) === "en";
-  const dil = (await searchParams)?.dil;
   return localizedMeta({
-    path: "/pricing", dil, en,
+    path: "/pricing", en,
     azTitle: "Qiymət — skopnix",
     enTitle: "Pricing — skopnix",
     azDesc: "Regional təhlükə kəşfiyyatı API və MCP — pulsuz başla, istifadəyə görə ödə. Sadə, özünə-xidmət qiymət. Satış zəngi yoxdur.",

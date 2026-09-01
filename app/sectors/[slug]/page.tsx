@@ -10,7 +10,7 @@ import { getLocale } from "@/lib/i18n-server";
 import { localizedMeta } from "@/lib/seo";
 import { jsonLdSafe } from "@/lib/format";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 86400;
 
 const BASE = "https://ctiaze.tech";
 
@@ -39,21 +39,17 @@ const TYPE_CHIP: Record<string, string> = {
 
 export async function generateMetadata({
   params,
-  searchParams,
 }: {
   params: Promise<{ slug: string }>;
-  searchParams: Promise<{ dil?: string }>;
 }): Promise<Metadata> {
   const { slug } = await params;
   const s = await getSector(slug);
   // Real 404 for an unknown sector slug (not a 200 soft-404 crawlers would index).
   if (!s) notFound();
   const en = (await getLocale()) === "en";
-  const dil = (await searchParams)?.dil;
   const who = en ? s.who.en || s.who.az : s.who.az || s.who.en;
   return localizedMeta({
     path: `/sectors/${s.slug}`,
-    dil,
     en,
     azTitle: `${s.name_az} sektoru: təhdidlər və müdafiə`,
     enTitle: `${s.name_en} sector: threats & defenses`,

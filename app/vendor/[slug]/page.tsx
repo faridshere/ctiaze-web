@@ -30,21 +30,17 @@ export async function generateStaticParams() {
 
 export async function generateMetadata({
   params,
-  searchParams,
 }: {
   params: Promise<{ slug: string }>;
-  searchParams: Promise<{ dil?: string }>;
 }): Promise<Metadata> {
   const { slug } = await params;
   const v = await getVendor(slug);
   // Real 404 for an unknown slug (not a 200 soft-404 that crawlers index).
   if (!v) notFound();
   const en = (await getLocale()) === "en";
-  const dil = (await searchParams)?.dil;
   const overview = en ? v.en || v.az : v.az || v.en;
   return localizedMeta({
     path: `/vendor/${v.slug}`,
-    dil,
     en,
     azTitle: `${v.name} təhlükəsizlik zəiflikləri`,
     enTitle: `${v.name} security vulnerabilities`,

@@ -14,6 +14,13 @@ import { QaBlock, faqPageJsonLd } from "@/components/QaBlock";
 import { SeeAlso } from "@/components/SeeAlso";
 
 export const revalidate = 3600;
+export const dynamicParams = true;
+// Render on demand and cache (ISR) rather than as a per-request function — there
+// are too many of these to prerender at build, but caching them keeps crawler
+// traffic off Fluid Active CPU.
+export async function generateStaticParams() {
+  return [];
+}
 
 const BASE = "https://ctiaze.tech";
 
@@ -23,10 +30,8 @@ function desc(a: NonNullable<Awaited<ReturnType<typeof getActorById>>>, en: bool
 
 export async function generateMetadata({
   params,
-  searchParams,
 }: {
   params: Promise<{ slug: string }>;
-  searchParams: Promise<{ dil?: string }>;
 }): Promise<Metadata> {
   const { slug } = await params;
   const a = await getActorById(slug);
@@ -38,8 +43,7 @@ export async function generateMetadata({
   const url = `${BASE}/actors/${a._id}`;
   // Self-canonical per ?dil= variant so both languages get indexed (see the xeber
   // page for the full rationale); bare URL keeps the bare canonical + x-default.
-  const dil = (await searchParams)?.dil;
-  const canonical = dil === "az" ? `${url}?dil=az` : dil === "en" ? `${url}?dil=en` : url;
+  const canonical = url;
   return {
     title,
     description: desc(a, en) || (en ? `Threat-actor dossier for ${a.name}.` : `${a.name} təhdid aktoru haqqında dossye.`),
