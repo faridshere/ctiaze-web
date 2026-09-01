@@ -8,7 +8,7 @@ const DONE_KEY = "skopnix.waitlist.done";       // actually signed up — never 
 
 // Fired by a tool once the visitor has a REAL result in hand.
 export const VALUE_EVENT = "skopnix:value-moment";
-export type ValueMoment = { subject?: string; kind?: "domain" | "email" | "actor" };
+export type ValueMoment = { subject?: string; kind?: "domain" | "email" | "actor"; finding?: string; headline?: string };
 
 export function announceValueMoment(detail: ValueMoment) {
   try {
@@ -101,7 +101,9 @@ export function WaitlistModal({ source }: { source: string }) {
   if (!open) return null;
 
   const subject = moment.subject?.slice(0, 40);
-  const heading = subject ? `Want ${subject} watched?` : "Want the keys?";
+  // Lead with THEIR finding, not our product — the ask then reads as "want this
+  // watched?" instead of "give me your email".
+  const heading = moment.headline?.slice(0, 90) || (subject ? `Want ${subject} watched?` : "Want the keys?");
   const blurb =
     moment.kind === "email"
       ? "Continuous monitoring is opening soon — we'll tell you if this address turns up in a new breach."
@@ -150,7 +152,7 @@ export function WaitlistModal({ source }: { source: string }) {
           {blurb} Drop your email to get in <b className="font-medium text-ink-primary">free, first</b>.
         </p>
         <div className="mt-5">
-          <Waitlist source={`${source}:modal`} compact />
+          <Waitlist source={`${source}:modal:${moment.finding ?? "generic"}`} compact />
         </div>
       </div>
     </div>

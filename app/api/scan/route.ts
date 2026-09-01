@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { createHash } from "crypto";
 import { rateLimit, clientIp, withinSharedDailyBudget } from "@/lib/ratelimit";
 import { verifyPow } from "@/lib/pow";
 import { generateLookalikes, brandMatch, splitDomain } from "@/lib/lookalikes";
@@ -325,14 +326,15 @@ async function scanEmail(email: string) {
   // honestly instead of headlining "YOUR passwords leaked".
   const addressClass = classifyAddress(normalized);
 
-  const [data, lc, hibp, infostealer] = await Promise.all([
+  const [data, lc, hibp, infostealer, gravatar] = await Promise.all([
     fetchJson<XonAnalytics>(`${XON_ANALYTICS_URL}?email=${encodeURIComponent(normalized)}`, 9000),
     leakcheckRows(normalized),
     hibpRows(normalized),
     hudsonRockEmail(normalized),
+    gravatarProfile(normalized),
   ]);
   if (data === null && lc.rows.length === 0 && hibp.rows.length === 0 && !hibp.available) {
-    return { ...(await scanEmailBasic(normalized)), infostealer, addressClass };
+    return { ...(await scanEmailBasic(normalized)), infostealer, addressClass, gravatar };
   }
 
   const details = data?.ExposedBreaches?.breaches_details;
@@ -397,6 +399,7 @@ async function scanEmail(email: string) {
     hibp: hibp.available,
     infostealer,
     addressClass,
+    gravatar,
   });
 }
 
@@ -872,6 +875,71 @@ async function scanLookalikes(domain: string) {
   return { status: "ok" as const, checked: top.length, registered: registered.slice(0, 12) };
 }
 
+// ---- Gravatar public profile (keyless) --------------------------------------
+// The sharpest "wait, that's public about ME?" on the page: an email address
+// hashes to a public profile anyone can fetch without consent or a login. Only
+// rendered on a hit — "no Gravatar" is not a finding. We deliberately do NOT
+// embed avatar_url: a remote image would beacon every scan to a third party and
+// break the CSP. We describe it and link the public profile instead.
+const GRAVATAR_URL = "https://api.gravatar.com/v3/profiles/";
+
+async function gravatarProfile(email: string) {
+  const hash = createHash("sha256").update(email.trim().toLowerCase()).digest("hex");
+  const r = await fetch(`${GRAVATAR_URL}${hash}`, {
+    headers: { "User-Agent": UA },
+    signal: AbortSignal.timeout(4000),
+  }).catch(() => null);
+  if (!r) return { status: "unavailable" as const };
+  if (r.status === 404) return { status: "none" as const };
+  if (!r.ok) return { status: "unavailable" as const };
+  const j = (await r.json().catch(() => null)) as Record<string, unknown> | null;
+  if (!j) return { status: "unavailable" as const };
+  const str = (v: unknown) => (typeof v === "string" && v ? v.slice(0, 60) : null);
+  return {
+    status: "ok" as const,
+    displayName: str(j.display_name),
+    location: str(j.location),
+    jobTitle: str(j.job_title),
+    company: str(j.company),
+    profileUrl: str(j.profile_url),
+    verifiedAccounts: Array.isArray(j.verified_accounts) ? j.verified_accounts.length : 0,
+  };
+}
+
+// ---- Public recon feed (urlscan.io, keyless) --------------------------------
+// Scans OTHER people already ran against this domain — permanent public records
+// of someone probing it. Zero touch on the target. Paths are sanitized to
+// host+pathname and must belong to the scanned domain.
+const URLSCAN_URL = "https://urlscan.io/api/v1/search/";
+
+async function urlscanRecon(domain: string) {
+  const base = { status: "unavailable" as "ok" | "unavailable", total: 0, recent: [] as { path: string; date: string }[] };
+  if (!(await withinSharedDailyBudget("scan:urlscan", 1500))) return base;
+  const j = await fetchJson<{ total?: number; results?: { task?: { time?: string }; page?: { url?: string } }[] }>(
+    `${URLSCAN_URL}?q=${encodeURIComponent(`page.domain:"${domain}"`)}&size=12`,
+    5000
+  );
+  if (!j || typeof j.total !== "number") return base;
+  const suffix = domain.toLowerCase();
+  const recent: { path: string; date: string }[] = [];
+  for (const row of j.results ?? []) {
+    const raw = row.page?.url;
+    if (typeof raw !== "string") continue;
+    let host = "", pathname = "";
+    try {
+      const u = new URL(raw);
+      host = u.hostname.toLowerCase();
+      pathname = u.pathname;
+    } catch {
+      continue;
+    }
+    if (host !== suffix && !host.endsWith(`.${suffix}`)) continue; // never echo a foreign host
+    recent.push({ path: `${host}${pathname === "/" ? "" : pathname}`.slice(0, 90), date: (row.task?.time ?? "").slice(0, 10) });
+    if (recent.length >= 4) break;
+  }
+  return { status: "ok" as const, total: j.total, recent };
+}
+
 // ---- RDAP domain registration (rdap.org, keyless) ---------------------------
 // Domain age is a strong phishing signal — a brand-new domain impersonating a
 // company is the classic setup. Also surfaces DNSSEC + registrar in one call.
@@ -958,11 +1026,11 @@ async function scanDomain(domain: string) {
       kind: "domain", domain: null, status: "invalid",
       subdomains: null, exposure: null, mentions: null, watchlist: null,
       emailSecurity: null, infostealer: null, registration: null, ipIntel: null,
-      lookalikes: null, brandImpersonation: null,
+      lookalikes: null, brandImpersonation: null, recon: null,
     };
   }
   const brandImpersonation = brandMatch(normalized);
-  const [subdomains, exposure, mentions, watchlist, emailSecurity, infostealer, registration, ipIntel, lookalikes] = await Promise.all([
+  const [subdomains, exposure, mentions, watchlist, emailSecurity, infostealer, registration, ipIntel, lookalikes, recon] = await Promise.all([
     scanSubdomains(normalized),
     scanExposure(normalized),
     scanMentions(normalized),
@@ -972,11 +1040,12 @@ async function scanDomain(domain: string) {
     scanRegistration(normalized),
     scanIpIntel(normalized),
     scanLookalikes(normalized),
+    urlscanRecon(normalized),
   ]);
   return {
     kind: "domain", domain: normalized, status: "ok",
     subdomains, exposure, mentions, watchlist, emailSecurity, infostealer, registration, ipIntel,
-    lookalikes, brandImpersonation,
+    lookalikes, brandImpersonation, recon,
   };
 }
 

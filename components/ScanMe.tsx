@@ -28,6 +28,7 @@ type EmailResult = {
   riskLabel: string | null; riskScore: number | null; passwordsExposed: boolean;
   breaches: Breach[]; exposedData: string[]; pastesCount: number; hibp: boolean;
   infostealer: Infostealer; addressClass: AddressClass; source: string; fetched_at: string | null;
+  gravatar?: { status: "ok" | "none" | "unavailable"; displayName?: string | null; location?: string | null; jobTitle?: string | null; company?: string | null; profileUrl?: string | null; verifiedAccounts?: number } | null;
   passwordStorage?: { plaintext: number; easyToCrack: number; strongHash: number; unknown: number } | null;
   timeline?: { year: number; count: number }[];
   firstSeen?: number | null;
@@ -74,6 +75,7 @@ type DomainResult = {
   emailSecurity: EmailSecurity; infostealer: DomainInfostealer;
   registration: RegistrationBlock; ipIntel: IpIntelBlock;
   lookalikes: LookalikesBlock; brandImpersonation: BrandImpersonation;
+  recon?: { status: "ok" | "unavailable"; total: number; recent: { path: string; date: string }[] } | null;
 };
 type ScanResult = EmailResult | DomainResult;
 type PwState = { state: "pwned" | "clean" | "unavailable"; count?: number } | null;
@@ -160,14 +162,12 @@ export function ScanMe({ locale }: { locale: Locale }) {
       if (!r.ok) setError(data.error || c.genericError);
       else {
         setResult(data as ScanResult);
-        // The visitor now has the answer they came for — the one moment an
-        // early-access offer is useful rather than an interruption.
+        // The visitor now has the answer they came for. Only ask when we actually
+        // FOUND something — spending the one lifetime impression on "you look
+        // clean" is the worst possible moment to ask for an email.
         const res = data as ScanResult;
-        announceValueMoment(
-          res.kind === "domain"
-            ? { kind: "domain", subject: res.domain ?? undefined }
-            : { kind: "email" }
-        );
+        const vm = valueMoment(res);
+        if (vm) announceValueMoment(vm);
         // Keep the URL in sync so the result can be shared — DOMAIN scans only.
         // An email in a URL leaks into history/server logs when shared, so email
         // scans always strip ?q= (matches the route's never-stored privacy rule).
@@ -474,6 +474,30 @@ function EmailView({ r, t, locale }: { r: EmailResult; t: ScanDict; locale: Loca
           <p className="mt-3 font-mono text-[12px] text-ink-secondary">{t.pastesLine(r.pastesCount)}</p>
         )}
 
+        {r.gravatar?.status === "ok" && (
+          <div className="mt-4 rounded-md border border-accent-warning/40 bg-accent-warning/[0.05] px-4 py-3">
+            <div className="flex items-baseline gap-2">
+              <span aria-hidden className="text-accent-warning">◉</span>
+              <span className="text-[14px] font-semibold text-ink-primary">Your address has a public profile.</span>
+            </div>
+            <p className="mt-1 text-[13px] leading-relaxed text-ink-secondary">
+              Hashing your email returns a public Gravatar profile — no login, no consent needed. Anyone who has your
+              address can pull{" "}
+              <b className="font-medium text-ink-primary">
+                {[r.gravatar.displayName, r.gravatar.jobTitle, r.gravatar.company, r.gravatar.location].filter(Boolean).join(" · ") || "your profile"}
+              </b>
+              {r.gravatar.verifiedAccounts ? ` and ${r.gravatar.verifiedAccounts} linked account${r.gravatar.verifiedAccounts === 1 ? "" : "s"}` : ""}
+              . It&apos;s how a spammer confirms a real person is behind the address before writing the phishing mail.
+            </p>
+            {r.gravatar.profileUrl && (
+              <a href={r.gravatar.profileUrl} target="_blank" rel="noopener noreferrer nofollow"
+                 className="mt-1.5 inline-block font-mono text-[11.5px] text-ink-muted underline underline-offset-2 hover:text-brand">
+                {r.gravatar.profileUrl.replace(/^https?:\/\//, "")} ↗
+              </a>
+            )}
+          </div>
+        )}
+
         {r.passwordStorage && (r.passwordStorage.plaintext > 0 || r.passwordStorage.easyToCrack > 0) && (
           <div className="mt-4 border-t border-hairline pt-3">
             <div className="font-mono text-[10px] uppercase tracking-wider text-ink-muted">How those passwords were stored</div>
@@ -568,6 +592,32 @@ function BrandBanner({ b }: { b: NonNullable<DomainResult["brandImpersonation"]>
       </div>
     </div>
   );
+}
+
+// The sharpest true thing we can say back to the visitor, or null when the scan
+// came back clean (in which case we never interrupt them with an ask).
+function valueMoment(res: ScanResult): { kind: "domain" | "email"; subject?: string; finding: string; headline: string } | null {
+  if (res.kind === "domain") {
+    const subject = res.domain ?? undefined;
+    const s = subject ?? "this domain";
+    if (res.brandImpersonation) return { kind: "domain", subject, finding: "impersonation", headline: `${s} impersonates ${res.brandImpersonation.brand}.` };
+    const portals = res.infostealer?.employeeUrls?.length ?? 0;
+    if (portals > 0) return { kind: "domain", subject, finding: "stolen-logins", headline: `${portals} of your login portals show stolen credentials.` };
+    const dangling = res.subdomains?.hygiene?.dangling?.length ?? 0;
+    if (dangling > 0) return { kind: "domain", subject, finding: "dangling", headline: `${dangling} of your subdomains could be taken over.` };
+    const withMail = (res.lookalikes?.registered ?? []).filter((l) => l.hasMx).length;
+    if (withMail > 0) return { kind: "domain", subject, finding: "lookalike-mail", headline: `${withMail} lookalike domains of yours can send mail.` };
+    const vulns = res.exposure?.vulns?.length ?? 0;
+    if (vulns > 0) return { kind: "domain", subject, finding: "open-vulns", headline: `${vulns} known vulnerabilities are exposed on your host.` };
+    if ((res.infostealer?.total ?? 0) > 0) return { kind: "domain", subject, finding: "infostealer", headline: `Credentials for ${s} are in infostealer logs.` };
+    return null;
+  }
+  if (res.infostealer?.infected) return { kind: "email", finding: "infostealer", headline: "A device tied to this address was infostealer-infected." };
+  const plaintext = res.passwordStorage?.plaintext ?? 0;
+  if (plaintext > 0) return { kind: "email", finding: "plaintext", headline: `${plaintext} of your passwords were stored in plaintext.` };
+  if (res.count > 0) return { kind: "email", finding: "breaches", headline: `Your address appears in ${res.count} breaches.` };
+  if (res.gravatar?.status === "ok") return { kind: "email", finding: "public-profile", headline: "Your address has a public profile attached." };
+  return null;
 }
 
 function DomainView({ r, t }: { r: DomainResult; t: ScanDict }) {
@@ -828,6 +878,27 @@ function DomainView({ r, t }: { r: DomainResult; t: ScanDict }) {
             <p className="mt-2 font-mono text-[10.5px] text-ink-muted">
               checked {r.lookalikes.checked} variants · &ldquo;has mail&rdquo; = an MX record = active phishing setup
             </p>
+          </SubCard>
+        )}
+
+        {r.recon?.status === "ok" && r.recon.total > 0 && (
+          <SubCard icon="◎" tone="warning" title="Public recon" badge={`${r.recon.total.toLocaleString("en-US")}`} badgeTone="warning">
+            <div className="font-headline text-2xl text-ink-primary tabular-nums">{r.recon.total.toLocaleString("en-US")}</div>
+            <div className="font-mono text-[11px] text-ink-muted">public scans of this domain on record</div>
+            <p className="mt-2 text-[13px] leading-relaxed text-ink-secondary">
+              Other people have submitted this domain to a public scanner. Each one is a permanent, public record —
+              you didn&apos;t submit them.
+            </p>
+            {r.recon.recent.length > 0 && (
+              <ul className="mt-2.5 space-y-1 font-mono text-[11.5px]">
+                {r.recon.recent.map((x) => (
+                  <li key={`${x.date}-${x.path}`} className="flex items-baseline gap-2">
+                    <span className="shrink-0 tabular-nums text-ink-muted">{x.date}</span>
+                    <span className="[overflow-wrap:anywhere] text-ink-secondary">{x.path}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
           </SubCard>
         )}
 
