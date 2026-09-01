@@ -28,7 +28,10 @@ export function Waitlist({ source = "site", compact = false }: { source?: string
         body: JSON.stringify({ email: v, source }),
       });
       const j = await r.json().catch(() => ({}));
-      if (r.ok) setState("done");
+      if (r.ok) {
+        setState("done");
+        try { localStorage.setItem("skopnix.waitlist.seen", "1"); } catch { /* private mode */ }
+      }
       else { setState("error"); setMsg(j.error || "Something went wrong — try again."); }
     } catch {
       setState("error");

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { rateLimit, clientIp, withinSharedDailyBudget } from "@/lib/ratelimit";
 import { verifyPow } from "@/lib/pow";
+import { generateLookalikes, brandMatch } from "@/lib/lookalikes";
 import { getDb } from "@/lib/db";
 import { getLatestSnapshot } from "@/lib/exposure";
 import { toStory, type StoryDoc } from "@/lib/types";
@@ -671,6 +672,31 @@ async function scanEmailSecurity(domain: string) {
   };
 }
 
+// ---- Lookalike / typosquat domains (dnstwist port, keyless) -----------------
+// Generate the typosquats an attacker would register to phish this domain, then
+// DNS-resolve them — the ones that RESOLVE are already registered, and a resolved
+// lookalike WITH an MX record is active phishing prep, not a parked coincidence.
+async function scanLookalikes(domain: string) {
+  const variants = generateLookalikes(domain, 140).filter((v) => /^[a-z0-9.-]+$/.test(v));
+  const top = variants.slice(0, 48);
+  const dns = await import("node:dns");
+  const registered: { domain: string; ip: string; hasMx: boolean }[] = [];
+  const CONC = 16;
+  for (let i = 0; i < top.length; i += CONC) {
+    const batch = top.slice(i, i + CONC);
+    const rows = await Promise.all(batch.map(async (v) => {
+      const addrs = await dnsRace(dns.promises.resolve4(v), 2500);
+      const ip = (addrs ?? []).find((a) => /^\d{1,3}(\.\d{1,3}){3}$/.test(a)) ?? null;
+      if (!ip) return null;
+      const mx = await dnsRace(dns.promises.resolveMx(v), 2500);
+      return { domain: v, ip, hasMx: Array.isArray(mx) && mx.length > 0 };
+    }));
+    for (const r of rows) if (r) registered.push(r);
+  }
+  registered.sort((a, b) => Number(b.hasMx) - Number(a.hasMx));
+  return { status: "ok" as const, checked: top.length, registered: registered.slice(0, 12) };
+}
+
 // ---- RDAP domain registration (rdap.org, keyless) ---------------------------
 // Domain age is a strong phishing signal — a brand-new domain impersonating a
 // company is the classic setup. Also surfaces DNSSEC + registrar in one call.
@@ -752,9 +778,11 @@ async function scanDomain(domain: string) {
       kind: "domain", domain: null, status: "invalid",
       subdomains: null, exposure: null, mentions: null, watchlist: null,
       emailSecurity: null, infostealer: null, registration: null, ipIntel: null,
+      lookalikes: null, brandImpersonation: null,
     };
   }
-  const [subdomains, exposure, mentions, watchlist, emailSecurity, infostealer, registration, ipIntel] = await Promise.all([
+  const brandImpersonation = brandMatch(normalized);
+  const [subdomains, exposure, mentions, watchlist, emailSecurity, infostealer, registration, ipIntel, lookalikes] = await Promise.all([
     scanSubdomains(normalized),
     scanExposure(normalized),
     scanMentions(normalized),
@@ -763,10 +791,12 @@ async function scanDomain(domain: string) {
     hudsonRockDomain(normalized),
     scanRegistration(normalized),
     scanIpIntel(normalized),
+    scanLookalikes(normalized),
   ]);
   return {
     kind: "domain", domain: normalized, status: "ok",
     subdomains, exposure, mentions, watchlist, emailSecurity, infostealer, registration, ipIntel,
+    lookalikes, brandImpersonation,
   };
 }
 

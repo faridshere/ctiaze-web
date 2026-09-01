@@ -3,6 +3,7 @@ import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { ScanMe } from "@/components/ScanMe";
 import { Waitlist } from "@/components/Waitlist";
+import { WaitlistModal } from "@/components/WaitlistModal";
 import { getDict } from "@/lib/i18n";
 import { getLocale } from "@/lib/i18n-server";
 import { localizedMeta } from "@/lib/seo";
@@ -27,6 +28,7 @@ export default async function ScanMePage() {
   return (
     <div className="ops flex min-h-screen flex-col">
       <Header />
+      <WaitlistModal source="scan-me" />
       {/* Core-register header: the same aurora world as home and /actors. */}
       <section className="relative isolate overflow-hidden border-b border-hairline bg-[#05060a]">
         <div aria-hidden className="aurora-streak pointer-events-none absolute rounded-full" style={{ width: 1400, height: 240, left: -220, top: -60, background: "linear-gradient(100deg, transparent 6%, rgba(38,90,150,0.4) 32%, rgba(111,211,230,0.32) 55%, transparent 92%)", filter: "blur(70px)", transform: "rotate(-24deg)", mixBlendMode: "screen" }} />

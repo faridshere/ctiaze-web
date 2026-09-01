@@ -50,11 +50,14 @@ type MentionBlock = { status: "ok" | "unavailable"; count: number; stories: Ment
 type WatchBlock = { product: string; az_exposed: number; as_of: string; source: string; fetched_at: string } | null;
 type RegistrationBlock = { status: "ok" | "unavailable"; created: string | null; ageDays: number | null; nrd: boolean; dnssec: boolean | null; registrar: string | null } | null;
 type IpIntelBlock = { status: "ok" | "unavailable"; ip: string | null; asn: string | null; org: string | null; country: string | null; hosting: boolean; proxy: boolean; greynoise: { noise: boolean; riot: boolean; classification: string | null; name: string | null; message: string | null } | null } | null;
+type LookalikesBlock = { status: "ok" | "unavailable"; checked: number; registered: { domain: string; ip: string; hasMx: boolean }[] } | null;
+type BrandImpersonation = { brand: string; type: "homoglyph" | "typo"; realDomain: string } | null;
 type DomainResult = {
   kind: "domain"; domain: string | null; status: "ok" | "invalid";
   subdomains: SubBlock | null; exposure: ExposureBlock | null; mentions: MentionBlock | null; watchlist: WatchBlock;
   emailSecurity: EmailSecurity; infostealer: DomainInfostealer;
   registration: RegistrationBlock; ipIntel: IpIntelBlock;
+  lookalikes: LookalikesBlock; brandImpersonation: BrandImpersonation;
 };
 type ScanResult = EmailResult | DomainResult;
 type PwState = { state: "pwned" | "clean" | "unavailable"; count?: number } | null;
@@ -468,6 +471,21 @@ function EmailView({ r, t, locale }: { r: EmailResult; t: ScanDict; locale: Loca
   );
 }
 
+function BrandBanner({ b }: { b: NonNullable<DomainResult["brandImpersonation"]> }) {
+  return (
+    <div className="mb-4 flex gap-3 rounded-md border border-accent-critical/50 bg-accent-critical/[0.08] px-4 py-3.5">
+      <span aria-hidden className="text-lg leading-none text-accent-critical">⚠</span>
+      <div>
+        <p className="text-[14px] font-semibold text-ink-primary">This domain impersonates {b.brand}.</p>
+        <p className="mt-0.5 text-[13px] leading-relaxed text-ink-secondary">
+          It&apos;s a {b.type === "homoglyph" ? "look-alike (homoglyph)" : "typo"} of the real{" "}
+          <span className="font-mono text-ink-primary">{b.realDomain}</span> — a classic phishing setup. Don&apos;t trust it.
+        </p>
+      </div>
+    </div>
+  );
+}
+
 function DomainView({ r, t }: { r: DomainResult; t: ScanDict }) {
   if (r.status === "invalid" || !r.domain) {
     return (
@@ -480,6 +498,7 @@ function DomainView({ r, t }: { r: DomainResult; t: ScanDict }) {
   }
   return (
     <ResultCard label={<>{t.attackSurface} · <span className="font-mono text-ink-secondary">{r.domain}</span></>}>
+      {r.brandImpersonation && <BrandBanner b={r.brandImpersonation} />}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <SubCard icon="◎" tone="brand" title={t.subTitle}
           badge={r.subdomains?.status === "ok" ? "ok" : r.subdomains?.status === "not_supported" ? "n/a" : "unavailable"}
@@ -656,6 +675,31 @@ function DomainView({ r, t }: { r: DomainResult; t: ScanDict }) {
             ) : (
               <p className="text-[13px] leading-relaxed text-ink-secondary">Host intelligence unavailable.</p>
             )}
+          </SubCard>
+        )}
+
+        {r.lookalikes && r.lookalikes.registered.length > 0 && (
+          <SubCard
+            icon="⧉"
+            tone={r.lookalikes.registered.some((l) => l.hasMx) ? "critical" : "warning"}
+            title="Lookalike domains"
+            badge={t.timesBadge(r.lookalikes.registered.length)}
+            badgeTone={r.lookalikes.registered.some((l) => l.hasMx) ? "critical" : "warning"}
+          >
+            <p className="text-[13px] leading-relaxed text-ink-secondary">
+              Registered typosquats of your domain — someone could use these to impersonate you.
+            </p>
+            <ul className="mt-2.5 space-y-1.5 font-mono text-[12px]">
+              {r.lookalikes.registered.map((l) => (
+                <li key={l.domain} className="flex items-center gap-2">
+                  <span className={l.hasMx ? "text-accent-critical" : "text-ink-primary"}>{l.domain}</span>
+                  {l.hasMx && <span className="shrink-0 rounded-sm border border-accent-critical/40 px-1 py-px text-[9.5px] uppercase tracking-wider text-accent-critical">has mail</span>}
+                </li>
+              ))}
+            </ul>
+            <p className="mt-2 font-mono text-[10.5px] text-ink-muted">
+              checked {r.lookalikes.checked} variants · &ldquo;has mail&rdquo; = an MX record = active phishing setup
+            </p>
           </SubCard>
         )}
 

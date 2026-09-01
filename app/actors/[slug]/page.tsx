@@ -10,6 +10,7 @@ import { getActorByIdCached as getActorById, originLabel } from "@/lib/threatact
 import { getLocale } from "@/lib/i18n-server";
 import { jsonLdSafe } from "@/lib/format";
 import { breadcrumbLd } from "@/lib/jsonld";
+import { getActorReports } from "@/lib/aptnotes";
 import { getQaForActor } from "@/lib/qa";
 import { QaBlock, faqPageJsonLd } from "@/components/QaBlock";
 import { SeeAlso } from "@/components/SeeAlso";
@@ -60,6 +61,7 @@ export default async function ActorPage({ params }: { params: Promise<{ slug: st
   const locale = await getLocale();
   const en = locale === "en";
   const origin = originLabel(a, locale);
+  const reports = await getActorReports([a.name, ...(a.aliases || [])]).catch(() => []);
 
   // Grounded Q&A pairs for this actor (bilingual, engine-authored) — powers both
   // the visible FAQ and the FAQPage rich-result markup below.
@@ -133,6 +135,28 @@ export default async function ActorPage({ params }: { params: Promise<{ slug: st
         </div>
         <ActorPlaybook a={a} en={en} />
         <QaBlock items={qa} en={en} />
+        {reports.length > 0 && (
+          <section data-sc className="mt-10">
+            <h2 className="flex items-center gap-3 font-mono text-[11px] uppercase tracking-[0.16em] text-brand">
+              Primary-source reports
+              <span aria-hidden className="h-px flex-1 bg-hairline" />
+              <span className="font-normal normal-case tracking-normal text-ink-muted">{reports.length}</span>
+            </h2>
+            <ul className="mt-4 space-y-2.5">
+              {reports.map((rep) => (
+                <li key={rep.url}>
+                  <a href={rep.url} target="_blank" rel="noopener noreferrer" className="group flex items-baseline gap-3 border-b border-hairline pb-2.5 hover:opacity-90">
+                    <span className="whitespace-nowrap font-mono text-[11px] tabular-nums text-ink-muted">{rep.year}</span>
+                    <span>
+                      <span className="text-[14px] leading-snug text-ink-primary transition-colors group-hover:text-brand">{rep.title}</span>
+                      {rep.source && <span className="ml-2 font-mono text-[11px] text-ink-muted">{rep.source} ↗</span>}
+                    </span>
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
         {/* cross-knowledge mesh — bge-m3 neighbours (kb_related), only live routes */}
         <SeeAlso sourceType="actor" sourceId={a._id} en={en} />
         <p className="mt-8 font-mono text-[11px] leading-relaxed text-ink-muted">

@@ -34,6 +34,20 @@ export const getStories = cache(async (limit = 60): Promise<Story[]> => {
   return docs.map(toStory);
 });
 
+// Paginated full archive (every published dispatch, newest first — including the
+// ctiaze.tech-era backlog, which lives in the same collection). Not cache()-
+// wrapped because the page varies; callers cache per-page with unstable_cache.
+export async function getArchivePage(skip: number, limit: number): Promise<Story[]> {
+  const col = await items();
+  const docs = await col
+    .find(PUBLISHED_FILTER)
+    .sort({ published_at: -1 })
+    .skip(Math.max(0, skip))
+    .limit(limit)
+    .toArray();
+  return docs.map(toStory);
+}
+
 export const getStoryBySlug = cache(async (slug: string): Promise<Story | null> => {
   // storyIdKey() recovers the stable _id key slugify() embedded (first 12 chars of
   // the prefix-stripped id, minus any trailing join hyphen). See lib/slug.ts — the

@@ -3,6 +3,7 @@ import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { ActorSearch } from "@/components/ActorSearch";
 import { Waitlist } from "@/components/Waitlist";
+import { WaitlistModal } from "@/components/WaitlistModal";
 import { ActorRow } from "@/components/ActorRow";
 import Link from "next/link";
 import { getActorsPageData } from "@/lib/threatactors";
@@ -55,6 +56,7 @@ export default async function ActorsPage() {
   return (
     <div className="ops flex min-h-screen flex-col">
       <Header />
+      <WaitlistModal source="actors" />
       {/* APT section header — the core register: aurora, centered display type */}
       <section className="relative isolate overflow-hidden border-b border-hairline bg-[#05060a]">
         {STREAKS.map((st, i) => (
