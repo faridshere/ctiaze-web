@@ -695,11 +695,11 @@ async function scanDomain(domain: string) {
 
 export async function GET(req: Request) {
   if (!rateLimit(`scan:${clientIp(req)}`, 12, 60_000)) {
-    return NextResponse.json({ error: "Çox sorğu göndərdiniz — bir dəqiqə gözləyin" }, { status: 429 });
+    return NextResponse.json({ error: "Too many requests — wait a minute" }, { status: 429 });
   }
   const target = (new URL(req.url).searchParams.get("q") || "").trim();
-  if (!target) return NextResponse.json({ error: "E-poçt və ya domain yazın" }, { status: 400 });
-  if (target.length > 254) return NextResponse.json({ error: "Giriş çox uzundur" }, { status: 400 });
+  if (!target) return NextResponse.json({ error: "Enter an email or domain" }, { status: 400 });
+  if (target.length > 254) return NextResponse.json({ error: "Input is too long" }, { status: 400 });
 
   const isEmail = target.includes("@") && !target.includes("://");
   const result = isEmail ? await scanEmail(target) : await scanDomain(target);

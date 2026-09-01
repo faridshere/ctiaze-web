@@ -331,7 +331,7 @@ export async function searchActors(term: string, limit = 24): Promise<ActorHit[]
   const t = term.trim();
   if (!t) return [];
   const en = AZ_QUERY_EN[norm(t)];   // English equivalent of an AZ country/sector term
-  const docs = await allActors();
+  const docs = await leanActors();
   const hits: ActorHit[] = [];
   for (const a of docs) {
     const reasons: string[] = [];

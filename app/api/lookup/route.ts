@@ -121,34 +121,34 @@ type Vuln = { cve: string; kev: boolean; epss: number | null };
 
 export async function GET(req: Request) {
   if (!rateLimit(`lookup:${clientIp(req)}`, 40, 60_000)) {
-    return NextResponse.json({ error: "Çox sorğu göndərdiniz — bir dəqiqə gözləyin" }, { status: 429 });
+    return NextResponse.json({ error: "Too many requests — wait a minute" }, { status: 429 });
   }
   const url = new URL(req.url);
   let input = (url.searchParams.get("ip") || "").trim();
   const own = !input;
   if (!input) input = firstForwarded(req.headers);
-  if (!input) return NextResponse.json({ error: "IP təyin edilə bilmədi" }, { status: 400 });
+  if (!input) return NextResponse.json({ error: "Could not determine an IP" }, { status: 400 });
 
   // Domain? resolve to an A record so people can check company.az, not just IPs.
   let ip = input;
   let resolvedFrom: string | undefined;
   if (!looksIPv4(input) && !looksIPv6(input)) {
     if (!looksDomain(input))
-      return NextResponse.json({ error: "Yanlış IP və ya domen formatı" }, { status: 400 });
+      return NextResponse.json({ error: "Invalid IP or domain format" }, { status: 400 });
     const r = await resolveDomain(input.toLowerCase());
-    if (!r) return NextResponse.json({ error: "Domen həll edilə bilmədi (A record tapılmadı)" }, { status: 400 });
+    if (!r) return NextResponse.json({ error: "Domain could not be resolved (no A record found)" }, { status: 400 });
     ip = r; resolvedFrom = input.toLowerCase();
   }
 
   if (looksIPv6(ip)) {
     const low = ip.toLowerCase();
     if (low === "::1" || low.startsWith("fe80") || low.startsWith("fc") || low.startsWith("fd"))
-      return NextResponse.json({ error: "Özəl / lokal IP dəstəklənmir" }, { status: 400 });
+      return NextResponse.json({ error: "Private / local IPs are not supported" }, { status: 400 });
   } else {
     const cls = classifyIPv4(ip);
-    if (cls === "invalid") return NextResponse.json({ error: "Yanlış IP formatı" }, { status: 400 });
+    if (cls === "invalid") return NextResponse.json({ error: "Invalid IP format" }, { status: 400 });
     if (cls === "private")
-      return NextResponse.json({ error: "Yalnız public IP — özəl/reserved ünvanlar dəstəklənmir" }, { status: 400 });
+      return NextResponse.json({ error: "Public IPs only — private/reserved addresses are not supported" }, { status: 400 });
   }
 
   const cache = own

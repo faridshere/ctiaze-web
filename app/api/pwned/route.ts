@@ -9,11 +9,11 @@ export const revalidate = 0;
 
 export async function GET(req: Request) {
   if (!rateLimit(`pwned:${clientIp(req)}`, 30, 60_000)) {
-    return NextResponse.json({ error: "Çox sorğu — bir dəqiqə gözləyin" }, { status: 429 });
+    return NextResponse.json({ error: "Too many requests — wait a minute" }, { status: 429 });
   }
   const prefix = (new URL(req.url).searchParams.get("prefix") || "").toUpperCase();
   if (!/^[0-9A-F]{5}$/.test(prefix)) {
-    return NextResponse.json({ error: "Yanlış prefix" }, { status: 400 });
+    return NextResponse.json({ error: "Invalid prefix" }, { status: 400 });
   }
   try {
     const r = await fetch(`https://api.pwnedpasswords.com/range/${prefix}`, {

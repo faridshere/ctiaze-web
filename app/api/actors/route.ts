@@ -3,17 +3,18 @@ import { rateLimit, clientIp } from "@/lib/ratelimit";
 import { searchActors } from "@/lib/threatactors";
 
 export const revalidate = 0;
+export const maxDuration = 60;
 
 export async function GET(req: Request) {
   if (!rateLimit(`actors:${clientIp(req)}`, 60, 60_000)) {
     return NextResponse.json(
-      { error: "Çox sorğu göndərdiniz — bir dəqiqə gözləyin" },
+      { error: "Too many requests — wait a minute" },
       { status: 429 }
     );
   }
   const q = (new URL(req.url).searchParams.get("q") || "").trim();
-  if (!q) return NextResponse.json({ error: "Axtarış termini boşdur" }, { status: 400 });
-  if (q.length > 80) return NextResponse.json({ error: "Termin çox uzundur" }, { status: 400 });
+  if (!q) return NextResponse.json({ error: "Search term is empty" }, { status: 400 });
+  if (q.length > 80) return NextResponse.json({ error: "Search term is too long" }, { status: 400 });
 
   try {
     const hits = await searchActors(q, 24);
@@ -45,7 +46,7 @@ export async function GET(req: Request) {
     );
   } catch {
     return NextResponse.json(
-      { error: "Aktor bazası hazırda əlçatan deyil — bir azdan yenidən yoxlayın" },
+      { error: "The actor database is temporarily unavailable — try again shortly" },
       { status: 503 }
     );
   }

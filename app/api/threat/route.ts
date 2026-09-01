@@ -87,16 +87,16 @@ function hostOfUrl(u: string): string | null {
 
 export async function GET(req: Request) {
   if (!rateLimit(`threat:${clientIp(req)}`, 40, 60_000)) {
-    return NextResponse.json({ error: "Çox sorğu göndərdiniz — bir dəqiqə gözləyin" }, { status: 429 });
+    return NextResponse.json({ error: "Too many requests — wait a minute" }, { status: 429 });
   }
   const raw = (new URL(req.url).searchParams.get("q") || "").trim();
-  if (!raw) return NextResponse.json({ error: "İndikator daxil edin" }, { status: 400 });
-  if (raw.length > 2048) return NextResponse.json({ error: "İndikator çox uzundur" }, { status: 400 });
+  if (!raw) return NextResponse.json({ error: "Enter an indicator" }, { status: 400 });
+  if (raw.length > 2048) return NextResponse.json({ error: "Indicator is too long" }, { status: 400 });
 
   const c = classify(raw);
   if (!c) {
     return NextResponse.json(
-      { error: "Tanınmayan format — IP, domen, URL, hash (MD5/SHA1/SHA256) və ya CVE gözlənilir" },
+      { error: "Unrecognized format — expected an IP, domain, URL, hash (MD5/SHA1/SHA256) or CVE" },
       { status: 400 }
     );
   }
@@ -138,7 +138,7 @@ export async function GET(req: Request) {
   // ---- indicator branch (ip / domain / url / hash) ----
   // Guard private/reserved IPs — reputation feeds only carry public infra.
   if (c.kind === "ip" && !isPublicIPv4(c.value)) {
-    return NextResponse.json({ error: "Yalnız public IP — özəl/reserved ünvanlar dəstəklənmir" }, { status: 400 });
+    return NextResponse.json({ error: "Public IPs only — private/reserved addresses are not supported" }, { status: 400 });
   }
 
   let hits: TfHit[] = await lookupThreatFox(c.value, c.kind);
