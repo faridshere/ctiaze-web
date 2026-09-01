@@ -4,7 +4,7 @@ import { useSyncExternalStore } from "react";
 import { AZ_MONTHS } from "@/lib/format";
 import { useLocale } from "./locale";
 
-const TIME_ZONE = "Asia/Baku";
+const TIME_ZONE = "UTC";
 const EN_MONTHS = ["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"];
 
 // Locale-independent tick: "day\tmonthIndex\thh:mm:ss" — the component formats the
@@ -38,7 +38,7 @@ function getServerSnapshot() {
 export function LiveStatus() {
   const en = useLocale() === "en";
   const raw = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
-  const prefix = en ? "baku" : "bakı";
+  const prefix = "utc";
 
   let tail = "";
   if (raw) {

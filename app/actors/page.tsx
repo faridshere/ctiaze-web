@@ -14,15 +14,8 @@ export const maxDuration = 60;
 export const metadata: Metadata = {
   title: "Threat actors — APT & crime groups",
   description:
-    "Who's targeting you? Search by country, sector, or company for the APT and crime groups that target it. Every answer is tied to a source (MISP Galaxy, ransomware.live, MITRE ATT&CK).",
+    "Who's targeting you? Search by country, sector, or company for the APT and crime groups that target it. We show only what's openly stated.",
 };
-
-function fmtDate(iso: string | null, locale: string): string {
-  if (!iso) return "—";
-  return new Intl.DateTimeFormat(locale === "en" ? "en-GB" : "az-AZ", {
-    timeZone: "Asia/Baku", day: "2-digit", month: "short", year: "numeric",
-  }).format(new Date(iso));
-}
 
 // Subpage aurora: two quiet streaks, not the full hero storm — same world.
 const STREAKS: React.CSSProperties[] = [
@@ -43,7 +36,7 @@ function SectionHead({ title, note, brand }: { title: string; note?: string; bra
 export default async function ActorsPage() {
   const locale = await getLocale();
   const t = getDict(locale).actors;
-  const { regional, top, stats, index } = await getActorsPageData();
+  const { top, stats, index } = await getActorsPageData();
   const en = locale === "en";
 
   // Group the full roster by first letter so a few hundred names read as an
@@ -77,8 +70,7 @@ export default async function ActorsPage() {
           </div>
           <p data-sc="3" className="mt-6 font-mono text-[length:var(--t-micro)] text-[#8A94A2]">
             <b className="font-normal tabular-nums text-ink-primary">{stats.total.toLocaleString("en-US")}</b> {en ? "dossiers" : "dosye"} ·{" "}
-            <b className="font-normal tabular-nums text-ink-primary">{stats.active}</b> {en ? "active" : "aktiv"} ·{" "}
-            MISP Galaxy + ransomware.live + MITRE ATT&amp;CK
+            <b className="font-normal tabular-nums text-ink-primary">{stats.active}</b> {en ? "active" : "aktiv"}
           </p>
         </div>
       </section>
@@ -97,16 +89,6 @@ export default async function ActorsPage() {
           <p className="mt-6 text-sm text-ink-muted">{t.rosterEmpty}</p>
         )}
 
-        {regional.length > 0 && (
-          <>
-            <SectionHead title={t.regionalTitle} note={t.regionalNote} brand />
-            <div className="mt-2">
-              {regional.map((a, i) => (
-                <ActorRow key={a._id} a={a} locale={locale} i={i} />
-              ))}
-            </div>
-          </>
-        )}
 
         {/* Crawlable A–Z index: real internal links for the full dossier set,
             grouped and jump-navigable so a few hundred names stay scannable. */}
@@ -157,12 +139,7 @@ export default async function ActorsPage() {
         )}
 
         <p className="mt-14 border-t border-hairline pt-8 font-mono text-xs leading-relaxed text-ink-muted">
-          {t.sourcesLine(
-            stats.total.toLocaleString("en-US"),
-            stats.active,
-            stats.translated,
-            stats.lastRefreshed ? fmtDate(stats.lastRefreshed, locale) : ""
-          )}
+          {stats.total.toLocaleString("en-US")} dossiers · {stats.active} active. Search covers the whole roster; nothing is invented.
         </p>
       </main>
       <Footer />

@@ -15,7 +15,7 @@ export async function generateMetadata(
     azTitle: "Özünü yoxla — breach və domain exposure · Scan me",
     enTitle: "Scan me — breach & domain exposure check",
     azDesc: "E-poçt, parol və iş domeninin ifşasını yoxla. Breach axtarışı (XposedOrNot), pwned-parol yoxlaması (k-anonymity), subdomain-lar (certspotter) və Shodan hücum səthi.",
-    enDesc: "Check your email, password and work domain exposure. Breach lookup (XposedOrNot), pwned-password check (k-anonymity), subdomains (certspotter) and Shodan attack surface.",
+    enDesc: "Check your email, password and work-domain exposure — breaches, leaked passwords, exposed subdomains and internet-facing attack surface.",
   });
 }
 
@@ -55,9 +55,6 @@ export default async function ScanMePage() {
           <ScanMe locale={locale} />
         </div>
 
-        <p className="mt-10 border-t border-hairline pt-6 font-mono text-xs leading-relaxed text-ink-muted">
-          {t.sources}
-        </p>
       </main>
       <Footer />
     </div>

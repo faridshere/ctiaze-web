@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Bricolage_Grotesque, Hanken_Grotesk, JetBrains_Mono } from "next/font/google";
+import { Schibsted_Grotesk, JetBrains_Mono } from "next/font/google";
 import { Analytics } from "@vercel/analytics/next";
 import { CommandPalette } from "@/components/CommandPalette";
 import { MotionRoot } from "@/components/MotionRoot";
@@ -7,21 +7,19 @@ import { LocaleProvider } from "@/components/locale";
 import { getLocale } from "@/lib/i18n-server";
 import "./globals.css";
 
-// "Ink & signal" type system (2026-08 redesign, matched to /radar.html):
-// Bricolage Grotesque — characterful editorial grotesque for headlines + the
-// wordmark (deliberately not a default sans); Hanken Grotesk — clean, warm body
-// workhorse; JetBrains Mono — ALL telemetry (timestamps,
+// Type system (2026-09): Schibsted Grotesk — one nonchalant grotesque for the
+// wordmark, headlines and body alike; JetBrains Mono — ALL telemetry (timestamps,
 // glyph codes, tickers, CVE/IOC values). latin-ext kept so actor names and
 // place names with diacritics render cleanly. next/font self-hosts woff2 from
 // our origin: no runtime CDN, no per-OS fallback drift.
-const headline = Bricolage_Grotesque({
+const headline = Schibsted_Grotesk({
   variable: "--font-headline",
   subsets: ["latin", "latin-ext"],
   weight: ["600", "700"],
   display: "swap",
 });
 
-const body = Hanken_Grotesk({
+const body = Schibsted_Grotesk({
   variable: "--font-body",
   subsets: ["latin", "latin-ext"],
   weight: ["400", "500", "600"],
@@ -35,11 +33,11 @@ const mono = JetBrains_Mono({
   display: "swap",
 });
 
-// Bricolage Grotesque again as the skopnix brand voice (hero + wordmark), applied
-// via font-display; one characterful display family unifies every headline.
-const display = Bricolage_Grotesque({
+// Schibsted Grotesk as the skopnix brand voice (hero + wordmark), applied via
+// font-display; one family unifies every headline and the mark.
+const display = Schibsted_Grotesk({
   variable: "--font-display",
-  subsets: ["latin"],
+  subsets: ["latin", "latin-ext"],
   weight: ["500", "600", "700"],
   display: "swap",
 });

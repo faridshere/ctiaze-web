@@ -123,7 +123,7 @@ export async function getActorById(id: string): Promise<ThreatActor | null> {
 // Every actor slug, for the sitemap. Substantive actors first (a thin name-only
 // stub is low-value to crawl), capped so the sitemap stays a sensible size.
 export async function getActorIds(limit = 800): Promise<string[]> {
-  const docs = await leanActors();
+  const docs = await indexActors();
   return [...docs]
     .sort((a, b) => substance(b) - substance(a) || activity(b) - activity(a) || byName(a, b))
     .slice(0, limit)
@@ -134,7 +134,7 @@ export async function getActorIds(limit = 800): Promise<string[]> {
 // ~800 dossiers in the sitemap actually receive internal links (a sitemap-only URL
 // ranks poorly). Same substantive-first cap as the sitemap so the two agree.
 export async function getActorIndex(limit = 800): Promise<{ id: string; name: string; type: string }[]> {
-  const docs = await leanActors();
+  const docs = await indexActors();
   return [...docs]
     .sort((a, b) => substance(b) - substance(a) || activity(b) - activity(a) || byName(a, b))
     .slice(0, limit)
@@ -148,7 +148,7 @@ export async function getActorStats(): Promise<{
   translated: number;
   lastRefreshed: string | null;
 }> {
-  const docs = await leanActors();
+  const docs = await indexActors();
   const active = docs.filter((a) => (a.recent_activity?.length ?? 0) > 0).length;
   const translated = docs.filter((a) => a.description_az).length;
   const last = docs
@@ -197,10 +197,24 @@ function byName(a: ThreatActor, b: ThreatActor): number {
   return (a.name || "").toLowerCase().localeCompare((b.name || "").toLowerCase());
 }
 
+// An actor worth surfacing: a written dossier, or structured intel (TTPs / a
+// MITRE id / observed victims / stated targeting). Pure name-only stubs are
+// hidden from every browse/search/stat surface — detail pages still resolve by
+// URL (dynamicParams), so nothing 404s; they just don't clutter the roster.
+export function actorHasInfo(a: ThreatActor): boolean {
+  const desc = (a.description_en || a.description_az || "").trim();
+  return desc.length >= 40 || substance(a) > 0;
+}
+
+// The roster minus name-only stubs — the base for all index/search/stat surfaces.
+async function indexActors(): Promise<ThreatActor[]> {
+  return (await leanActors()).filter(actorHasInfo);
+}
+
 // The APTs and crime groups stated to target Azerbaijan / the Caucasus — the whole
 // reason a local reader comes here rather than to MITRE. Regional weight first.
 export async function getRegionalActors(n = 6): Promise<ThreatActor[]> {
-  const docs = await leanActors();
+  const docs = await indexActors();
   return docs
     .filter((a) => regionalWeight(a) > 0)
     .sort(
@@ -221,13 +235,12 @@ export async function getRegionalActors(n = 6): Promise<ThreatActor[]> {
 // is what saves a cold lambda from refetching the roster ("can't access /actors").
 export const getActorsPageData = unstable_cache(
   async () => {
-    const [regional, stats, index] = await Promise.all([
-      getRegionalActors(6),
+    const [stats, index] = await Promise.all([
       getActorStats(),
       getActorIndex(),
     ]);
-    const top = await getTopActors(24, new Set(regional.map((a) => a._id)));
-    return { regional, top, stats, index };
+    const top = await getTopActors(24);
+    return { top, stats, index };
   },
   ["actors-page-v2"],
   { revalidate: 3600 },
@@ -242,7 +255,7 @@ export const getActorByIdCached = unstable_cache(
 );
 
 export async function getTopActors(n = 12, exclude?: Set<string>): Promise<ThreatActor[]> {
-  const docs = await leanActors();
+  const docs = await indexActors();
   return [...docs]
     .filter((a) => !exclude?.has(a._id))
     .sort(
@@ -331,7 +344,7 @@ export async function searchActors(term: string, limit = 24): Promise<ActorHit[]
   const t = term.trim();
   if (!t) return [];
   const en = AZ_QUERY_EN[norm(t)];   // English equivalent of an AZ country/sector term
-  const docs = await leanActors();
+  const docs = await indexActors();
   const hits: ActorHit[] = [];
   for (const a of docs) {
     const reasons: string[] = [];

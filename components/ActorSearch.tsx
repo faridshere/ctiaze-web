@@ -1,8 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { getDict, type Locale } from "@/lib/i18n";
+import { getPowToken, primePowToken } from "@/lib/pow-client";
 
 type Hit = {
   id: string; name: string; aliases: string[]; type: string;
@@ -28,6 +29,8 @@ export function ActorSearch({ locale }: { locale: Locale }) {
   const [data, setData] = useState<SearchResponse | null>(null);
   const [error, setError] = useState("");
 
+  useEffect(() => { primePowToken(); }, []); // pre-solve the invisible PoW
+
   const typeLabel = (tp: string) => (tp === "unknown" ? t.nameleum : tp);
 
   async function run(term: string) {
@@ -35,7 +38,8 @@ export function ActorSearch({ locale }: { locale: Locale }) {
     setData(null);
     setLoading(true);
     try {
-      const r = await fetch(`/api/actors?q=${encodeURIComponent(term)}`);
+      const pow = await getPowToken();
+      const r = await fetch(`/api/actors?q=${encodeURIComponent(term)}`, { headers: { "x-pow": pow } });
       const j = await r.json();
       if (!r.ok) setError(j.error || c.genericError);
       else setData(j as SearchResponse);

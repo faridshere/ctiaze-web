@@ -10,14 +10,12 @@ import { getDict } from "@/lib/i18n";
 
 // Focused nav (Farid, 2026-08-30): /exposure, /cve, /ioc stay live but leave
 // the nav for now — the product story is wire → adversaries → scan → API.
+// Soft-launch nav (Farid, 2026-09-01): only Feed / Actors / Scan me are public.
+// stacknix, API and pricing stay built but hidden — re-add here as the tool gets used.
 const NAV: [string, keyof ReturnType<typeof getDict>["nav"]][] = [
   ["/", "feed"],
   ["/actors", "actors"],
-  ["/stacknix", "stacknix"],
   ["/scan-me", "scanme"],
-  ["/developers", "api"],
-  ["/pricing", "pricing"],
-  ["/about", "about"],
 ];
 
 export function Header() {

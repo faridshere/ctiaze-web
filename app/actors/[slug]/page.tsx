@@ -135,8 +135,8 @@ export default async function ActorPage({ params }: { params: Promise<{ slug: st
         <SeeAlso sourceType="actor" sourceId={a._id} en={en} />
         <p className="mt-8 font-mono text-[11px] leading-relaxed text-ink-muted">
           {en
-            ? "Every claim on this page is drawn from the cited source (MISP Galaxy, MITRE ATT&CK, ransomware.live) — no attribution is invented."
-            : "Bu səhifədəki hər iddia göstərilən mənbədən götürülüb (MISP Galaxy, MITRE ATT&CK, ransomware.live) — heç bir atribusiya uydurulmayıb."}
+            ? "Nothing on this page is invented — only what's openly stated is shown."
+            : "Bu səhifədə heç nə uydurulmayıb — yalnız açıq bəyan edilənlər göstərilir."}
         </p>
       </main>
       <Footer />

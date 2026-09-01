@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { rateLimit, clientIp } from "@/lib/ratelimit";
+import { verifyPow } from "@/lib/pow";
 import { searchActors } from "@/lib/threatactors";
 
 export const revalidate = 0;
@@ -10,6 +11,12 @@ export async function GET(req: Request) {
     return NextResponse.json(
       { error: "Too many requests — wait a minute" },
       { status: 429 }
+    );
+  }
+  if (!verifyPow(req.headers.get("x-pow"))) {
+    return NextResponse.json(
+      { error: "Couldn't verify the request — refresh the page and try again." },
+      { status: 403 }
     );
   }
   const q = (new URL(req.url).searchParams.get("q") || "").trim();

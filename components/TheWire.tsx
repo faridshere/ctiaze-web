@@ -5,21 +5,12 @@ import Link from "next/link";
 // never ride the RSC payload.
 export type WireItem = {
   id: string; slug: string; titleEn: string; titleAz: string;
-  sourceUrl: string; kev: boolean; region: boolean;
-  severity: string | null; cveIds: string[]; publishedAt: string;
+  kev: boolean; severity: string | null; cveIds: string[]; publishedAt: string;
 };
 
 // "On the wire, right now" — the real published feed, rendered as a dense
-// intelligence wire. Every row is a real story (→ /news/{slug}) with its real
-// KEV / region / CVE / source signal. This is the homepage's proof that the
-// product is live data, not a template.
-function sourceName(url: string): string {
-  try {
-    return new URL(url).hostname.replace(/^www\./, "");
-  } catch {
-    return "";
-  }
-}
+// intelligence wire. Every row is a real story (→ /news/{slug}) with its KEV /
+// CVE signal. The homepage's proof that this is live data, not a template.
 
 function relTime(iso: string, en: boolean): string {
   const ms = Date.now() - new Date(iso).getTime();
@@ -32,7 +23,6 @@ function relTime(iso: string, en: boolean): string {
 
 function Row({ s, en, i }: { s: WireItem; en: boolean; i: number }) {
   const time = relTime(s.publishedAt, en); // server-rendered, revalidates with the page
-  const src = sourceName(s.sourceUrl);
   const cve = s.cveIds[0];
   return (
     <Link
@@ -48,10 +38,8 @@ function Row({ s, en, i }: { s: WireItem; en: boolean; i: number }) {
         </span>
         <span className="mt-[7px] flex flex-wrap items-center gap-[7px]">
           {s.kev && <Flag className="border-[rgba(255,90,77,0.45)] text-[#FF5A4D]">KEV</Flag>}
-          {s.region && <Flag className="border-[rgba(111,211,230,0.4)] text-[#6FD3E6]">{en ? "Region" : "Region"}</Flag>}
           {cve && <Flag className="border-white/[0.15] text-[#79838F]">{cve}</Flag>}
           {!cve && s.severity === "critical" && <Flag className="border-[rgba(255,90,77,0.4)] text-[#FF5A4D]">Critical</Flag>}
-          {src && <Flag className="border-hairline text-[#79838F]">{src}</Flag>}
         </span>
       </span>
     </Link>
@@ -75,8 +63,7 @@ export function TheWire({ stories, en }: { stories: WireItem[]; en: boolean }) {
           {en ? "On the wire, right now" : "Xəttin üstündə, indi"}
         </h2>
         <div className="font-mono text-[length:var(--t-micro)] text-[#79838F]">
-          {en ? "Every line is a queryable object · sources " : "Hər sətir sorğulana bilən obyektdir · mənbələr "}
-          <b className="font-normal text-[#9AA6B4]">NVD · CISA KEV · MITRE ATT&amp;CK · ransomware.live · abuse.ch</b>
+          {en ? "the last few hours" : "son bir neçə saat"}
         </div>
       </div>
       <div className="grid grid-cols-1 gap-x-[clamp(24px,4vw,56px)] md:grid-cols-2">
@@ -89,7 +76,7 @@ export function TheWire({ stories, en }: { stories: WireItem[]; en: boolean }) {
           {en ? "Open the full feed" : "Tam lenti aç"} →
         </Link>
         <span className="font-mono text-[length:var(--t-micro)] text-[#79838F]">
-          {en ? "Bilingual (AZ / EN) · grounded against the source, never fabricated" : "İkidilli (AZ / EN) · mənbəyə qarşı yoxlanılır, uydurulmur"}
+          {en ? "grounded — nothing fabricated" : "yoxlanılıb — heç nə uydurulmayıb"}
         </span>
       </div>
     </section>

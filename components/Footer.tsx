@@ -13,21 +13,14 @@ export function Footer() {
         <div className="max-w-md">
           <p className="text-sm text-ink-secondary">{t.tagline}</p>
           <p className="mt-3 font-mono text-[11px] text-ink-muted">
-            © {new Date().getFullYear()} skopnix · Hackxana
+            © {new Date().getFullYear()} skopnix
           </p>
         </div>
         <nav className="flex flex-wrap gap-x-6 gap-y-2 font-mono text-[11px] uppercase tracking-wider text-ink-muted">
-          <a href="/feed.json" className="hover:text-brand">feed.json</a>
-          <a href="/rss.xml" className="hover:text-brand">rss</a>
-          <Link href="/sectors" className="hover:text-brand">{t.sectors}</Link>
-          <Link href="/vendor" className="hover:text-brand">{t.vendors}</Link>
-          <Link href="/attacks" className="hover:text-brand">{t.guides}</Link>
-          <Link href="/glossary" className="hover:text-brand">{t.glossary}</Link>
-          <Link href="/methodology" className="hover:text-brand">{t.methodology}</Link>
-          <Link href="/about" className="hover:text-brand">{t.about}</Link>
-          <a href="https://t.me/ctiaze" target="_blank" rel="noopener noreferrer" className="hover:text-brand">
-            telegram ↗
-          </a>
+          <Link href="/" className="hover:text-brand">feed</Link>
+          <Link href="/actors" className="hover:text-brand">actors</Link>
+          <Link href="/scan-me" className="hover:text-brand">scan me</Link>
+          <Link href="/about" className="hover:text-brand">about</Link>
         </nav>
       </div>
     </footer>

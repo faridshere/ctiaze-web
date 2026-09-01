@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { getDict, type Locale } from "@/lib/i18n";
 import { breachActions, riskLabel, type Risk } from "@/lib/breachactions";
+import { getPowToken, primePowToken } from "@/lib/pow-client";
 
 const RISK_CHIP: Record<Risk, string> = {
   critical: "border-accent-critical/40 bg-accent-critical/10 text-accent-critical",
@@ -111,6 +112,7 @@ export function ScanMe({ locale }: { locale: Locale }) {
   // useSearchParams — so no Suspense boundary / SSR bailout is forced on the page.
   const booted = useRef(false);
   useEffect(() => {
+    primePowToken(); // pre-solve the invisible proof-of-work so submit is instant
     if (booted.current) return;
     booted.current = true;
     const initial = new URLSearchParams(window.location.search).get("q")?.trim();
@@ -129,7 +131,8 @@ export function ScanMe({ locale }: { locale: Locale }) {
     setResult(null);
     setLoading(true);
     try {
-      const r = await fetch(`/api/scan?q=${encodeURIComponent(term)}`);
+      const pow = await getPowToken();
+      const r = await fetch(`/api/scan?q=${encodeURIComponent(term)}`, { headers: { "x-pow": pow } });
       const data = await r.json();
       if (!r.ok) setError(data.error || c.genericError);
       else {
@@ -301,13 +304,11 @@ type ScanDict = ReturnType<typeof getDict>["scan"];
 function fmtDate(iso: string | null): string {
   return iso ? iso.slice(0, 10) : "—";
 }
+// Soft launch: we don't surface where the data comes from. Kept as a no-op so
+// the call sites stay intact for when provenance is turned back on.
 function Source({ children }: { children: React.ReactNode }) {
-  return (
-    <div className="mt-4 flex items-start gap-2 border-t border-dashed border-hairline pt-3 font-mono text-[11px] text-ink-muted">
-      <span aria-hidden="true">🛈</span>
-      <span>{children}</span>
-    </div>
-  );
+  void children; // provenance hidden for now — children kept for later
+  return null;
 }
 
 function InfostealerBanner({ steal, t }: { steal: NonNullable<Infostealer>; t: ScanDict }) {
@@ -342,12 +343,6 @@ function ActionList({ actions, t, locale }: { actions: ReturnType<typeof breachA
             </span>
             <span className="text-[13.5px] leading-relaxed text-ink-secondary">
               {locale === "en" ? a.en : a.az}
-              {a.az_local && (
-                <span className="mt-1 flex gap-1.5 text-[12.5px] text-ink-muted">
-                  <span className="shrink-0 font-mono text-[10px] uppercase tracking-wider text-brand">{t.localActionLabel}:</span>
-                  <span>{a.az_local}</span>
-                </span>
-              )}
             </span>
           </li>
         ))}
@@ -555,7 +550,7 @@ function DomainView({ r, t }: { r: DomainResult; t: ScanDict }) {
                   {r.mentions.stories.slice(0, 3).map((s) => (
                     <a key={s.url} href={s.url} className="block border-t border-hairline pt-2 first:border-t-0 first:pt-0 hover:opacity-90">
                       <div className="text-[13px] leading-snug text-ink-primary">{s.title}</div>
-                      <div className="mt-0.5 font-mono text-[10.5px] text-ink-muted">{s.source} · {fmtDate(s.published)}</div>
+                      <div className="mt-0.5 font-mono text-[10.5px] text-ink-muted">{fmtDate(s.published)}</div>
                     </a>
                   ))}
                 </div>
