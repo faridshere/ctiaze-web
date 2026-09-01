@@ -39,3 +39,9 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# OSINT scratch / stray agent fetches
+al.txt
+rl_groups.json
+thaicert.html
+*.tmp.json
