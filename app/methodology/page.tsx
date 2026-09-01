@@ -10,7 +10,7 @@ import { jsonLdSafe } from "@/lib/format";
 
 export const revalidate = 86400; // methodology is near-static; numbers via ISR
 
-const BASE = "https://ctiaze.tech";
+const BASE = "https://skopnix.com";
 
 const nf = (n: number) => n.toLocaleString("en-US");
 

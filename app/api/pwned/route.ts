@@ -17,7 +17,7 @@ export async function GET(req: Request) {
   }
   try {
     const r = await fetch(`https://api.pwnedpasswords.com/range/${prefix}`, {
-      headers: { "User-Agent": "ctiaze.tech scan-me", "Add-Padding": "true" },
+      headers: { "User-Agent": "skopnix.com scan-me", "Add-Padding": "true" },
       signal: AbortSignal.timeout(8000),
     });
     if (!r.ok) return NextResponse.json({ error: "unavailable" }, { status: 503 });

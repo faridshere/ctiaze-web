@@ -8,7 +8,7 @@ export default function robots(): MetadataRoute.Robots {
       { userAgent: "*", allow: "/" },
       { userAgent: ["GPTBot", "ClaudeBot", "PerplexityBot", "Google-Extended"], allow: "/" },
     ],
-    sitemap: ["https://ctiaze.tech/sitemap.xml", "https://ctiaze.tech/news-sitemap.xml"],
-    host: "https://ctiaze.tech",
+    sitemap: ["https://skopnix.com/sitemap.xml", "https://skopnix.com/news-sitemap.xml"],
+    host: "https://skopnix.com",
   };
 }

@@ -22,7 +22,7 @@ export async function generateStaticParams() {
   return [];
 }
 
-const BASE = "https://ctiaze.tech";
+const BASE = "https://skopnix.com";
 
 function desc(a: NonNullable<Awaited<ReturnType<typeof getActorById>>>, en: boolean): string {
   return ((en ? a.description_en || a.description_az : a.description_az || a.description_en) || "").slice(0, 300);

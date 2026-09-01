@@ -10,7 +10,7 @@ import { jsonLdSafe } from "@/lib/format";
 
 export const revalidate = 3600;
 
-const BASE = "https://ctiaze.tech";
+const BASE = "https://skopnix.com";
 
 // Dark-register category hex (--d-cat-*). The page is `.ops` (always dark), so the
 // literal dark values are correct by construction — no dynamic Tailwind class that

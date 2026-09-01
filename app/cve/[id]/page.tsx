@@ -15,7 +15,7 @@ import { SeeAlso } from "@/components/SeeAlso";
 
 export const revalidate = 86400; // explainers are static engine output — daily is plenty
 
-const BASE = "https://ctiaze.tech";
+const BASE = "https://skopnix.com";
 
 // Prerender the engine's top-priority CVEs (kev > exploited > high > standard);
 // the remaining ~7.8k explainer pages fill in on demand via ISR (dynamicParams

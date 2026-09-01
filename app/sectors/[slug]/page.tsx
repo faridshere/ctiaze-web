@@ -12,7 +12,7 @@ import { jsonLdSafe } from "@/lib/format";
 
 export const revalidate = 86400;
 
-const BASE = "https://ctiaze.tech";
+const BASE = "https://skopnix.com";
 
 export const dynamicParams = true;
 

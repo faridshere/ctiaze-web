@@ -66,7 +66,7 @@ export async function getLatestSignal(): Promise<{ count: number }> {
   return { count };
 }
 
-const SITE = "https://ctiaze.tech";
+const SITE = "https://skopnix.com";
 
 // Public, machine-readable shape for feed.json / RSS / MCP consumers. Only
 // fields that are safe and useful to expose — no internal scoring internals
@@ -78,7 +78,7 @@ export type FeedItem = {
   title_en: string;
   summary_az: string;   // so an AI agent has text to quote/ground on, not just a title
   summary_en: string;
-  url: string; // stable permalink on ctiaze.tech
+  url: string; // stable permalink on skopnix.com
   source_url: string;
   category: string;
   severity: string | null;

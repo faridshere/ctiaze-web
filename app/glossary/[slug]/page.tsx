@@ -44,8 +44,8 @@ export default async function TermPage({ params }: { params: Promise<{ slug: str
     "@type": "DefinedTerm",
     name: g.term,
     description: en ? g.en : g.az,
-    inDefinedTermSet: "https://ctiaze.tech/glossary",
-    url: `https://ctiaze.tech/glossary/${g.slug}`,
+    inDefinedTermSet: "https://skopnix.com/glossary",
+    url: `https://skopnix.com/glossary/${g.slug}`,
   };
 
   return (

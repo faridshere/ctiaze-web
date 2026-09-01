@@ -13,7 +13,7 @@ export const revalidate = 3600;
 // search + AI answer engines — the per-CVE Azerbaijani long-tail and the only
 // Azerbaijani threat-actor dossier set in existence, where skopnix can rank #1.
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const base = "https://ctiaze.tech";
+  const base = "https://skopnix.com";
   const [stories, actorIds, cveIds, guideSlugs, sectorSlugs, vendorSlugs] = await Promise.all([
     getStories(500).catch(() => []),
     getActorIds(800).catch(() => []),

@@ -102,7 +102,7 @@ function put(map: Map<string, TfHit[]>, key: string, hit: TfHit) {
 
 async function build(): Promise<Index> {
   const res = await fetch(EXPORT_URL, {
-    headers: { accept: "application/json", "User-Agent": "ctiaze.tech threat lookup (+https://ctiaze.tech)" },
+    headers: { accept: "application/json", "User-Agent": "skopnix.com threat lookup (+https://skopnix.com)" },
     signal: AbortSignal.timeout(15000),
   });
   if (!res.ok) throw new Error(`threatfox export ${res.status}`);

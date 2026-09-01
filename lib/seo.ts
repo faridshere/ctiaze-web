@@ -6,7 +6,7 @@ import type { Metadata } from "next";
 // an alternate that canonicalizes elsewhere is deduped and its hreflang ignored.
 // The bare URL keeps the bare canonical + x-default; a junk ?dil falls back to it.
 
-const SITE = "https://ctiaze.tech";
+const SITE = "https://skopnix.com";
 
 export function dilAlternates(path: string, dil?: string): NonNullable<Metadata["alternates"]> {
   const url = `${SITE}${path}`;

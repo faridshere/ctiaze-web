@@ -12,7 +12,7 @@ import { jsonLdSafe } from "@/lib/format";
 
 export const revalidate = 86400;
 
-const BASE = "https://ctiaze.tech";
+const BASE = "https://skopnix.com";
 
 // How many CVEs to render on a hub. Microsoft alone carries ~1,560 — an
 // unbounded list would be a huge DOM and blow past the FIRST EPSS batch limit

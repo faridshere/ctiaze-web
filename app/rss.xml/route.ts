@@ -1,6 +1,6 @@
 import { getStories } from "@/lib/stories";
 
-const SITE = "https://ctiaze.tech";
+const SITE = "https://skopnix.com";
 
 function esc(s: string): string {
   return s

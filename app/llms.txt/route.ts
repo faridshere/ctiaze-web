@@ -13,19 +13,19 @@ export async function GET() {
 > (AZ) Azərbaycan dilində avtomatlaşdırılmış kibertəhlükəsizlik threat intelligence.
 
 ## Key pages
-- [Threat actors](https://ctiaze.tech/actors): the only Azerbaijani threat-actor
+- [Threat actors](https://skopnix.com/actors): the only Azerbaijani threat-actor
   dossier set — hundreds of APT/crime groups with MITRE ATT&CK techniques, malware,
   victimology and regional targeting. Per-actor pages at /actors/{slug}.
-- [CVE registry](https://ctiaze.tech/cve): CVEs with CISA KEV + FIRST EPSS context.
-- [Exposure](https://ctiaze.tech/exposure): a weekly Shodan dataset of Azerbaijan's
+- [CVE registry](https://skopnix.com/cve): CVEs with CISA KEV + FIRST EPSS context.
+- [Exposure](https://skopnix.com/exposure): a weekly Shodan dataset of Azerbaijan's
   internet-exposed attack surface (a recurring, unique dataset).
-- [Scan-me](https://ctiaze.tech/scan-me): keyless email-breach + infostealer + domain
+- [Scan-me](https://skopnix.com/scan-me): keyless email-breach + infostealer + domain
   attack-surface lookup.
-- [News](https://ctiaze.tech): the bilingual, grounded CTI feed; stories at /news/{slug}.
+- [News](https://skopnix.com): the bilingual, grounded CTI feed; stories at /news/{slug}.
 
 ## Feeds
-- [feed.json](https://ctiaze.tech/feed.json): JSON feed, last 100 stories.
-- [RSS](https://ctiaze.tech/rss.xml): RSS 2.0. Filterable: ?kev=1 (actively exploited),
+- [feed.json](https://skopnix.com/feed.json): JSON feed, last 100 stories.
+- [RSS](https://skopnix.com/rss.xml): RSS 2.0. Filterable: ?kev=1 (actively exploited),
   ?region=1 (Azerbaijan/regional), ?cat=ransomware, ?lang=en (English).
 
 ## Feed fields
@@ -34,8 +34,8 @@ source_url, category, severity, kev (CISA Known Exploited Vulnerabilities), cve_
 region_relevant (Azerbaijan/regional relevance), published_at (ISO 8601).
 
 ## Sites
-- [ctiaze.tech](https://ctiaze.tech): the human-readable bilingual CTI console.
-- [ctiaze.dev](https://ctiaze.dev): developer / API portal.
+- [skopnix.com](https://skopnix.com): the human-readable bilingual CTI console.
+- [skopnix.com/developers](https://skopnix.com/developers): developer / API portal.
 
 ## Attribution
 Every story links to its original source (source_url). skopnix aggregates, verifies

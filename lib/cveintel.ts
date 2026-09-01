@@ -9,7 +9,7 @@ async function j<T>(url: string, ms: number): Promise<T | null> {
   try {
     const r = await fetch(url, {
       signal: AbortSignal.timeout(ms),
-      headers: { accept: "application/json", "User-Agent": "ctiaze.tech CVE lookup (+https://ctiaze.tech)" },
+      headers: { accept: "application/json", "User-Agent": "skopnix.com CVE lookup (+https://skopnix.com)" },
     });
     if (!r.ok) return null;
     return (await r.json()) as T;

@@ -1,14 +1,14 @@
 import { NextResponse } from "next/server";
 import { getFeed } from "@/lib/stories";
 
-// Public machine-readable feed — the substrate the ctiaze.dev developer portal
+// Public machine-readable feed — the substrate the skopnix.com/developers developer portal
 // and any AI agent / MCP server consumes. CDN-cached for 5 min (feed changes at
 // most every couple hours, so a live DB hit per request is wasteful).
 export async function GET() {
   const items = await getFeed(100);
   return NextResponse.json(
     {
-      source: "ctiaze.tech",
+      source: "skopnix.com",
       description:
         "Azərbaycan dilində avtomatlaşdırılmış CTI feed. Son 100 dərc olunmuş xəbər.",
       generated_at: new Date().toISOString(),

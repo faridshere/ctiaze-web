@@ -32,7 +32,7 @@ const BENIGN_DOMAINS = new Set([
   "bleepingcomputer.com", "thehackernews.com", "securityweek.com",
   "krebsonsecurity.com", "therecord.media", "darkreading.com",
   "theregister.com", "arstechnica.com", "wired.com", "zdnet.com",
-  "bankinfosecurity.com", "hackread.com", "ctiaze.tech",
+  "bankinfosecurity.com", "hackread.com", "skopnix.com",
   // security-vendor / research blogs that appear as source citations, not IOCs
   "catonetworks.com", "group-ib.com", "intezer.com", "malwarebytes.com",
   "welivesecurity.com", "securelist.com", "unit42.paloaltonetworks.com",

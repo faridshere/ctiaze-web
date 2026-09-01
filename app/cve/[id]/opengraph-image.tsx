@@ -78,7 +78,7 @@ async function renderCard(opts: {
   grounded: boolean;
 }) {
   const { eyebrow, headline, suffix, chips, lead, grounded } = opts;
-  const allText = `skopnix ${suffix} ${eyebrow} ${headline} ${chips.map((c) => c.text).join(" ")} ${lead ?? ""} əsaslandırılıb ctiaze.tech`;
+  const allText = `skopnix ${suffix} ${eyebrow} ${headline} ${chips.map((c) => c.text).join(" ")} ${lead ?? ""} əsaslandırılıb skopnix.com`;
   const [bold, semi] = await Promise.all([loadFont(allText, 700), loadFont(allText, 600)]);
   const fonts = [
     bold && { name: "Archivo", data: bold, weight: 700 as const, style: "normal" as const },
@@ -149,7 +149,7 @@ async function renderCard(opts: {
           ) : (
             <div style={{ display: "flex" }} />
           )}
-          <div style={{ fontSize: 22, color: DIM }}>ctiaze.tech</div>
+          <div style={{ fontSize: 22, color: DIM }}>skopnix.com</div>
         </div>
       </div>
     ),

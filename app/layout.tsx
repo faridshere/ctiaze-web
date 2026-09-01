@@ -44,7 +44,7 @@ const display = Schibsted_Grotesk({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://ctiaze.tech"),
+  metadataBase: new URL("https://skopnix.com"),
   title: {
     default: "skopnix — global cyber-threat intelligence",
     template: "%s — skopnix",

@@ -54,7 +54,7 @@ export async function generateMetadata({
   const en = (await getLocale()) === "en";
   const title = en ? story.titleEn : story.titleAz;
   const desc = (en ? story.summaryEn : story.bodyAz).slice(0, 160);
-  const url = `https://ctiaze.tech/news/${story.slug}`;
+  const url = `https://skopnix.com/news/${story.slug}`;
   // Each ?dil= variant must be SELF-canonical, or Google dedupes the alternate into
   // the bare URL's canonical and ignores the hreflang cluster — so the Azerbaijani
   // long-tail never gets its own indexable URL. Bare URL keeps the bare canonical +
@@ -110,7 +110,7 @@ export default async function StoryPage({ params }: { params: Promise<Params> })
   const pivots = specificPivots(...iocText);
   const maybeIntel = extracted.length > 0 || actors.length > 0 || pivots.length > 0;
 
-  const storyUrl = `https://ctiaze.tech/news/${story.slug}`;
+  const storyUrl = `https://skopnix.com/news/${story.slug}`;
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "NewsArticle",

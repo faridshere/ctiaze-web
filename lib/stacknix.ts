@@ -15,7 +15,7 @@ import { unstable_cache } from "next/cache";
 import { kevMeta, kevCatalogDate, epssDetailed, type KevRow } from "./cveintel";
 
 const NVD = "https://services.nvd.nist.gov/rest/json";
-const UA = "skopnix stacknix (+https://ctiaze.tech)";
+const UA = "skopnix stacknix (+https://skopnix.com)";
 const KEY = process.env.NVD_API_KEY; // optional; keyless 5/30s, keyed 50/30s
 
 async function nvd<T>(url: string, ms = 12000): Promise<T | null> {

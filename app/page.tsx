@@ -78,18 +78,18 @@ export default async function HomePage() {
     "@context": "https://schema.org",
     "@graph": [
       {
-        "@type": "Organization", "@id": "https://ctiaze.tech/#org", name: "skopnix",
-        url: "https://ctiaze.tech",
+        "@type": "Organization", "@id": "https://skopnix.com/#org", name: "skopnix",
+        url: "https://skopnix.com",
         description: en
           ? "Global cyber-threat intelligence as an API and MCP server, with a regional data edge — grounded, cited, bilingual."
           : "Qlobal kiber-təhlükə kəşfiyyatı — API və MCP server, regional data üstünlüyü ilə. Yoxlanılır, mənbəyə istinad edilir, ikidilli.",
-        logo: "https://ctiaze.tech/icon.svg",
+        logo: "https://skopnix.com/icon.svg",
         sameAs: ["https://t.me/ctiaze"],
       },
       {
-        "@type": "WebSite", "@id": "https://ctiaze.tech/#site", name: "skopnix",
-        url: "https://ctiaze.tech", inLanguage: ["az", "en"],
-        publisher: { "@id": "https://ctiaze.tech/#org" },
+        "@type": "WebSite", "@id": "https://skopnix.com/#site", name: "skopnix",
+        url: "https://skopnix.com", inLanguage: ["az", "en"],
+        publisher: { "@id": "https://skopnix.com/#org" },
       },
     ],
   };

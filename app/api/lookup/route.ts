@@ -159,7 +159,7 @@ export async function GET(req: Request) {
   // of whether InternetDB has a hit, so a "clean" IP still returns a full card.
   const idbPromise = j<{ ports?: number[]; vulns?: string[]; hostnames?: string[]; tags?: string[]; cpes?: string[] }>(
     `https://internetdb.shodan.io/${encodeURIComponent(ip)}`, 10000,
-    { headers: { "User-Agent": "ctiaze.tech exposure lookup (+https://ctiaze.tech)" } });
+    { headers: { "User-Agent": "skopnix.com exposure lookup (+https://skopnix.com)" } });
   // Reputation cross-check (keyless abuse.ch ThreatFox live feed) — makes the
   // verdict trustworthy: InternetDB can say "invisible" for an IP that is in
   // fact a known C2, so a malicious-reputation hit overrides everything.

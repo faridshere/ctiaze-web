@@ -93,7 +93,7 @@ export default async function AboutPage() {
           <a href="https://t.me/ctiaze" target="_blank" rel="noopener noreferrer" className="text-brand hover:underline">@ctiaze →</a>
           <Link href="/feed.json" className="text-brand hover:underline">feed.json</Link>
           <Link href="/rss.xml" className="text-brand hover:underline">RSS</Link>
-          <a href="https://ctiaze.dev" target="_blank" rel="noopener noreferrer" className="text-brand hover:underline">ctiaze.dev (API/MCP)</a>
+          <a href="https://skopnix.com/developers" target="_blank" rel="noopener noreferrer" className="text-brand hover:underline">skopnix.com/developers (API/MCP)</a>
         </div>
 
         <p className="mt-10 pt-8 border-t border-hairline font-mono text-xs text-ink-muted">

@@ -12,7 +12,7 @@ export const maxDuration = 30;
 
 export const revalidate = 0;
 
-const UA = "ctiaze.tech scan-me (+https://ctiaze.tech)";
+const UA = "skopnix.com scan-me (+https://skopnix.com)";
 const XON_ANALYTICS_URL = "https://api.xposedornot.com/v1/breach-analytics";
 const XON_CHECK_URL = "https://api.xposedornot.com/v1/check-email/";
 const LEAKCHECK_URL = "https://leakcheck.io/api/public";
@@ -213,7 +213,7 @@ async function hibpRows(email: string): Promise<{ rows: Breach[]; available: boo
   try {
     const r = await fetch(
       `https://haveibeenpwned.com/api/v3/breachedaccount/${encodeURIComponent(email)}?truncateResponse=false`,
-      { headers: { "hibp-api-key": key, "user-agent": "ctiaze.tech" }, signal: AbortSignal.timeout(9000) }
+      { headers: { "hibp-api-key": key, "user-agent": "skopnix.com" }, signal: AbortSignal.timeout(9000) }
     );
     if (r.status === 404) return { rows: [], available: true }; // authoritative clean
     if (!r.ok) return { rows: [], available: false }; // 401/403/429 → treat as unavailable

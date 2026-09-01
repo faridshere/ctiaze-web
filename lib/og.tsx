@@ -99,7 +99,7 @@ export async function ogCard(title: string, tagline: string, meta: Meta = {}) {
             )}
             {!meta.cve && !meta.verified && <div>{tagline}</div>}
           </div>
-          <div style={{ fontSize: 22, color: DIM }}>ctiaze.tech</div>
+          <div style={{ fontSize: 22, color: DIM }}>skopnix.com</div>
         </div>
       </div>
     ),
