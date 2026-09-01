@@ -55,7 +55,7 @@ export function Header() {
         </div>
       </div>
 
-      <nav className="flex items-center gap-5 overflow-x-auto border-b border-hairline px-[var(--sp-gutter)] py-2.5 xl:hidden">
+      <nav className="flex items-center gap-5 overflow-x-auto border-b border-hairline px-[var(--sp-gutter)] py-2.5 xl:hidden [mask-image:linear-gradient(to_right,black_90%,transparent)]">
         {NAV.map(([href, key]) => (
           <NavLink key={href} href={href}>
             {t[key]}

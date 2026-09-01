@@ -37,7 +37,7 @@ export function Hero({
       <div aria-hidden className="pointer-events-none absolute inset-0" style={{ background: "radial-gradient(90% 70% at 50% 42%, rgba(5,6,10,0.55) 0%, rgba(5,6,10,0.25) 55%, transparent 80%)" }} />
 
       <div className="relative z-10 mx-auto flex min-h-[80svh] w-full max-w-[75rem] flex-col items-center justify-center px-[var(--sp-gutter)] py-[var(--sp-section)] text-center">
-        <h1 className="font-display text-[clamp(2.6rem,6vw,4.6rem)] font-semibold leading-[1.04] tracking-[-0.03em] text-[#EDF1F6]">
+        <h1 className="font-display text-[clamp(2.6rem,6vw,4.6rem)] font-semibold leading-[1.04] tracking-[-0.03em] text-balance text-[#EDF1F6]">
           <span className="hl"><span>The world&apos;s threats,</span></span>
           <span className="hl"><span>read straight off the wire.</span></span>
         </h1>

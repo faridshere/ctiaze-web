@@ -48,7 +48,7 @@ export function ActorRow({ a, locale, i }: { a: ThreatActor; locale: Locale; i: 
             <span key={al} className="font-mono text-[10.5px] text-ink-muted">{al}</span>
           ))}
         </span>
-        {desc && <span className="mt-0.5 block max-w-[52ch] truncate text-[13px] leading-snug text-ink-secondary">{desc}</span>}
+        {desc && <span className="mt-0.5 block truncate text-[13px] leading-snug text-ink-secondary">{desc}</span>}
       </span>
       <span className="hidden shrink-0 flex-col items-end gap-y-0.5 text-right font-mono text-[11px] leading-snug text-ink-muted sm:flex">
         {a.type !== "unknown" && <span className={`uppercase tracking-[0.08em] ${TYPE_INK[a.type] ?? ""}`}>{a.type}</span>}

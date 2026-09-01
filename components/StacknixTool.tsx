@@ -130,7 +130,7 @@ function Loading({ en, lines }: { en: boolean; lines: string[] }) {
       {lines.map((l, i) => (
         <div key={i} className="flex items-center justify-between border-b border-white/[0.06] py-3 font-mono text-[12px]">
           <span className="truncate text-[#9AA6B4]">{l}</span>
-          <span className="text-[#6FD3E6]">{i === 0 ? "cpe ✓ · nvd pull…" : en ? "queued · nvd rate window" : "növbədə"}</span>
+          <span className="text-brand">{i === 0 ? "cpe ✓ · nvd pull…" : en ? "queued · nvd rate window" : "növbədə"}</span>
         </div>
       ))}
     </div>
@@ -177,7 +177,7 @@ function ReportView({ report, en, openCve, setOpenCve, showClean, setShowClean, 
         const t1 = affected.filter((f) => f.tier === 1);
         if (!t1.length) return null;
         return (
-          <div className="mt-8 border border-[rgba(255,90,31,0.28)] bg-[rgba(255,90,31,0.05)] rounded-[10px] overflow-hidden">
+          <div className="mt-8 border border-[rgba(255,90,31,0.28)] bg-[rgba(255,90,31,0.05)] rounded-md overflow-hidden">
             <div className="border-b border-[rgba(255,90,31,0.2)] px-4 py-2.5 font-mono text-[11px] uppercase tracking-[0.14em] text-[#FF5A1F]">{en ? "Act now — exploited in the wild, your version" : "İndi hərəkət et — vəhşidə istismar, sənin versiyan"}</div>
             {t1.map((f) => <CveRow key={"t1" + f.cve} f={f} en={en} open={openCve === f.cve} onToggle={() => setOpenCve(openCve === f.cve ? null : f.cve)} accent />)}
           </div>
@@ -244,7 +244,7 @@ function ItemBlock({ it, en, gated, openCve, setOpenCve, showClean, setShowClean
         <div className="min-w-0">
           <span className="font-display text-[1.12rem] font-semibold text-[#F2F4FA]">{it.resolved?.title || it.product}</span>
           {it.version && <span className="ml-2 font-mono text-[13px] text-[#9AA6B4]">{it.version}</span>}
-          <div className="mt-0.5 font-mono text-[11px] text-[#667085]">
+          <div className="mt-0.5 font-mono text-[11px] text-ink-muted">
             {it.resolved ? `matched cpe:2.3:${it.resolved.vendor === "microsoft" ? "a" : "a"}:${it.resolved.vendor}:${it.resolved.product}` : (en ? "no CPE match — check the product name" : "CPE tapılmadı — məhsul adını yoxla")}
             {it.resolutionConfidence === "low" && <span className="text-[#F6B44A]"> · {en ? "low confidence" : "aşağı əminlik"}</span>}
           </div>
@@ -259,11 +259,11 @@ function ItemBlock({ it, en, gated, openCve, setOpenCve, showClean, setShowClean
       {shown.map((f) => <CveRow key={f.cve} f={f} en={en} open={openCve === f.cve} onToggle={() => setOpenCve(openCve === f.cve ? null : f.cve)} />)}
       {withheld > 0 && (
         <div className="flex items-center gap-3 py-3 font-mono text-[12px] text-[#79838F]">
-          <span className="text-[#565D72]">••• {withheld} {en ? "findings withheld on Free" : "nəticə Free-də gizlədilib"}</span>
+          <span className="text-ink-muted">••• {withheld} {en ? "findings withheld on Free" : "nəticə Free-də gizlədilib"}</span>
         </div>
       )}
       {!gated && clean.length > 0 && (
-        <button onClick={() => setShowClean(!showClean)} className="py-2 font-mono text-[11px] text-[#667085] hover:text-[#9AA6B4]">
+        <button onClick={() => setShowClean(!showClean)} className="py-2 font-mono text-[11px] text-ink-muted hover:text-[#9AA6B4]">
           {showClean ? "▾" : "▸"} {clean.length} {en ? "not in range (hidden)" : "diapazonda deyil"}
         </button>
       )}
@@ -276,13 +276,13 @@ function CveRow({ f, en, open, onToggle, accent, muted }: { f: Finding; en: bool
   const label = VLABEL[f.verdict] || f.verdict;
   return (
     <div className={`border-b border-white/[0.06] ${muted ? "opacity-40" : ""}`} style={f.kev ? { boxShadow: "inset 2px 0 0 #FF5A1F" } : undefined}>
-      <button onClick={onToggle} className="grid w-full grid-cols-[1fr_auto] items-start gap-3 py-3 pl-3 pr-1 text-left hover:bg-[rgba(111,211,230,0.04)]">
+      <button onClick={onToggle} aria-expanded={open} className="grid w-full grid-cols-[1fr_auto] items-start gap-3 py-3 pl-3 pr-1 text-left hover:bg-[rgba(111,211,230,0.04)]">
         <span className="min-w-0">
           <span className="font-mono text-[13px] text-[#E8EAF2]">{f.cve}</span>
           {f.summary && <span className="mt-0.5 block truncate text-[13px] text-[#9AA3B2]">{f.summary}</span>}
         </span>
         <span className="flex shrink-0 items-center gap-3 font-mono text-[11px] tabular-nums">
-          <span className={f.verdict === "vulnerable" ? "text-[#E8EAF2]" : f.verdict === "not-affected" ? "text-[#565D72]" : "text-[#9AA3B2] underline decoration-dashed underline-offset-2"}>{label}</span>
+          <span className={f.verdict === "vulnerable" ? "text-[#E8EAF2]" : f.verdict === "not-affected" ? "text-ink-muted" : "text-[#9AA3B2] underline decoration-dashed underline-offset-2"}>{label}</span>
           {f.kev && <span className="flex items-center gap-1 text-[#FF5A1F]"><span className="size-1.5 rounded-full bg-[#FF5A1F]" />KEV</span>}
           <span className="flex items-center gap-1.5 text-[#9AA6B4]">
             <span className="h-[4px] w-[36px] overflow-hidden rounded-full bg-white/[0.08]"><span className="block h-full bg-[#A9AFC3]" style={{ width: `${Math.round((f.epss ?? 0) * 100)}%` }} /></span>
@@ -293,10 +293,10 @@ function CveRow({ f, en, open, onToggle, accent, muted }: { f: Finding; en: bool
       </button>
       {open && (
         <div className="grid gap-2 px-3 pb-4 font-mono text-[12px] text-[#9AA6B4]">
-          {f.matchedBound && <div><span className="text-[#667085]">{en ? "evidence" : "sübut"} </span><span className="text-[#6FD3E6]">{f.matchedBound}</span></div>}
-          {f.matchedCpe && <div className="truncate text-[#667085]">{f.matchedCpe}</div>}
+          {f.matchedBound && <div><span className="text-ink-muted">{en ? "evidence" : "sübut"} </span><span className="text-brand">{f.matchedBound}</span></div>}
+          {f.matchedCpe && <div className="truncate text-ink-muted">{f.matchedCpe}</div>}
           {f.kev && <div className="text-[#FF5A1F]">{en ? "exploited in the wild" : "vəhşidə istismar"}{f.kevDateAdded ? ` · KEV ${f.kevDateAdded}` : ""}{f.ransomware ? ` · ${en ? "ransomware" : "ransomware"}` : ""}</div>}
-          {f.fixedVersion && f.verdict === "vulnerable" && <div className="text-[#5FE0A8]">{en ? "fix: upgrade to" : "düzəliş: yenilə"} {f.fixedVersion}{f.refs[0] ? " · " : ""}{f.refs[0] && <a href={f.refs[0]} target="_blank" rel="noopener noreferrer" className="text-[#6FD3E6] hover:underline">{en ? "advisory ↗" : "bildiriş ↗"}</a>}</div>}
+          {f.fixedVersion && f.verdict === "vulnerable" && <div className="text-[#5FE0A8]">{en ? "fix: upgrade to" : "düzəliş: yenilə"} {f.fixedVersion}{f.refs[0] ? " · " : ""}{f.refs[0] && <a href={f.refs[0]} target="_blank" rel="noopener noreferrer" className="text-brand hover:underline">{en ? "advisory ↗" : "bildiriş ↗"}</a>}</div>}
           {f.caveats.map((c) => <div key={c} className="text-[#F6B44A]">⚠ {CAVEAT_TEXT[c]}</div>)}
         </div>
       )}
@@ -325,7 +325,7 @@ function UnlockCta({ en, onKey }: { en: boolean; onKey: (k: string) => void }) {
       <span className="flex items-center gap-2 font-mono text-[12px] text-[#79838F]">
         {en ? "have a key?" : "açarın var?"}
         <input value={k} onChange={(e) => setK(e.target.value)} placeholder="sk_…" className="w-40 border-b border-white/[0.15] bg-transparent py-1 text-[#EDF1F6] outline-none focus:border-[var(--brand)]/50" />
-        <button onClick={() => k.trim() && onKey(k.trim())} className="text-[#6FD3E6] hover:underline">{en ? "apply" : "tətbiq"}</button>
+        <button onClick={() => k.trim() && onKey(k.trim())} className="text-brand hover:underline">{en ? "apply" : "tətbiq"}</button>
       </span>
     </div>
   );

@@ -73,10 +73,10 @@ function ApiSection({ en, doStats }: { en: boolean; doStats: DoStats }) {
         <div data-sc="2" className="overflow-hidden rounded-[12px] border border-white/[0.15] bg-[linear-gradient(180deg,#0F121A,#0B0D13)] shadow-[0_40px_90px_-50px_rgba(0,0,0,0.9)] md:order-1">
           <div className="flex items-center gap-2 border-b border-hairline bg-white/[0.015] px-3.5 py-3">
             <span className="size-[9px] rounded-full bg-[#2a303b]" /><span className="size-[9px] rounded-full bg-[#2a303b]" /><span className="size-[9px] rounded-full bg-[var(--brand)]" />
-            <span className="ml-1.5 font-mono text-[0.72rem] text-[#79838F]">api.skopnix.io</span>
+            <span className="ml-1.5 font-mono text-[0.72rem] text-[#79838F]">api.skopnix.com</span>
           </div>
           <div className="overflow-x-auto px-[18px] py-[17px] font-mono text-[0.78rem] leading-[1.9] text-[#9AA6B4]">
-            <div><span className="text-[var(--brand)]">$</span> <span className="text-[#EDF1F6]">curl api.skopnix.io/v1/actors/lazarus</span></div>
+            <div><span className="text-[var(--brand)]">$</span> <span className="text-[#EDF1F6]">curl api.skopnix.com/v1/actors/lazarus</span></div>
             <div className="text-[#79838F]">{"{"}</div>
             <div>{"  "}<span className="text-[#6FD3E6]">&quot;name&quot;</span>: <span className="text-[#EDF1F6]">&quot;Lazarus Group&quot;</span>, <span className="text-[#6FD3E6]">&quot;country&quot;</span>: <span className="text-[#EDF1F6]">&quot;DPRK&quot;</span>,</div>
             <div>{"  "}<span className="text-[#6FD3E6]">&quot;aka&quot;</span>: <span className="text-[#EDF1F6]">[&quot;Hidden Cobra&quot;,&quot;APT38&quot;]</span>,</div>

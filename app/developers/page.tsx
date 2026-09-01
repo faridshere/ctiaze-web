@@ -7,7 +7,7 @@ import { localizedMeta } from "@/lib/seo";
 
 export const revalidate = 86400;
 
-const EARLY = "mailto:hello@skopnix.io?subject=skopnix%20API%20early%20access";
+const EARLY = "mailto:hello@skopnix.com?subject=skopnix%20API%20early%20access";
 
 export async function generateMetadata(
 ): Promise<Metadata> {
@@ -43,9 +43,8 @@ export default async function DevelopersPage() {
       <Header />
       <main id="main" className="mx-auto w-full max-w-[75rem] flex-1 px-[var(--sp-gutter)] py-[var(--sp-section)]">
         <div className="max-w-[44rem]">
-          <div className="mb-4 flex items-center gap-3 font-mono text-[length:var(--t-micro)] uppercase tracking-[0.18em] text-[var(--brand)]">
-            Developers
-            <span className="rounded-[2px] border border-hairline px-2 py-0.5 text-ink-muted">Private beta</span>
+          <div className="mb-4">
+            <span className="rounded-[2px] border border-hairline px-2 py-0.5 font-mono text-[length:var(--t-micro)] uppercase tracking-wider text-ink-muted">Private beta</span>
           </div>
           <h1 className="font-headline text-[clamp(2rem,4.5vw,3rem)] font-semibold leading-[1.05] tracking-tight text-ink-primary">
             Query the region, from your code or your agent.
@@ -55,6 +54,10 @@ export default async function DevelopersPage() {
             with confidence, sources and stable permalinks — and <span className="font-mono text-[var(--brand)]">&quot;unknown&quot;</span> is
             a first-class answer, never a guess. That is honesty-first, expressed in JSON.
           </p>
+          <div className="mt-7 flex flex-wrap gap-3">
+            <a href={EARLY} className="inline-flex items-center gap-2 rounded-[2px] bg-[var(--brand)] px-5 py-3 font-mono text-[length:var(--t-meta)] font-semibold text-[#170a03] transition-transform hover:-translate-y-0.5">Request a key →</a>
+            <Link href="/pricing" className="inline-flex items-center gap-2 rounded-[2px] border border-hairline px-5 py-3 font-mono text-[length:var(--t-meta)] text-ink-secondary transition-colors hover:border-[var(--ink-muted)] hover:text-ink-primary">Pricing</Link>
+          </div>
         </div>
 
         {/* sample call */}
@@ -62,7 +65,7 @@ export default async function DevelopersPage() {
           <div className="border-b border-hairline px-4 py-2 font-mono text-[length:var(--t-micro)] uppercase tracking-[0.12em] text-ink-muted">
             Your first call
           </div>
-          <pre className="overflow-x-auto px-4 py-4 font-mono text-[length:var(--t-meta)] leading-relaxed text-ink-secondary"><code>{`curl https://api.skopnix.io/v1/exposure/az/latest \\
+          <pre className="overflow-x-auto px-4 py-4 font-mono text-[length:var(--t-meta)] leading-relaxed text-ink-secondary"><code>{`curl https://api.skopnix.com/v1/exposure/az/latest \\
   -H "Authorization: Bearer sk_live_..."
 
 # → { "country": "AZ", "as_of": "2026-08-28T…Z",
@@ -96,7 +99,7 @@ export default async function DevelopersPage() {
             <pre className="overflow-x-auto px-4 py-4 font-mono text-[length:var(--t-meta)] text-ink-secondary"><code>{`{
   "mcpServers": {
     "skopnix": {
-      "url": "https://mcp.skopnix.io",
+      "url": "https://mcp.skopnix.com",
       "headers": { "Authorization": "Bearer sk_..." }
     }
   }

@@ -381,3 +381,9 @@ html.motion-ok [data-sc="3"] { transition-delay: 0.2s; }
   }
   .hl > span { transform: none; }
 }
+
+/* Smooth in-page anchor scrolling (e.g. the /actors A-Z jump nav) - gated on the
+   viewer welcoming motion, matching the reduced-motion discipline above. */
+@media (prefers-reduced-motion: no-preference) {
+  html { scroll-behavior: smooth; }
+}

@@ -85,7 +85,7 @@ export function TheWire({ stories, en }: { stories: WireItem[]; en: boolean }) {
         ))}
       </div>
       <div data-sc className="mt-6 flex flex-wrap items-center gap-3.5">
-        <Link href="/" className="inline-flex items-center gap-2 rounded-[3px] border border-white/[0.15] bg-[rgba(11,13,19,0.55)] px-4 py-2 font-display text-[length:var(--t-meta)] text-[#EDF1F6] transition-colors hover:border-[#4b5563]">
+        <Link href="/feed.json" className="inline-flex items-center gap-2 rounded-[3px] border border-white/[0.15] bg-[rgba(11,13,19,0.55)] px-4 py-2 font-display text-[length:var(--t-meta)] text-[#EDF1F6] transition-colors hover:border-[#4b5563]">
           {en ? "Open the full feed" : "Tam lenti aç"} →
         </Link>
         <span className="font-mono text-[length:var(--t-micro)] text-[#79838F]">
