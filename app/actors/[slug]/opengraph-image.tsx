@@ -3,7 +3,7 @@ import { getActorById, originLabel } from "@/lib/threatactors";
 
 export const size = OG_SIZE;
 export const contentType = OG_CONTENT_TYPE;
-export const alt = "skopnix — təhdid aktoru dossyesi";
+export const alt = "skopnix — threat actor dossier";
 
 // Branded share card for /actors/[slug] — these dossiers are the only
 // Azerbaijani-language threat-actor pages anywhere, but a shared link rendered
@@ -14,11 +14,11 @@ export default async function Image({ params }: { params: Promise<{ slug: string
   if (!a) {
     return ogCard("skopnix", "Global cyber-threat intelligence", {});
   }
-  const origin = originLabel(a, "az");
+  const origin = originLabel(a, "en");
   const alias = (a.aliases || []).filter((x) => x && x !== a.name)[0];
   const title = alias ? `${a.name} (${alias})` : a.name;
   return ogCard(title, origin ? `Threat actor · ${origin}` : "Threat actor dossier", {
-    category: a.type === "nation-state" ? "dövlət dəstəkli APT" : a.type === "crime" ? "kibercinayət qrupu" : "təhdid aktoru",
+    category: a.type === "nation-state" ? "state-sponsored APT" : a.type === "crime" ? "cybercrime group" : "threat actor",
     critical: a.type === "nation-state",
     verified: true,
   });

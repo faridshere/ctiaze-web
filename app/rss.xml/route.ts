@@ -20,7 +20,7 @@ function esc(s: string): string {
 //   ?lang=en       English titles/summaries (default Azerbaijani)
 export async function GET(req: Request) {
   const q = new URL(req.url).searchParams;
-  const en = q.get("lang") === "en";
+  const en = q.get("lang") !== "az"; // English/global by default
   const onlyKev = q.get("kev") === "1";
   const onlyRegion = q.get("region") === "1";
   const cat = (q.get("cat") || "").trim().toLowerCase();
@@ -51,7 +51,7 @@ export async function GET(req: Request) {
       return terms.some((t) => hay.includes(t));
     });
   }
-  stories = stories.slice(0, 50);
+  stories = stories.filter((s) => s.titleEn).slice(0, 50); // English-only feed
 
   const suffix = [onlyKev && "KEV", onlyRegion && "AZ", cat, terms.length && terms.join(", ")]
     .filter(Boolean)
@@ -64,8 +64,8 @@ export async function GET(req: Request) {
       const link = `${SITE}/news/${s.slug}`;
       // Fall back to AZ when an English field is missing (e.g. digest items) so a
       // single title-less doc can't 500 the whole feed via esc(undefined).
-      const title = (en ? s.titleEn || s.titleAz : s.titleAz || s.titleEn) || "";
-      const body = ((en ? s.summaryEn || s.bodyAz : s.bodyAz) || "").slice(0, 500);
+      const title = (en ? s.titleEn || s.titleAz : s.titleAz || s.titleEn) || ""; // en path uses titleEn (filtered above)
+      const body = ((en ? s.summaryEn : s.bodyAz) || "").slice(0, 500);
       const cats = [s.category, ...(s.kev ? ["kev"] : []), ...(s.region ? ["azerbaijan"] : []), ...s.cveIds]
         .map((c) => `<category>${esc(c)}</category>`)
         .join("");
@@ -83,10 +83,10 @@ export async function GET(req: Request) {
   const xml = `<?xml version="1.0" encoding="UTF-8"?>
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
-    <title>${esc(`skopnix — ${en ? "Azerbaijan CTI" : "Azərbaycan CTI"}${suffix ? ` (${suffix})` : ""}`)}</title>
+    <title>${esc(`skopnix — cyber-threat intelligence${suffix ? ` · ${suffix}` : ""}`)}</title>
     <link>${SITE}</link>
     <atom:link href="${esc(self)}" rel="self" type="application/rss+xml"/>
-    <description>${esc(en ? "Automated Azerbaijani cybersecurity threat intelligence." : "Azərbaycan dilində avtomatlaşdırılmış kibertəhlükəsizlik threat intelligence.")}</description>
+    <description>${esc(en ? "Global cyber-threat intelligence, off the wire — actively-exploited CVEs, threat actors and live IOCs." : "Qlobal kibertəhlükə kəşfiyyatı.")}</description>
     <language>${en ? "en" : "az"}</language>
     <lastBuildDate>${(stories[0] ? new Date(stories[0].publishedAt) : new Date()).toUTCString()}</lastBuildDate>
 ${items}

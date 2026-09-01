@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { ScanMe } from "@/components/ScanMe";
+import { Waitlist } from "@/components/Waitlist";
 import { getDict } from "@/lib/i18n";
 import { getLocale } from "@/lib/i18n-server";
 import { localizedMeta } from "@/lib/seo";
@@ -55,6 +56,9 @@ export default async function ScanMePage() {
           <ScanMe locale={locale} />
         </div>
 
+        <div className="mt-16 border-t border-hairline pt-12">
+          <Waitlist source="scan-me" />
+        </div>
       </main>
       <Footer />
     </div>

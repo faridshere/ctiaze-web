@@ -9,6 +9,7 @@ import { AttackRose } from "@/components/AttackRose";
 import { getActorByIdCached as getActorById, originLabel } from "@/lib/threatactors";
 import { getLocale } from "@/lib/i18n-server";
 import { jsonLdSafe } from "@/lib/format";
+import { breadcrumbLd } from "@/lib/jsonld";
 import { getQaForActor } from "@/lib/qa";
 import { QaBlock, faqPageJsonLd } from "@/components/QaBlock";
 import { SeeAlso } from "@/components/SeeAlso";
@@ -47,7 +48,7 @@ export async function generateMetadata({
   return {
     title,
     description: desc(a, en) || (en ? `Threat-actor dossier for ${a.name}.` : `${a.name} təhdid aktoru haqqında dossye.`),
-    alternates: { canonical, languages: { az: `${url}?dil=az`, en: `${url}?dil=en`, "x-default": url } },
+    alternates: { canonical },
     openGraph: { title, url: canonical, type: "profile" },
   };
 }
@@ -84,6 +85,7 @@ export default async function ActorPage({ params }: { params: Promise<{ slug: st
       <Header />
       <main id="main" className="mx-auto w-full max-w-3xl flex-1 px-4 py-14 sm:py-20">
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLdSafe(jsonLd) }} />
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLdSafe(breadcrumbLd([{ name: "Home", path: "/" }, { name: "Threat actors", path: "/actors" }, { name: a.name, path: `/actors/${slug}` }])) }} />
         {faqLd && (
           <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLdSafe(faqLd) }} />
         )}

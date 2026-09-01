@@ -8,6 +8,7 @@ import { cveBadges } from "@/lib/cveintel";
 import { getLocale } from "@/lib/i18n-server";
 import { localizedMeta } from "@/lib/seo";
 import { jsonLdSafe } from "@/lib/format";
+import { breadcrumbLd } from "@/lib/jsonld";
 import { getQaForCve } from "@/lib/qa";
 import { getVendorsForCve } from "@/lib/vendors";
 import { QaBlock, faqPageJsonLd } from "@/components/QaBlock";
@@ -110,6 +111,7 @@ export default async function CveIntelPage({ params }: { params: Promise<{ id: s
   return (
     <div className="ops flex min-h-screen flex-col">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLdSafe(jsonLd) }} />
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLdSafe(breadcrumbLd([{ name: "Home", path: "/" }, { name: "CVE", path: "/cve" }, { name: doc.id, path: `/cve/${id}` }])) }} />
       {faqLd && (
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLdSafe(faqLd) }} />
       )}

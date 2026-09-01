@@ -9,6 +9,7 @@ import { actorInitials, flagEmoji, originLabel } from "@/lib/threatactors";
 import { getLocale } from "@/lib/i18n-server";
 import { localizedMeta } from "@/lib/seo";
 import { jsonLdSafe } from "@/lib/format";
+import { breadcrumbLd } from "@/lib/jsonld";
 
 export const revalidate = 86400;
 
@@ -109,6 +110,7 @@ export default async function SectorHubPage({
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: jsonLdSafe(jsonLd) }}
         />
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLdSafe(breadcrumbLd([{ name: "Home", path: "/" }, { name: "Sectors", path: "/sectors" }, { name: name, path: `/sectors/${slug}` }])) }} />
 
         <nav className="font-mono text-[11px] uppercase tracking-[0.14em] text-ink-muted">
           <Link href="/sectors" className="hover:text-brand">

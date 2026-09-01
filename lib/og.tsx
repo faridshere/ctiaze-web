@@ -47,7 +47,7 @@ export async function ogCard(title: string, tagline: string, meta: Meta = {}) {
     semi && { name: "Archivo", data: semi, weight: 600 as const, style: "normal" as const },
   ].filter(Boolean) as { name: string; data: ArrayBuffer; weight: 700 | 600; style: "normal" }[];
 
-  const tag = meta.kev ? "KEV · aktiv istismar" : meta.critical ? "kritik" : meta.category;
+  const tag = meta.kev ? "KEV · actively exploited" : meta.critical ? "critical" : meta.category;
 
   return new ImageResponse(
     (
@@ -94,7 +94,7 @@ export async function ogCard(title: string, tagline: string, meta: Meta = {}) {
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={BRAND} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M20 6L9 17l-5-5" />
                 </svg>
-                <span>əsaslandırılıb</span>
+                <span>verified</span>
               </div>
             )}
             {!meta.cve && !meta.verified && <div>{tagline}</div>}

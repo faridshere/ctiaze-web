@@ -11,8 +11,8 @@ export async function generateMetadata(): Promise<Metadata> {
   return localizedMeta({
     path: "/about",
     en,
-    azTitle: "About skopnix",
-    enTitle: "About skopnix",
+    azTitle: "About",
+    enTitle: "About",
     azDesc:
       "skopnix reads the world's cyber threats and files them where you can read them — continuously, and without the noise.",
     enDesc:

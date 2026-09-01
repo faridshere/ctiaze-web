@@ -79,12 +79,29 @@ async function build(): Promise<string> {
 let cached: string | null = null;
 let inflight: Promise<string> | null = null;
 
+// Subscribable status so the UI can show an honest "verification" indicator
+// (the gate is invisible/no-puzzle, but people should be able to SEE it working).
+export type PowStatus = "idle" | "solving" | "ready" | "error";
+let status: PowStatus = "idle";
+const statusListeners = new Set<() => void>();
+function setStatus(s: PowStatus) {
+  if (s === status) return;
+  status = s;
+  statusListeners.forEach((l) => l());
+}
+export function getPowStatus(): PowStatus { return status; }
+export function subscribePowStatus(cb: () => void): () => void {
+  statusListeners.add(cb);
+  return () => { statusListeners.delete(cb); };
+}
+
 // Kick off solving a token ahead of time (call on mount) so submit is instant.
 export function primePowToken(): void {
   if (cached || inflight) return;
+  setStatus("solving");
   inflight = build().then(
-    (tok) => { cached = tok; inflight = null; return tok; },
-    () => { inflight = null; return ""; }
+    (tok) => { cached = tok; inflight = null; setStatus("ready"); return tok; },
+    () => { inflight = null; setStatus("error"); return ""; }
   );
 }
 
@@ -93,7 +110,7 @@ export function primePowToken(): void {
 export async function getPowToken(): Promise<string> {
   if (cached) { const t = cached; cached = null; primePowToken(); return t; }
   let t = inflight ? await inflight.catch(() => "") : "";
-  if (!t) { try { t = await build(); } catch { t = ""; } }
+  if (!t) { setStatus("solving"); try { t = await build(); setStatus("ready"); } catch { setStatus("error"); t = ""; } }
   cached = null;
   primePowToken();
   return t;

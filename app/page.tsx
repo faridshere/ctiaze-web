@@ -2,6 +2,7 @@ import { Header } from "@/components/Header";
 import { Hero } from "@/components/Hero";
 import { Footer } from "@/components/Footer";
 import { TheWire } from "@/components/TheWire";
+import { Waitlist } from "@/components/Waitlist";
 import { unstable_cache } from "next/cache";
 import { getStories, getStats } from "@/lib/stories";
 import type { Metadata } from "next";
@@ -76,6 +77,9 @@ export default async function HomePage() {
       <Hero archive={stats.total} kevCount={stats.kevCount} syncedLabel={syncedLabel} />
       <main id="main" className="flex-1">
         <TheWire stories={wire} en={en} />
+        <section className="border-t border-hairline bg-[#070809] px-[var(--sp-gutter)] py-[clamp(48px,7vw,88px)]">
+          <Waitlist source="home" />
+        </section>
       </main>
       <Footer />
     </div>

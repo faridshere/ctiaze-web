@@ -53,7 +53,7 @@ export async function generateMetadata({
   if (!story) notFound();
   const en = (await getLocale()) === "en";
   const title = en ? story.titleEn : story.titleAz;
-  const desc = (en ? story.summaryEn : story.bodyAz).slice(0, 160);
+  const desc = (story.summaryEn || story.titleEn || story.titleAz).slice(0, 160);
   const url = `https://skopnix.com/news/${story.slug}`;
   // Each ?dil= variant must be SELF-canonical, or Google dedupes the alternate into
   // the bare URL's canonical and ignores the hreflang cluster — so the Azerbaijani
@@ -66,7 +66,7 @@ export async function generateMetadata({
     description: desc,
     // Crawlable in both languages so the Azerbaijani per-CVE long-tail gets indexed
     // (Googlebot is cookieless → would otherwise only ever see the English render).
-    alternates: { canonical, languages: { az: `${url}?dil=az`, en: `${url}?dil=en`, "x-default": url } },
+    alternates: { canonical },
     openGraph: { title, description: desc, url: canonical, type: "article", publishedTime: story.publishedAt },
   };
 }
@@ -123,7 +123,7 @@ export default async function StoryPage({ params }: { params: Promise<Params> })
     author: { "@type": "Organization", name: "Hackxana" },
     publisher: { "@type": "Organization", name: "skopnix" },
     mainEntityOfPage: storyUrl,
-    ...(story.bodyAz ? { description: story.bodyAz.slice(0, 200) } : {}),
+    ...((story.summaryEn || story.titleEn) ? { description: (story.summaryEn || story.titleEn).slice(0, 200) } : {}),
     ...(story.cveIds.length
       ? { about: story.cveIds.map((c) => ({ "@type": "Thing", name: c })) }
       : {}),

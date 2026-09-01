@@ -8,6 +8,7 @@ import { getTermAny, siblingTermsAny } from "@/lib/glossary-db";
 import { getLocale } from "@/lib/i18n-server";
 import { localizedMeta } from "@/lib/seo";
 import { jsonLdSafe } from "@/lib/format";
+import { breadcrumbLd } from "@/lib/jsonld";
 import { SeeAlso } from "@/components/SeeAlso";
 
 export const revalidate = 86400;
@@ -51,6 +52,7 @@ export default async function TermPage({ params }: { params: Promise<{ slug: str
   return (
     <div className="ops flex min-h-screen flex-col">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLdSafe(jsonLd) }} />
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLdSafe(breadcrumbLd([{ name: "Home", path: "/" }, { name: "Glossary", path: "/glossary" }, { name: g.term, path: `/glossary/${slug}` }])) }} />
       <Header />
       <main id="main" className="mx-auto w-full max-w-2xl flex-1 px-4 py-14 sm:py-20">
         <nav className="font-mono text-[11px] uppercase tracking-[0.14em] text-ink-muted">

@@ -8,13 +8,10 @@ import type { Metadata } from "next";
 
 const SITE = "https://skopnix.com";
 
-export function dilAlternates(path: string, dil?: string): NonNullable<Metadata["alternates"]> {
-  const url = `${SITE}${path}`;
-  const canonical = dil === "az" ? `${url}?dil=az` : dil === "en" ? `${url}?dil=en` : url;
-  return {
-    canonical,
-    languages: { az: `${url}?dil=az`, en: `${url}?dil=en`, "x-default": url },
-  };
+// English-only global site: one clean self-referencing canonical, no hreflang.
+// (The old ?dil= language split is dead — getLocale() is hardcoded "en".)
+export function dilAlternates(path: string): NonNullable<Metadata["alternates"]> {
+  return { canonical: `${SITE}${path}` };
 }
 
 // One-call localized page metadata (title + description + self-canonical hreflang +
@@ -31,11 +28,11 @@ export function localizedMeta(opts: {
 }): Metadata {
   const title = opts.en ? opts.enTitle : opts.azTitle;
   const description = opts.en ? opts.enDesc : opts.azDesc;
-  const alternates = dilAlternates(opts.path, opts.dil);
+  const alternates = dilAlternates(opts.path);
   return {
     title,
     description,
     alternates,
-    openGraph: { title, description, url: alternates.canonical as string },
+    openGraph: { title, description, url: alternates.canonical as string, images: ["/opengraph-image"] },
   };
 }

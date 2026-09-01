@@ -49,7 +49,7 @@ export async function GET(req: Request) {
     }));
     return NextResponse.json(
       { query: q, count: results.length, results },
-      { headers: { "Cache-Control": "public, s-maxage=3600, stale-while-revalidate=86400" } }
+      { headers: { "Cache-Control": "private, no-store" } } // never shared-CDN-cache a PoW-gated response
     );
   } catch {
     return NextResponse.json(

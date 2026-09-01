@@ -56,7 +56,7 @@ const nextConfig: NextConfig = {
       { source: "/sektor/:slug", destination: "/sectors/:slug", permanent: true },
       { source: "/lugat", destination: "/glossary", permanent: true },
       { source: "/lugat/:slug", destination: "/glossary/:slug", permanent: true },
-      { source: "/metodologiya", destination: "/methodology", permanent: true },
+      { source: "/metodologiya", destination: "/about", permanent: true },
       { source: "/veziyyet", destination: "/situation", permanent: true },
       { source: "/xeber/:slug", destination: "/news/:slug", permanent: true },
     ];

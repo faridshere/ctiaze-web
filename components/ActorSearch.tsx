@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useState, useEffect } from "react";
 import { getDict, type Locale } from "@/lib/i18n";
 import { getPowToken, primePowToken } from "@/lib/pow-client";
+import { PowBadge } from "@/components/PowBadge";
 
 type Hit = {
   id: string; name: string; aliases: string[]; type: string;
@@ -62,6 +63,7 @@ export function ActorSearch({ locale }: { locale: Locale }) {
             <i className="size-2.5 rounded-full bg-accent-good/80" />
           </span>
           <span className="font-mono text-[11px] tracking-[0.06em] text-ink-muted">{t.consoleLabel}</span>
+          <PowBadge className="ml-auto" />
         </div>
         <form
           onSubmit={(e) => { e.preventDefault(); if (q.trim()) run(q.trim()); }}

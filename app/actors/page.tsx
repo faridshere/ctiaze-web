@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { ActorSearch } from "@/components/ActorSearch";
+import { Waitlist } from "@/components/Waitlist";
 import { ActorRow } from "@/components/ActorRow";
 import Link from "next/link";
 import { getActorsPageData } from "@/lib/threatactors";
@@ -13,6 +14,7 @@ export const maxDuration = 60;
 
 export const metadata: Metadata = {
   title: "Threat actors — APT & crime groups",
+  alternates: { canonical: "https://skopnix.com/actors" },
   description:
     "Who's targeting you? Search by country, sector, or company for the APT and crime groups that target it. We show only what's openly stated.",
 };
@@ -141,6 +143,9 @@ export default async function ActorsPage() {
         <p className="mt-14 border-t border-hairline pt-8 font-mono text-xs leading-relaxed text-ink-muted">
           {stats.total.toLocaleString("en-US")} dossiers · {stats.active} active. Search covers the whole roster; nothing is invented.
         </p>
+        <div className="mt-16 border-t border-hairline pt-12">
+          <Waitlist source="actors" />
+        </div>
       </main>
       <Footer />
     </div>

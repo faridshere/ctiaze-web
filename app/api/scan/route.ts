@@ -671,26 +671,102 @@ async function scanEmailSecurity(domain: string) {
   };
 }
 
+// ---- RDAP domain registration (rdap.org, keyless) ---------------------------
+// Domain age is a strong phishing signal — a brand-new domain impersonating a
+// company is the classic setup. Also surfaces DNSSEC + registrar in one call.
+const RDAP_DOMAIN = "https://rdap.org/domain/";
+
+async function scanRegistration(domain: string) {
+  const base = {
+    status: "unavailable" as "ok" | "unavailable",
+    created: null as string | null, ageDays: null as number | null,
+    nrd: false, dnssec: null as boolean | null, registrar: null as string | null,
+  };
+  const j = await fetchJson<Record<string, unknown>>(`${RDAP_DOMAIN}${encodeURIComponent(domain)}`, 9000).catch(() => null);
+  if (!j) return base;
+  const events = (j.events as { eventAction?: string; eventDate?: string }[]) || [];
+  const created = events.find((e) => e.eventAction === "registration")?.eventDate ?? null;
+  const ageDays = created ? Math.floor((Date.now() - new Date(created).getTime()) / 86_400_000) : null;
+  const secureDNS = j.secureDNS as { delegationSigned?: boolean } | undefined;
+  let registrar: string | null = null;
+  const rar = ((j.entities as { roles?: string[]; vcardArray?: unknown[] }[]) || []).find((e) => (e.roles || []).includes("registrar"));
+  const vcard = rar?.vcardArray?.[1] as unknown[] | undefined;
+  const fn = Array.isArray(vcard) ? (vcard as unknown[][]).find((f) => f[0] === "fn") : undefined;
+  if (fn && typeof fn[3] === "string") registrar = fn[3].slice(0, 60);
+  return {
+    status: "ok" as const, created, ageDays,
+    nrd: ageDays != null && ageDays >= 0 && ageDays < 30,
+    dnssec: secureDNS?.delegationSigned ?? null, registrar,
+  };
+}
+
+// ---- Hosting + IP reputation (ip-api.com + GreyNoise community, keyless) -----
+const IPAPI_URL = "http://ip-api.com/json/";
+const GREYNOISE_URL = "https://api.greynoise.io/v3/community/";
+
+function isPublicIpv4(ip: string): boolean {
+  const m = ip.match(/^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/);
+  if (!m) return false;
+  const a = Number(m[1]), b = Number(m[2]);
+  if (a === 10 || a === 127 || a === 0 || a >= 224) return false;
+  if (a === 192 && b === 168) return false;
+  if (a === 172 && b >= 16 && b <= 31) return false;
+  if (a === 169 && b === 254) return false;
+  return true;
+}
+
+async function scanIpIntel(domain: string) {
+  const base = {
+    status: "unavailable" as "ok" | "unavailable",
+    ip: null as string | null, asn: null as string | null, org: null as string | null,
+    country: null as string | null, hosting: false, proxy: false,
+    greynoise: null as { noise: boolean; riot: boolean; classification: string | null; name: string | null; message: string | null } | null,
+  };
+  const dns = await import("node:dns");
+  const addrs = await dnsRace(dns.promises.resolve4(domain), 4000);
+  const ip = (addrs ?? []).find((x) => /^\d{1,3}(\.\d{1,3}){3}$/.test(x)) ?? null;
+  if (!ip || !isPublicIpv4(ip)) return base;
+  const [geo, gn] = await Promise.all([
+    fetchJson<Record<string, unknown>>(`${IPAPI_URL}${ip}?fields=status,country,city,isp,org,as,asname,hosting,proxy,mobile,query`, 6000).catch(() => null),
+    fetchJson<Record<string, unknown>>(`${GREYNOISE_URL}${ip}`, 6000).catch(() => null),
+  ]);
+  const asRaw = typeof geo?.as === "string" ? geo.as : "";
+  return {
+    status: "ok" as const, ip,
+    asn: asRaw ? asRaw.split(" ")[0] : null,
+    org: (geo?.org as string) || (geo?.isp as string) || null,
+    country: (geo?.country as string) || null,
+    hosting: Boolean(geo?.hosting), proxy: Boolean(geo?.proxy),
+    greynoise: gn ? {
+      noise: Boolean(gn.noise), riot: Boolean(gn.riot),
+      classification: (gn.classification as string) || null,
+      name: (gn.name as string) || null, message: (gn.message as string) || null,
+    } : null,
+  };
+}
+
 async function scanDomain(domain: string) {
   const normalized = await normalizeDomain(domain);
   if (!normalized) {
     return {
       kind: "domain", domain: null, status: "invalid",
       subdomains: null, exposure: null, mentions: null, watchlist: null,
-      emailSecurity: null, infostealer: null,
+      emailSecurity: null, infostealer: null, registration: null, ipIntel: null,
     };
   }
-  const [subdomains, exposure, mentions, watchlist, emailSecurity, infostealer] = await Promise.all([
+  const [subdomains, exposure, mentions, watchlist, emailSecurity, infostealer, registration, ipIntel] = await Promise.all([
     scanSubdomains(normalized),
     scanExposure(normalized),
     scanMentions(normalized),
     scanWatchlist(normalized),
     scanEmailSecurity(normalized),
     hudsonRockDomain(normalized),
+    scanRegistration(normalized),
+    scanIpIntel(normalized),
   ]);
   return {
     kind: "domain", domain: normalized, status: "ok",
-    subdomains, exposure, mentions, watchlist, emailSecurity, infostealer,
+    subdomains, exposure, mentions, watchlist, emailSecurity, infostealer, registration, ipIntel,
   };
 }
 

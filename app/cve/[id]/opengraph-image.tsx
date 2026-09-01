@@ -5,7 +5,7 @@ import { cveBadges, type CveBadge } from "@/lib/cveintel";
 
 export const size = OG_SIZE;
 export const contentType = OG_CONTENT_TYPE;
-export const alt = "skopnix — CVE izahı";
+export const alt = "skopnix — CVE explainer";
 
 // Branded share card for /cve/[id] (the CVE explainer pages). A shared link used
 // to fall back to the generic site card; this surfaces the CVE's KEV / EPSS / CWE
@@ -61,10 +61,10 @@ function oneLine(s: string, max = 104): string {
 }
 
 // AZ label for the engine's non-KEV triage tag (mirrors the /cve page wording).
-const PRIORITY_AZ: Record<Exclude<CvePriority, "kev">, string> = {
-  exploited: "istismar bildirilib",
-  high: "yüksək prioritet",
-  standard: "standart prioritet",
+const PRIORITY_LABEL: Record<Exclude<CvePriority, "kev">, string> = {
+  exploited: "exploitation reported",
+  high: "high priority",
+  standard: "standard priority",
 };
 
 type Chip = { text: string; fg: string; bg?: string; border?: string };
@@ -78,7 +78,7 @@ async function renderCard(opts: {
   grounded: boolean;
 }) {
   const { eyebrow, headline, suffix, chips, lead, grounded } = opts;
-  const allText = `skopnix ${suffix} ${eyebrow} ${headline} ${chips.map((c) => c.text).join(" ")} ${lead ?? ""} əsaslandırılıb skopnix.com`;
+  const allText = `skopnix ${suffix} ${eyebrow} ${headline} ${chips.map((c) => c.text).join(" ")} ${lead ?? ""} verified skopnix.com`;
   const [bold, semi] = await Promise.all([loadFont(allText, 700), loadFont(allText, 600)]);
   const fonts = [
     bold && { name: "Archivo", data: bold, weight: 700 as const, style: "normal" as const },
@@ -144,7 +144,7 @@ async function renderCard(opts: {
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={GOOD} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M20 6L9 17l-5-5" />
               </svg>
-              <span>əsaslandırılıb</span>
+              <span>verified</span>
             </div>
           ) : (
             <div style={{ display: "flex" }} />
@@ -185,15 +185,15 @@ export default async function Image({ params }: { params: Promise<{ id: string }
   const chips: Chip[] = [];
   if (isKev) chips.push({ text: "KEV", fg: BG, bg: CRIT });
   if (ep) chips.push({ text: `EPSS ${ep}`, fg: INK2, border: INK2 });
-  if (prio === "exploited") chips.push({ text: PRIORITY_AZ.exploited, fg: WARN, border: WARN });
-  else if (prio === "high") chips.push({ text: PRIORITY_AZ.high, fg: DIM, border: HAIR });
+  if (prio === "exploited") chips.push({ text: PRIORITY_LABEL.exploited, fg: WARN, border: WARN });
+  else if (prio === "high") chips.push({ text: PRIORITY_LABEL.high, fg: DIM, border: HAIR });
   if (doc.cwe) {
     const name =
       doc.cwe.name && doc.cwe.name.length > 40 ? doc.cwe.name.slice(0, 39).trimEnd() + "…" : doc.cwe.name;
     chips.push({ text: name ? `${doc.cwe.id} · ${name}` : doc.cwe.id, fg: INK2, border: HAIR });
   }
 
-  const lead = doc.az || doc.en;
+  const lead = doc.en || doc.az;
 
   return renderCard({
     eyebrow: "CVE",

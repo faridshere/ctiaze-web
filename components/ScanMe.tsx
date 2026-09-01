@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { getDict, type Locale } from "@/lib/i18n";
 import { breachActions, riskLabel, type Risk } from "@/lib/breachactions";
 import { getPowToken, primePowToken } from "@/lib/pow-client";
+import { PowBadge } from "@/components/PowBadge";
 
 const RISK_CHIP: Record<Risk, string> = {
   critical: "border-accent-critical/40 bg-accent-critical/10 text-accent-critical",
@@ -47,10 +48,13 @@ type ExposureBlock = {
 type MentionStory = { title: string; url: string; source: string; published: string | null };
 type MentionBlock = { status: "ok" | "unavailable"; count: number; stories: MentionStory[]; source: string; fetched_at: string };
 type WatchBlock = { product: string; az_exposed: number; as_of: string; source: string; fetched_at: string } | null;
+type RegistrationBlock = { status: "ok" | "unavailable"; created: string | null; ageDays: number | null; nrd: boolean; dnssec: boolean | null; registrar: string | null } | null;
+type IpIntelBlock = { status: "ok" | "unavailable"; ip: string | null; asn: string | null; org: string | null; country: string | null; hosting: boolean; proxy: boolean; greynoise: { noise: boolean; riot: boolean; classification: string | null; name: string | null; message: string | null } | null } | null;
 type DomainResult = {
   kind: "domain"; domain: string | null; status: "ok" | "invalid";
   subdomains: SubBlock | null; exposure: ExposureBlock | null; mentions: MentionBlock | null; watchlist: WatchBlock;
   emailSecurity: EmailSecurity; infostealer: DomainInfostealer;
+  registration: RegistrationBlock; ipIntel: IpIntelBlock;
 };
 type ScanResult = EmailResult | DomainResult;
 type PwState = { state: "pwned" | "clean" | "unavailable"; count?: number } | null;
@@ -186,6 +190,7 @@ export function ScanMe({ locale }: { locale: Locale }) {
             <i className="size-2.5 rounded-full bg-accent-good/80" />
           </span>
           <span className="font-mono text-[11px] tracking-[0.06em] text-ink-muted">{t.consoleLabel}</span>
+          <PowBadge className="ml-auto" />
         </div>
 
         <form
@@ -578,6 +583,81 @@ function DomainView({ r, t }: { r: DomainResult; t: ScanDict }) {
         )}
 
         {r.emailSecurity && <EmailSecCard es={r.emailSecurity} t={t} />}
+
+        {r.registration && (
+          <SubCard
+            icon="⧗"
+            tone={r.registration.status !== "ok" ? "muted" : r.registration.nrd ? "warning" : "brand"}
+            title="Domain age"
+            badge={r.registration.status !== "ok" ? "unavailable" : r.registration.nrd ? "new" : r.registration.ageDays != null ? `${Math.max(1, Math.floor(r.registration.ageDays / 365))}y` : "?"}
+            badgeTone={r.registration.status !== "ok" ? "muted" : r.registration.nrd ? "warning" : "brand"}
+            unavailable={r.registration.status !== "ok"}
+          >
+            {r.registration.status === "ok" ? (
+              <>
+                {r.registration.ageDays != null && (
+                  <div className="font-headline text-2xl text-ink-primary tabular-nums">
+                    {r.registration.ageDays < 730 ? `${r.registration.ageDays} days` : `${Math.floor(r.registration.ageDays / 365)} years`}
+                  </div>
+                )}
+                <div className="font-mono text-[11px] text-ink-muted">
+                  {r.registration.created ? `registered ${r.registration.created.slice(0, 10)}` : "registration date unknown"}
+                </div>
+                {r.registration.nrd && (
+                  <p className="mt-2 text-[13px] leading-relaxed text-accent-warning">
+                    Newly registered (under 30 days) — a common signal for phishing and typosquats.
+                  </p>
+                )}
+                {(r.registration.registrar || r.registration.dnssec != null) && (
+                  <div className="mt-2.5 flex flex-wrap gap-1.5 font-mono text-[11px]">
+                    {r.registration.registrar && <span className="rounded-sm border border-hairline px-1.5 py-0.5 text-ink-secondary">{r.registration.registrar}</span>}
+                    {r.registration.dnssec != null && (
+                      <span className={`rounded-sm border px-1.5 py-0.5 ${r.registration.dnssec ? "border-accent-good/40 text-accent-good" : "border-hairline text-ink-muted"}`}>
+                        DNSSEC {r.registration.dnssec ? "on" : "off"}
+                      </span>
+                    )}
+                  </div>
+                )}
+              </>
+            ) : (
+              <p className="text-[13px] leading-relaxed text-ink-secondary">Registration data unavailable.</p>
+            )}
+          </SubCard>
+        )}
+
+        {r.ipIntel && (
+          <SubCard
+            icon="◈"
+            tone={r.ipIntel.status !== "ok" ? "muted" : r.ipIntel.greynoise?.classification === "malicious" ? "critical" : r.ipIntel.proxy ? "warning" : "brand"}
+            title="Hosting & reputation"
+            badge={r.ipIntel.status !== "ok" ? "unavailable" : r.ipIntel.greynoise?.classification === "malicious" ? "flagged" : r.ipIntel.greynoise?.noise ? "scanner" : r.ipIntel.hosting ? "cloud" : "ok"}
+            badgeTone={r.ipIntel.status !== "ok" ? "muted" : r.ipIntel.greynoise?.classification === "malicious" ? "critical" : r.ipIntel.greynoise?.noise ? "warning" : "brand"}
+            unavailable={r.ipIntel.status !== "ok"}
+          >
+            {r.ipIntel.status === "ok" ? (
+              <>
+                <div className="font-mono text-[11px] text-ink-muted">{r.ipIntel.ip}{r.ipIntel.country ? ` · ${r.ipIntel.country}` : ""}</div>
+                {r.ipIntel.org && <div className="mt-1 text-[14px] text-ink-primary">{r.ipIntel.org}</div>}
+                <div className="mt-2.5 flex flex-wrap gap-1.5 font-mono text-[11px]">
+                  {r.ipIntel.asn && <span className="rounded-sm border border-hairline px-1.5 py-0.5 text-ink-secondary">{r.ipIntel.asn}</span>}
+                  {r.ipIntel.hosting && <span className="rounded-sm border border-hairline px-1.5 py-0.5 text-ink-muted">cloud / hosting</span>}
+                  {r.ipIntel.proxy && <span className="rounded-sm border border-accent-warning/40 px-1.5 py-0.5 text-accent-warning">proxy / VPN</span>}
+                </div>
+                {r.ipIntel.greynoise && (r.ipIntel.greynoise.noise || r.ipIntel.greynoise.riot || r.ipIntel.greynoise.classification === "malicious") && (
+                  <p className="mt-2.5 text-[13px] leading-relaxed text-ink-secondary">
+                    {r.ipIntel.greynoise.classification === "malicious"
+                      ? `Flagged as malicious${r.ipIntel.greynoise.name ? ` (${r.ipIntel.greynoise.name})` : ""}.`
+                      : r.ipIntel.greynoise.riot
+                      ? `Known-benign common infrastructure${r.ipIntel.greynoise.name ? ` (${r.ipIntel.greynoise.name})` : ""}.`
+                      : "This IP is actively scanning the internet."}
+                  </p>
+                )}
+              </>
+            ) : (
+              <p className="text-[13px] leading-relaxed text-ink-secondary">Host intelligence unavailable.</p>
+            )}
+          </SubCard>
+        )}
 
         {r.infostealer && (() => {
           const inf = r.infostealer;

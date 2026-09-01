@@ -25,13 +25,13 @@ export async function GET() {
 
   const urls = fresh
     .map((s) => {
-      const title = s.titleAz || s.titleEn;
+      const title = s.titleEn || s.titleAz;
       return `  <url>
     <loc>${SITE}/news/${esc(s.slug)}</loc>
     <news:news>
       <news:publication>
         <news:name>skopnix</news:name>
-        <news:language>az</news:language>
+        <news:language>en</news:language>
       </news:publication>
       <news:publication_date>${new Date(s.publishedAt).toISOString()}</news:publication_date>
       <news:title>${esc(title)}</news:title>
