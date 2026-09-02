@@ -50,7 +50,16 @@ export async function POST(req: Request) {
       { email },
       {
         $setOnInsert: { email, created_at: new Date() },
-        $set: { source, ua_hash, updated_at: new Date() },
+        $set: {
+          source,
+          ua_hash,
+          updated_at: new Date(),
+          // kept so the dashboard can show where a signup came from
+          ip: clientIp(req),
+          country: req.headers.get("x-vercel-ip-country") || null,
+          city: req.headers.get("x-vercel-ip-city") || null,
+          ua: (req.headers.get("user-agent") || "").slice(0, 200),
+        },
       },
       { upsert: true }
     );
