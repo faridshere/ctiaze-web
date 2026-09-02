@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { getPowToken, primePowToken } from "@/lib/pow-client";
 import { PowBadge } from "@/components/PowBadge";
 
@@ -11,8 +11,6 @@ export function Waitlist({ source = "site", compact = false }: { source?: string
   const [email, setEmail] = useState("");
   const [state, setState] = useState<"idle" | "loading" | "done" | "error">("idle");
   const [msg, setMsg] = useState("");
-
-  useEffect(() => { primePowToken(); }, []);
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -76,6 +74,12 @@ export function Waitlist({ source = "site", compact = false }: { source?: string
             required
             value={email}
             onChange={(e) => setEmail(e.target.value)}
+            // Solve the proof-of-work on first focus rather than on mount. The
+            // landing page is the busiest page on the site and almost nobody who
+            // loads it types an email, so priming for everyone spent a serverless
+            // invocation per visitor for nothing. Focusing the field still gives
+            // far more lead time than the ~200ms solve needs.
+            onFocus={() => primePowToken()}
             placeholder="you@company.com"
             autoComplete="email"
             spellCheck={false}
