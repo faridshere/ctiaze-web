@@ -15,7 +15,7 @@ import { jsonLdSafe } from "@/lib/format";
 import { breadcrumbLd } from "@/lib/jsonld";
 import { SeeAlso } from "@/components/SeeAlso";
 
-export const revalidate = 86400;
+export const revalidate = 604800;
 
 const BASE = "https://skopnix.com";
 

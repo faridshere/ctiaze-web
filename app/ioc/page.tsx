@@ -19,7 +19,7 @@ function tfKindOf(t: IocType): TfKind | null {
   return null;
 }
 
-export const revalidate = 1800; // the board refreshes ~2×/hour; the lib caches 1h
+export const revalidate = 3600; // the board refreshes ~2×/hour; the lib caches 1h
 
 export async function generateMetadata(
 ): Promise<Metadata> {

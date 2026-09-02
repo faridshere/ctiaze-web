@@ -22,7 +22,7 @@ const STEPS_AZ: [string, string][] = [
   ["Süzgəc", "Süni intellekt hər xəbərin Azərbaycan üçün əhəmiyyətini qiymətləndirir — gündəlik gurultunu kəsir, yalnız vacib olanı saxlayır."],
   ["Əsaslandırılmış tərcümə", "Seçilən məzmun peşəkar Azərbaycan dilinə çevrilir və qurulduğu mənbəyə bağlı qalır — CVE, RCE kimi texniki terminlər qorunur."],
   ["Əsaslandırma yoxlaması", "Müstəqil, avtomatik yoxlama hər izahı iddia-iddia mənbəyə qarşı ölçür. Bu səhifə məhz bu addımı görünən edir."],
-  ["Dərc", "Nəticə @ctiaze Telegram kanalına və bu sayta göndərilir — 24/7, insan müdaxiləsi olmadan."],
+  ["Dərc", "Nəticə bu sayta göndərilir — 24/7, insan müdaxiləsi olmadan."],
 ];
 
 const STEPS_EN: [string, string][] = [
@@ -30,7 +30,7 @@ const STEPS_EN: [string, string][] = [
   ["Curation", "AI judges how much each story matters for Azerbaijan — cutting the daily noise, keeping only what counts."],
   ["Grounded rewrite", "The selected content is rewritten into professional Azerbaijani, tied to the source it was built from — technical terms like CVE, RCE are preserved."],
   ["Groundedness audit", "An independent, automated check measures every explainer, claim by claim, against its source. This page is what makes that step visible."],
-  ["Publish", "The result goes to the @ctiaze Telegram channel and this site — 24/7, with no human in the loop."],
+  ["Publish", "The result is published to this site — 24/7, with no human in the loop."],
 ];
 
 const TYPE_LABEL: Record<string, { az: string; en: string }> = {
@@ -182,9 +182,6 @@ export default async function MetodologiyaPage() {
           <Link href="/situation" className="text-brand hover:underline">
             {en ? "Threat situation →" : "Vəziyyət →"}
           </Link>
-          <a href="https://t.me/ctiaze" target="_blank" rel="noopener noreferrer" className="text-brand hover:underline">
-            @ctiaze →
-          </a>
         </div>
 
         {/* honesty footer */}

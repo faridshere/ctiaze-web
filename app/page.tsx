@@ -10,7 +10,7 @@ import { getLocale } from "@/lib/i18n-server";
 import { jsonLdSafe } from "@/lib/format";
 import { localizedMeta } from "@/lib/seo";
 
-export const revalidate = 180;
+export const revalidate = 900;
 
 // All Mongo work rides Vercel's shared data cache: one blob, warm for every
 // lambda — a cold instance renders from cache instantly.

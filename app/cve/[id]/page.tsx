@@ -14,7 +14,9 @@ import { getVendorsForCve } from "@/lib/vendors";
 import { QaBlock, faqPageJsonLd } from "@/components/QaBlock";
 import { SeeAlso } from "@/components/SeeAlso";
 
-export const revalidate = 86400; // explainers are static engine output — daily is plenty
+export const revalidate = 604800; // weekly: static engine output, and 7.9k pages is the
+// largest ISR-write surface on the site (daily revalidation alone was ~237k writes/month,
+// more than the whole free-tier budget).
 
 const BASE = "https://skopnix.com";
 

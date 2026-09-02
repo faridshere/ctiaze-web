@@ -16,7 +16,7 @@ function esc(s: string): string {
 // $0 path into the Google News surface, where an Azerbaijani-language security
 // publisher has effectively no competition. Referenced from robots.ts; submit
 // once in Search Console for fastest pickup.
-export const revalidate = 900; // fresh enough for a 2h publish cadence
+export const revalidate = 3600; // fresh enough for a 2h publish cadence
 
 export async function GET() {
   const stories = await getStories(80).catch(() => []);

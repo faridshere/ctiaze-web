@@ -15,7 +15,7 @@ import { getQaForActor } from "@/lib/qa";
 import { QaBlock, faqPageJsonLd } from "@/components/QaBlock";
 import { SeeAlso } from "@/components/SeeAlso";
 
-export const revalidate = 3600;
+export const revalidate = 86400;
 export const dynamicParams = true;
 // Render on demand and cache (ISR) rather than as a per-request function — there
 // are too many of these to prerender at build, but caching them keeps crawler

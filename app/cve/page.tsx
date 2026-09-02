@@ -12,7 +12,7 @@ import { cveIntelIdSet } from "@/lib/cveintel-page";
 import { getLocale } from "@/lib/i18n-server";
 import { localizedMeta } from "@/lib/seo";
 
-export const revalidate = 21600; // 6h — CVE authority data moves slowly
+export const revalidate = 43200; // 6h — CVE authority data moves slowly
 
 export async function generateMetadata(
 ): Promise<Metadata> {

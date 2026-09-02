@@ -7,7 +7,7 @@ import { getSectorSlugs } from "@/lib/sectors";
 import { getVendorSlugs } from "@/lib/vendors";
 import { GLOSSARY } from "@/lib/glossary";
 
-export const revalidate = 3600;
+export const revalidate = 21600;
 
 // Makes the /news/[slug] stories AND the /actors/[slug] dossiers discoverable to
 // search + AI answer engines — the per-CVE Azerbaijani long-tail and the only
