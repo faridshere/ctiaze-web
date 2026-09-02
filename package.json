@@ -9,7 +9,10 @@
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
     "test": "node --experimental-strip-types --test \"tests/**/*.test.ts\"",
-    "health": "node scripts/health-check.mjs"
+    "health": "node scripts/health-check.mjs",
+    "db:backup": "node scripts/db-backup.mjs backup \"$HOME/Desktop/skopnix-db-backup/$(date +%F)\"",
+    "db:verify": "node scripts/db-backup.mjs verify \"$HOME/Desktop/skopnix-db-backup/$(date +%F)\"",
+    "db:restore": "node scripts/db-backup.mjs restore"
   },
   "dependencies": {
     "@vercel/analytics": "^2.0.1",
