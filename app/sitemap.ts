@@ -1,83 +1,25 @@
 import type { MetadataRoute } from "next";
 import { getStories } from "@/lib/stories";
-import { getActorIds } from "@/lib/threatactors";
-import { getAllCveIds } from "@/lib/cveintel-page";
-import { getGuideSlugs } from "@/lib/guides";
-import { getSectorSlugs } from "@/lib/sectors";
-import { getVendorSlugs } from "@/lib/vendors";
-import { GLOSSARY } from "@/lib/glossary";
 
 export const revalidate = 21600;
 
-// Makes the /news/[slug] stories AND the /actors/[slug] dossiers discoverable to
-// search + AI answer engines — the per-CVE Azerbaijani long-tail and the only
-// Azerbaijani threat-actor dossier set in existence, where skopnix can rank #1.
+// The public surface is the landing page plus the story pages the Telegram
+// channel links to. Everything else was shelved under app/_disabled and now
+// 404s, so it must not be advertised here — a sitemap full of 404s is worse
+// than a small one: it wastes crawl budget and teaches crawlers to distrust it.
+// Re-add a section here and in app/robots.ts together when a tool comes back.
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const base = "https://skopnix.com";
-  const [stories, actorIds, cveIds, guideSlugs, sectorSlugs, vendorSlugs] = await Promise.all([
-    getStories(500).catch(() => []),
-    getActorIds(800).catch(() => []),
-    getAllCveIds().catch(() => []),
-    getGuideSlugs().catch(() => []),
-    getSectorSlugs().catch(() => []),
-    getVendorSlugs().catch(() => []),
-  ]);
+  const stories = await getStories(500).catch(() => []);
   const newest = stories[0] ? new Date(stories[0].publishedAt) : new Date();
 
-  // Static pages: only the homepage carries a real lastModified (the newest story).
-  // Stamping new Date() on every URL every run teaches Google to ignore our lastmod.
-  const staticUrls: MetadataRoute.Sitemap = [
-    { url: `${base}`, lastModified: newest, changeFrequency: "hourly", priority: 1 },
-    ...["/cve", "/ioc", "/exposure", "/actors", "/sectors", "/vendor", "/situation", "/attacks", "/scan-me", "/glossary", "/news", "/about"].map(
-      (p) => ({ url: `${base}${p}`, changeFrequency: "daily" as const, priority: 0.8 })
-    ),
+  return [
+    { url: base, lastModified: newest, changeFrequency: "daily", priority: 1 },
+    ...stories.map((s) => ({
+      url: `${base}/news/${s.slug}`,
+      lastModified: new Date(s.publishedAt),
+      changeFrequency: "monthly" as const,
+      priority: 0.7,
+    })),
   ];
-
-  const guideUrls: MetadataRoute.Sitemap = guideSlugs.map((slug) => ({
-    url: `${base}/attacks/${slug}`,
-    changeFrequency: "monthly",
-    priority: 0.6,
-  }));
-
-  const sectorUrls: MetadataRoute.Sitemap = sectorSlugs.map((slug) => ({
-    url: `${base}/sectors/${slug}`,
-    changeFrequency: "weekly",
-    priority: 0.7,
-  }));
-
-  const vendorUrls: MetadataRoute.Sitemap = vendorSlugs.map((slug) => ({
-    url: `${base}/vendor/${slug}`,
-    changeFrequency: "weekly",
-    priority: 0.6,
-  }));
-
-  const glossaryUrls: MetadataRoute.Sitemap = GLOSSARY.map((g) => ({
-    url: `${base}/glossary/${g.slug}`,
-    changeFrequency: "monthly",
-    priority: 0.5,
-  }));
-
-  const storyUrls: MetadataRoute.Sitemap = stories.map((s) => ({
-    url: `${base}/news/${s.slug}`,
-    lastModified: new Date(s.publishedAt),
-    changeFrequency: "weekly",
-    priority: 0.7,
-  }));
-
-  const actorUrls: MetadataRoute.Sitemap = actorIds.map((id) => ({
-    url: `${base}/actors/${id}`,
-    changeFrequency: "weekly",
-    priority: 0.6,
-  }));
-
-  // Every /cve/[id] explainer (~7.9k — comfortably under the 50k-URL sitemap
-  // cap). No lastModified: the docs carry no date, and a fake one teaches
-  // Google to ignore our lastmod (see the note above).
-  const cveUrls: MetadataRoute.Sitemap = cveIds.map((id) => ({
-    url: `${base}/cve/${id}`,
-    changeFrequency: "monthly",
-    priority: 0.5,
-  }));
-
-  return [...staticUrls, ...sectorUrls, ...vendorUrls, ...guideUrls, ...glossaryUrls, ...storyUrls, ...actorUrls, ...cveUrls];
 }
