@@ -1,7 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Schibsted_Grotesk, JetBrains_Mono } from "next/font/google";
 import { Analytics } from "@vercel/analytics/next";
-import { CommandPalette } from "@/components/CommandPalette";
 import { MotionRoot } from "@/components/MotionRoot";
 import { HitBeacon } from "@/components/HitBeacon";
 import { LocaleProvider } from "@/components/locale";
@@ -95,7 +94,6 @@ export default async function RootLayout({
         <LocaleProvider value={locale}>
           <MotionRoot />
         <HitBeacon />
-          <CommandPalette />
           {children}
           <Analytics />
         </LocaleProvider>

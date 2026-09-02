@@ -17,10 +17,7 @@ export function Footer() {
           </p>
         </div>
         <nav className="flex flex-wrap gap-x-6 gap-y-2 font-mono text-[11px] uppercase tracking-wider text-ink-muted">
-          <Link href="/" className="hover:text-brand">feed</Link>
-          <Link href="/actors" className="hover:text-brand">actors</Link>
-          <Link href="/scan-me" className="hover:text-brand">scan me</Link>
-          <Link href="/about" className="hover:text-brand">about</Link>
+          <Link href="/" className="hover:text-brand">skopnix.com</Link>
         </nav>
       </div>
     </footer>

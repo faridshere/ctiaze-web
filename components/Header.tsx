@@ -1,8 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { LiveStatus } from "./LiveStatus";
-import { SearchTrigger } from "./SearchTrigger";
 import { CtiazeMark } from "./CtiazeMark";
 import { NavLink } from "./NavLink";
 import { useLocale } from "./locale";
@@ -12,11 +10,10 @@ import { getDict } from "@/lib/i18n";
 // the nav for now — the product story is wire → adversaries → scan → API.
 // Soft-launch nav (Farid, 2026-09-01): only Feed / Actors / Scan me are public.
 // stacknix, API and pricing stay built but hidden — re-add here as the tool gets used.
-const NAV: [string, keyof ReturnType<typeof getDict>["nav"]][] = [
-  ["/", "feed"],
-  ["/actors", "actors"],
-  ["/scan-me", "scanme"],
-];
+// Pre-launch: the site is two landing pages plus the story pages the Telegram
+// channel links to. Every tool still exists under app/_disabled — move a folder
+// back into app/ and add its entry here to switch it on.
+const NAV: [string, keyof ReturnType<typeof getDict>["nav"]][] = [];
 
 export function Header() {
   const locale = useLocale();
@@ -40,16 +37,7 @@ export function Header() {
             ))}
           </nav>
 
-          <div className="ml-auto flex items-center gap-3">
-            <span className="hidden items-center gap-1.5 md:inline-flex">
-              <span className="relative flex size-1.5">
-                <span className="absolute inline-flex size-full animate-ping rounded-full bg-accent-good opacity-60" />
-                <span className="relative inline-flex size-1.5 rounded-full bg-accent-good" />
-              </span>
-              <LiveStatus />
-            </span>
-            <SearchTrigger />
-          </div>
+          <div className="ml-auto" />
         </div>
       </div>
 
