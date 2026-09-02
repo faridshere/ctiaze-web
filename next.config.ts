@@ -61,6 +61,26 @@ const nextConfig: NextConfig = {
       { source: "/xeber/:slug", destination: "/news/:slug", permanent: true },
     ];
   },
+
+  // ctiaze.tech is retired as a product surface — the site lives on skopnix.com.
+  // Everything that domain serves is the single placeholder screen (globe + an
+  // email field). Done as a host rewrite rather than middleware so it costs no
+  // per-request invocation, and in beforeFiles so it wins over the filesystem.
+  // The negative lookahead keeps the page's own JS/CSS, the API routes and the
+  // metadata files reachable — without it the rewrite would swallow /_next/* and
+  // the page would render unstyled.
+  async rewrites() {
+    const hosts = ["ctiaze.tech", "www.ctiaze.tech"];
+    return {
+      beforeFiles: hosts.map((value) => ({
+        source: "/((?!_next/|api/|coming-soon).*)",
+        has: [{ type: "host" as const, value }],
+        destination: "/coming-soon",
+      })),
+      afterFiles: [],
+      fallback: [],
+    };
+  },
 };
 
 export default nextConfig;

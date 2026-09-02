@@ -4,6 +4,7 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
+import { Waitlist } from "@/components/Waitlist";
 import { GlyphChip } from "@/components/GlyphChip";
 import { FlagChips } from "@/components/FlagChips";
 import { SpektrStrip } from "@/components/SpektrStrip";
@@ -353,6 +354,9 @@ export default async function StoryPage({ params }: { params: Promise<Params> })
             </ul>
           </nav>
         )}
+        <div className="mt-16 border-t border-hairline pt-12">
+          <Waitlist source="story:inline" />
+        </div>
       </main>
       <Footer />
     </div>
