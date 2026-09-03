@@ -52,6 +52,13 @@ that's normal, not an incident.
 - "admin leaks nothing" → **drop everything, that's a data leak**
 - "waitlist rejects tokenless" → PoW gate broken → check /api/challenge
 
+**Off-site backup red (email from GitHub)**
+`ctiaze-engine/.github/workflows/db-backup.yml` runs weekly (Sundays) and uploads
+a full DB dump as an artifact (14-day retention, private repo). If it fails, the
+MONGO_URI secret or Atlas is the usual cause. Trigger a manual run from the
+engine repo's Actions tab. This is the copy that survives losing the laptop; the
+local `npm run db:backup` is the other.
+
 **Vercel "exceeded free resources"**
 Usage is shared across ALL projects on the account. First move: check for
 stray projects burning quota (ctiaze-dev and irai were candidates). Hobby has
@@ -82,6 +89,11 @@ cd ~/Desktop/carbanak/claude-test/ctiaze-web && npm run db:backup
 M0 has **no automated backups**. The dump is canonical EJSON (types survive),
 verified against live counts, ~17MB on Desktop.
 
+Security hygiene (occasionally): `npm audit --omit=dev` in ctiaze-web should read
+0 vulnerabilities — Next is pinned to a patched minor and `overrides.nanoid`
+keeps the transitive fix. A Next bump can shift behaviour, so always rebuild +
+run the funnel checks before trusting one.
+
 ## Attribution legend (reading /admin)
 
 - visits `from: tg` → came through a Telegram post link (`?s=tg`)
@@ -96,7 +108,8 @@ Visits expire after 30 days (TTL); emails keep forever.
 2. Remove its line from the `shelved` list in `next.config.ts` redirects()
 3. Add it back to NAV in `components/Header.tsx` and to `app/sitemap.ts`
 4. Restore any pointers that were neutralized (grep `_disabled` in comments —
-   e.g. IocPanel's /ioc link)
+   e.g. IocPanel's /ioc link), and re-add the section's line in
+   `app/llms.txt/route.ts` (it must only advertise pages that actually resolve)
 5. Build locally; watch the page count and revalidate column in the route table
    — that's what protects the ISR budget
 
