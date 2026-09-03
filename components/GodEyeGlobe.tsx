@@ -109,7 +109,21 @@ export function GodEyeGlobe() {
     };
 
     let raf = 0, running = false, lastF = performance.now(), skyAcc = 0;
-    const frame = (now: number) => { if (!running) return; const dt = now - lastF; lastF = now; if (dt > 15 && ready) { draw(now); skyAcc += dt; if (skyAcc > 90) { skyAcc = 0; drawSky(now); } } raf = requestAnimationFrame(frame); };
+    // Draw the globe on every animation frame. Motion is derived from absolute
+    // time (tsec = now - t0), so one draw per refresh is smooth at any rate.
+    // The previous throttle skipped draws when dt <= 15ms while still advancing
+    // lastF every callback — so on a 120Hz ProMotion display (dt ~8.3ms) it drew
+    // only on dropped frames, which read as stutter. The star field is cheap but
+    // needs no per-frame update, so it stays throttled to ~90ms via skyAcc.
+    const frame = (now: number) => {
+      if (!running) return;
+      raf = requestAnimationFrame(frame);
+      if (!ready) return;
+      const dt = now - lastF; lastF = now;
+      draw(now);
+      skyAcc += dt;
+      if (skyAcc > 90) { skyAcc = 0; drawSky(now); }
+    };
     const start = () => { if (running) return; running = true; lastF = performance.now(); raf = requestAnimationFrame(frame); };
     const stop = () => { running = false; cancelAnimationFrame(raf); };
 
