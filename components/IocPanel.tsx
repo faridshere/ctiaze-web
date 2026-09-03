@@ -82,11 +82,9 @@ export function IocPanel({
 
       {!hasExtracted && !hasFamily && (
         <p className="mt-4 font-mono text-[length:var(--t-meta)] text-ink-muted">
-          {en ? "No machine-readable indicators detected in this dispatch. For active threat indicators see the " : "Bu dispaçda maşınla oxunan indikator aşkarlanmadı. Aktiv təhdid göstəriciləri üçün "}
-          <a href="/ioc" className="text-brand hover:underline">
-            {en ? "IOC page" : "IOC səhifəsi"}
-          </a>
-          .
+          {/* The /ioc page is shelved under app/_disabled while the site runs
+              lean — restore this pointer when it comes back. */}
+          {en ? "No machine-readable indicators detected in this dispatch." : "Bu dispaçda maşınla oxunan indikator aşkarlanmadı."}
         </p>
       )}
 
