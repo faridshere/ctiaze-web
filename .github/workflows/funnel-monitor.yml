@@ -1,0 +1,70 @@
+# Twice-daily probe of the live funnel. The repo is public, so these minutes are
+# free and no secrets are involved — it only checks what any visitor can see.
+# When a check fails the run goes red and GitHub emails the repo owner: a free
+# uptime monitor for the pieces that actually earn emails.
+name: funnel monitor (skopnix.com + ctiaze.tech)
+
+on:
+  schedule:
+    - cron: "41 5,17 * * *" # off the :00 mark; GitHub throttles busy slots hardest
+  workflow_dispatch: {}
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Probe the funnel
+        run: |
+          set -u
+          UA='Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0 Safari/537.36'
+          fails=0
+          say() { printf '%s\n' "$*"; }
+          get() { curl -sS -A "$UA" --max-time 25 --retry 3 --retry-all-errors --retry-delay 5 "$@"; }
+
+          check() { # name, condition-result
+            if [ "$2" = "ok" ]; then say "  ✓ $1"; else say "  ✗ $1"; fails=$((fails+1)); fi
+          }
+
+          say "── skopnix.com"
+          body=$(get https://skopnix.com/ || true)
+          echo "$body" | grep -q 'See it'          && r=ok || r=no; check "landing renders" $r
+          echo "$body" | grep -q 'on the wire'     && r=ok || r=no; check "wire strip has data (Mongo read works)" $r
+
+          say "── ctiaze.tech"
+          get https://ctiaze.tech/ | grep -q 'Something is coming' && r=ok || r=no
+          check "placeholder renders" $r
+
+          say "── story rescue (old Telegram links)"
+          loc=$(get -o /dev/null -w '%{redirect_url}' https://ctiaze.tech/xeber/monitor-probe || true)
+          case "$loc" in https://skopnix.com/news/monitor-probe*) r=ok;; *) r=no;; esac
+          check "ctiaze.tech/xeber/* -> skopnix.com/news/* ($loc)" $r
+
+          say "── story pages"
+          slug=$(get https://skopnix.com/news-sitemap.xml | grep -oE '<loc>[^<]+/news/[^<]+' | head -1 | sed 's|.*/news/||')
+          if [ -n "$slug" ]; then
+            code=$(get -o /dev/null -w '%{http_code}' "https://skopnix.com/news/$slug" || true)
+            [ "$code" = "200" ] && r=ok || r=no; check "latest story ($code)" $r
+          else
+            check "news sitemap has stories" no
+          fi
+
+          say "── feeds"
+          # capture, don't pipe into head — an early-closed pipe makes curl
+          # report a write error and burn its retries on a false failure
+          rss=$(get https://skopnix.com/rss.xml || true)
+          case "$rss" in *'<rss'*) r=ok;; *) r=no;; esac
+          check "rss.xml" $r
+
+          say "── security canaries"
+          admin=$(get https://skopnix.com/admin || true)
+          echo "$admin" | grep -qi 'Emails collected' && r=no || r=ok
+          check "admin leaks nothing without auth" $r
+          wcode=$(get -o /dev/null -w '%{http_code}' -X POST -H 'content-type: application/json' \
+                  -d '{"email":"probe@example.com"}' https://skopnix.com/api/waitlist || true)
+          [ "$wcode" = "403" ] || [ "$wcode" = "429" ] && r=ok || r=no
+          check "waitlist rejects tokenless posts ($wcode)" $r
+
+          say ""
+          if [ "$fails" -gt 0 ]; then say "$fails CHECK(S) FAILED"; exit 1; fi
+          say "all checks passed"
