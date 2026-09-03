@@ -69,9 +69,11 @@ export function Waitlist({ source = "site", compact = false }: { source?: string
       )}
       <form onSubmit={submit} className={`${compact ? "" : "mt-6"} flex flex-col gap-2 sm:flex-row ${compact ? "" : "mx-auto max-w-md"}`}>
         <label className="relative flex flex-1 items-center">
+          <span className="sr-only">Your email address</span>
           <input
             type="email"
             required
+            aria-label="Your email address"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             // Solve the proof-of-work on first focus rather than on mount. The
