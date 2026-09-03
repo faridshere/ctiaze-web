@@ -2,36 +2,33 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { dilAlternates, localizedMeta } from "../lib/seo.ts";
 
-test("bare URL keeps a bare canonical + full hreflang cluster", () => {
+// The site went English-only + global (2026-08-30): getLocale() is hardcoded
+// "en", the ?dil= language split is dead, and the brand domain is skopnix.com.
+// These tests lock in the new contract: one clean self-referencing canonical
+// per path, NO hreflang cluster, og:url identical to the canonical.
+
+test("canonical is the bare skopnix.com URL for the path", () => {
+  assert.equal(dilAlternates("/cve").canonical, "https://skopnix.com/cve");
+  assert.equal(dilAlternates("/").canonical, "https://skopnix.com/");
+});
+
+test("no hreflang cluster is minted (English-only site)", () => {
   const a = dilAlternates("/cve");
-  assert.equal(a.canonical, "https://ctiaze.tech/cve");
-  assert.deepEqual(a.languages, {
-    az: "https://ctiaze.tech/cve?dil=az",
-    en: "https://ctiaze.tech/cve?dil=en",
-    "x-default": "https://ctiaze.tech/cve",
-  });
-});
-
-test("each forced ?dil variant is SELF-canonical (the whole point)", () => {
-  assert.equal(dilAlternates("/cve", "az").canonical, "https://ctiaze.tech/cve?dil=az");
-  assert.equal(dilAlternates("/cve", "en").canonical, "https://ctiaze.tech/cve?dil=en");
-});
-
-test("junk ?dil falls back to the bare canonical (no duplicate minting)", () => {
-  assert.equal(dilAlternates("/cve", "xx").canonical, "https://ctiaze.tech/cve");
-  assert.equal(dilAlternates("/", "'; DROP").canonical, "https://ctiaze.tech/");
+  assert.equal("languages" in a ? a.languages : undefined, undefined);
 });
 
 test("localizedMeta picks the locale copy and og:url matches the canonical", () => {
-  const en = localizedMeta({ path: "/exposure", dil: "en", en: true,
+  const en = localizedMeta({ path: "/exposure", en: true,
     azTitle: "AZ T", enTitle: "EN T", azDesc: "AZ D", enDesc: "EN D" });
   assert.equal(en.title, "EN T");
   assert.equal(en.description, "EN D");
-  assert.equal(en.alternates?.canonical, "https://ctiaze.tech/exposure?dil=en");
-  assert.equal((en.openGraph as { url?: string })?.url, "https://ctiaze.tech/exposure?dil=en");
+  assert.equal(en.alternates?.canonical, "https://skopnix.com/exposure");
+  assert.equal((en.openGraph as { url?: string })?.url, "https://skopnix.com/exposure");
 
+  // The AZ branch is dead code while getLocale() is hardcoded, but the strings
+  // are still wired through — keep the contract honest until they're removed.
   const az = localizedMeta({ path: "/exposure", en: false,
     azTitle: "AZ T", enTitle: "EN T", azDesc: "AZ D", enDesc: "EN D" });
   assert.equal(az.title, "AZ T");
-  assert.equal(az.alternates?.canonical, "https://ctiaze.tech/exposure");
+  assert.equal(az.alternates?.canonical, "https://skopnix.com/exposure");
 });

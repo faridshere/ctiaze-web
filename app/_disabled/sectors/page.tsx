@@ -9,9 +9,7 @@ import { localizedMeta } from "@/lib/seo";
 
 export const revalidate = 86400;
 
-export async function generateMetadata({
-}: {
-}): Promise<Metadata> {
+export async function generateMetadata(): Promise<Metadata> {
   const en = (await getLocale()) === "en";
   return localizedMeta({
     path: "/sectors",
