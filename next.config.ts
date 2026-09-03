@@ -39,26 +39,54 @@ const nextConfig: NextConfig = {
   async headers() {
     return [{ source: "/:path*", headers: SECURITY_HEADERS }];
   },
-  // /radar (static console) and /apt (redundant with /actors) removed in the
-  // skopnix cleanup — 301 old URLs to the closest live page. Going global, the
-  // Azerbaijani route slugs were renamed to English; 301 the old ones so
-  // bookmarks, backlinks and indexed URLs keep resolving.
+  // Two jobs here, in priority order:
+  //
+  // 1. STORY RESCUE — every Telegram post ever published links a story URL, and
+  //    those posts can't be edited in bulk. Pre-rebrand posts link
+  //    ctiaze.tech/xeber/<slug>. The old generic /xeber rewrite was *relative*,
+  //    so on ctiaze.tech it landed on ctiaze.tech/news/<slug> — which the host
+  //    rewrite below then swallowed into the placeholder. Cross-domain 308s
+  //    send that whole archive of inbound links to the real story on
+  //    skopnix.com, where the email form is.
+  //
+  // 2. SHELVED SECTIONS — everything moved to app/_disabled 404s now. Humans
+  //    arriving from old links/bookmarks/search results get the landing page
+  //    instead of a dead end. Deliberately permanent:false (307): these
+  //    sections are coming back, and a 308 would be cached forever by browsers
+  //    and search engines, hijacking the URLs even after relaunch.
   async redirects() {
+    const ctiazeHosts = ["ctiaze.tech", "www.ctiaze.tech"];
+    const storyRescue = ctiazeHosts.flatMap((value) => [
+      {
+        source: "/xeber/:slug",
+        has: [{ type: "host" as const, value }],
+        destination: "https://skopnix.com/news/:slug",
+        permanent: true,
+      },
+      {
+        source: "/news/:slug",
+        has: [{ type: "host" as const, value }],
+        destination: "https://skopnix.com/news/:slug",
+        permanent: true,
+      },
+    ]);
+
+    // Shelved product sections plus their legacy AZ-era aliases. ":path*"
+    // matches the bare section and any depth beneath it.
+    const shelved = [
+      "actors", "cve", "vendor", "sectors", "attacks", "glossary", "scan-me",
+      "ioc", "exposure", "situation", "stacknix", "developers", "pricing",
+      "methodology", "apt", "radar", "hucum", "sektor", "lugat", "veziyyet",
+    ].map((seg) => ({ source: `/${seg}/:path*`, destination: "/", permanent: false }));
+
     return [
-      { source: "/radar", destination: "/exposure", permanent: true },
-      { source: "/radar.html", destination: "/exposure", permanent: true },
-      { source: "/apt", destination: "/actors", permanent: true },
-      // AZ slug → English slug
+      ...storyRescue,
+      // still-alive renames keep their permanent redirects
       { source: "/haqqinda", destination: "/about", permanent: true },
-      { source: "/hucum", destination: "/attacks", permanent: true },
-      { source: "/hucum/:slug", destination: "/attacks/:slug", permanent: true },
-      { source: "/sektor", destination: "/sectors", permanent: true },
-      { source: "/sektor/:slug", destination: "/sectors/:slug", permanent: true },
-      { source: "/lugat", destination: "/glossary", permanent: true },
-      { source: "/lugat/:slug", destination: "/glossary/:slug", permanent: true },
       { source: "/metodologiya", destination: "/about", permanent: true },
-      { source: "/veziyyet", destination: "/situation", permanent: true },
       { source: "/xeber/:slug", destination: "/news/:slug", permanent: true },
+      { source: "/radar.html", destination: "/", permanent: false },
+      ...shelved,
     ];
   },
 

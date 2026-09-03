@@ -11,8 +11,13 @@ export function usePowStatus(): PowStatus {
   return useSyncExternalStore(subscribePowStatus, getPowStatus, () => "idle");
 }
 
+// "idle" is the resting state now that the token is only solved on first focus
+// of the form (lazy priming) — it can last the whole visit, so it must read as
+// settled, not in-progress. The endpoint itself rejects tokenless submissions
+// regardless of client state, so "bot-protected" is true the entire time; the
+// green check simply marks when this browser's token is armed and verified.
 const MAP: Record<PowStatus, { label: string; dot: string; pulse: boolean; on: boolean }> = {
-  idle: { label: "securing…", dot: "bg-ink-muted", pulse: true, on: false },
+  idle: { label: "bot-protected", dot: "bg-ink-muted", pulse: false, on: false },
   solving: { label: "verifying…", dot: "bg-accent-warning", pulse: true, on: false },
   ready: { label: "bot-protected", dot: "bg-accent-good", pulse: false, on: true },
   error: { label: "re-verifying…", dot: "bg-accent-warning", pulse: true, on: false },
