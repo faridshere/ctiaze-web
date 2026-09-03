@@ -20,7 +20,17 @@ export function HitBeacon() {
     } catch {
       ref = "";
     }
-    const body = JSON.stringify({ path: pathname, ref });
+    // Source tag (?s=tg on every published Telegram link). Telegram's in-app
+    // browser usually sends no referrer, so without this every reader logs as
+    // "direct". Read from location.search rather than useSearchParams() — the
+    // hook would demand a Suspense boundary and can opt static pages out.
+    let src = "";
+    try {
+      src = new URLSearchParams(window.location.search).get("s") ?? "";
+    } catch {
+      src = "";
+    }
+    const body = JSON.stringify({ path: pathname, ref, ...(src ? { src } : {}) });
     // keepalive so the beacon still lands if the visitor navigates away at once
     fetch("/api/hit", {
       method: "POST",

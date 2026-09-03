@@ -14,7 +14,7 @@ export const metadata: Metadata = {
 };
 
 type Signup = { email: string; source?: string; created_at?: Date; ip?: string; country?: string | null; city?: string | null };
-type Visit = { at?: Date; ip?: string; country?: string | null; city?: string | null; path?: string; ref?: string | null; host?: string | null };
+type Visit = { at?: Date; ip?: string; country?: string | null; city?: string | null; path?: string; ref?: string | null; src?: string | null; host?: string | null };
 
 function ago(d?: Date | string | null): string {
   if (!d) return "—";
@@ -214,7 +214,7 @@ export default async function AdminPage() {
                   <td className="py-2 pr-3 font-mono text-[11.5px] text-ink-secondary [overflow-wrap:anywhere]">
                     {v.host && v.host.includes("ctiaze") ? "ctiaze:" : ""}{v.path || "/"}
                   </td>
-                  <td className="py-2 pr-3 font-mono text-[11.5px] text-ink-muted">{v.ref || "direct"}</td>
+                  <td className="py-2 pr-3 font-mono text-[11.5px] text-ink-muted">{v.src || v.ref || "direct"}</td>
                   <td className="py-2 font-mono text-[11.5px] text-ink-muted">{ago(v.at)}</td>
                 </tr>
               ))}

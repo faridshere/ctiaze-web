@@ -23,10 +23,12 @@ export async function POST(req: Request) {
 
   let path = "/";
   let ref = "";
+  let src = "";
   try {
-    const body = (await req.json()) as { path?: unknown; ref?: unknown };
+    const body = (await req.json()) as { path?: unknown; ref?: unknown; src?: unknown };
     path = String(body.path ?? "/").slice(0, 200);
     ref = String(body.ref ?? "").slice(0, 200);
+    src = String(body.src ?? "").slice(0, 40);
   } catch {
     /* beacon with no body is still a visit */
   }
@@ -46,6 +48,7 @@ export async function POST(req: Request) {
       host: req.headers.get("host") || null,
       path,
       ref: ref || null,
+      src: src || null,
       ua: (req.headers.get("user-agent") || "").slice(0, 200),
     });
   } catch {
