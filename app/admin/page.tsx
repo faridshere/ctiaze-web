@@ -33,7 +33,7 @@ async function load() {
   const signupsCol = db.collection<Signup>("signups");
   const visitsCol = db.collection<Visit>("visits");
 
-  const [signups, signupTotal, signupWeek, visits, visitTotal, visitWeek, byCountry, byPath, uniqueIps] =
+  const [signups, signupTotal, signupWeek, visits, visitTotal, visitWeek, byCountry, byPath, uniqueIps, signupsBySource, visitsBySource] =
     await Promise.all([
       signupsCol.find({}).sort({ created_at: -1 }).limit(500).toArray().catch(() => []),
       signupsCol.countDocuments().catch(() => 0),
@@ -50,9 +50,24 @@ async function load() {
         .toArray()
         .catch(() => []),
       visitsCol.distinct("ip").then((a) => a.length).catch(() => 0),
+      // which form each email came through — the payoff of the source tags
+      signupsCol
+        .aggregate([{ $group: { _id: "$source", n: { $sum: 1 } } }, { $sort: { n: -1 } }, { $limit: 10 }])
+        .toArray()
+        .catch(() => []),
+      // where visits originate — "tg" means a Telegram post link (?s=tg)
+      visitsCol
+        .aggregate([{ $group: { _id: "$src", n: { $sum: 1 } } }, { $sort: { n: -1 } }, { $limit: 10 }])
+        .toArray()
+        .catch(() => []),
     ]);
 
-  return { signups, signupTotal, signupWeek, visits, visitTotal, visitWeek, byCountry, byPath, uniqueIps };
+  // Rough visit→signup conversion. uniqueIps is the honest denominator we have
+  // (one beacon per view would double-count refreshes); good enough to compare
+  // weeks and sources, not a precise funnel metric.
+  const conversion = uniqueIps > 0 ? (signupTotal / uniqueIps) * 100 : 0;
+
+  return { signups, signupTotal, signupWeek, visits, visitTotal, visitWeek, byCountry, byPath, uniqueIps, signupsBySource, visitsBySource, conversion };
 }
 
 function Stat({ label, value, note }: { label: string; value: string | number; note?: string }) {
@@ -112,11 +127,46 @@ export default async function AdminPage() {
         <AdminTools emails={emails} />
       </div>
 
-      <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
+      <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
         <Stat label="signups" value={data.signupTotal.toLocaleString("en-US")} note={`${data.signupWeek} this week`} />
         <Stat label="visits" value={data.visitTotal.toLocaleString("en-US")} note={`${data.visitWeek} this week`} />
         <Stat label="unique IPs" value={data.uniqueIps.toLocaleString("en-US")} />
+        <Stat
+          label="conversion"
+          value={`${data.conversion.toFixed(1)}%`}
+          note="signups ÷ unique IPs"
+        />
         <Stat label="countries" value={data.byCountry.filter((c) => c._id).length} />
+      </div>
+
+      {/* ---- attribution: where signups and visits come from ---- */}
+      <div className="mt-10 grid gap-6 sm:grid-cols-2">
+        <div>
+          <h2 className="font-mono text-[11px] uppercase tracking-[0.16em] text-brand">Signups by form</h2>
+          <ul className="mt-3 space-y-1 font-mono text-[12px]">
+            {data.signupsBySource.length === 0 && <li className="text-ink-muted">no signups yet</li>}
+            {data.signupsBySource.map((r) => (
+              <li key={String(r._id)} className="flex justify-between border-b border-hairline/60 py-1">
+                <span className="text-ink-secondary">{String(r._id ?? "unknown")}</span>
+                <span className="tabular-nums text-ink-primary">{r.n}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+        <div>
+          <h2 className="font-mono text-[11px] uppercase tracking-[0.16em] text-brand">Visits by source</h2>
+          <ul className="mt-3 space-y-1 font-mono text-[12px]">
+            {data.visitsBySource.filter((r) => r._id).length === 0 && (
+              <li className="text-ink-muted">no tagged visits yet — Telegram links carry ?s=tg</li>
+            )}
+            {data.visitsBySource.map((r) => (
+              <li key={String(r._id ?? "direct")} className="flex justify-between border-b border-hairline/60 py-1">
+                <span className="text-ink-secondary">{r._id ? String(r._id) : "direct / untagged"}</span>
+                <span className="tabular-nums text-ink-primary">{r.n}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
       </div>
 
       {/* ---- signups ---- */}
