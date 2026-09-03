@@ -63,7 +63,16 @@ export function GodEyeGlobe() {
     const spawn = () => { let lat = 0, lon = 0, rf = 0, tr = 0; do { lat = LAT0 + (Math.random() * 2 - 1) * DLAT; lon = LON0 + (Math.random() * 2 - 1) * DLON; rf = regionF(lat, lon); tr++; } while (rf < 0.14 && tr < 10); threats.push({ w: wvec(lat, lon), born: performance.now(), life: 3000 + Math.random() * 3200, nixAt: 1100 + Math.random() * 2400, nixed: false }); };
 
     const yawBase = -34 * D2R, pitchBase = 20 * D2R, t0 = performance.now();
+    // Pointer input is never applied raw: events land at input rate (~60Hz),
+    // out of phase with the render loop, so writing straight into the rotation
+    // reads as discrete jumps against the 120Hz-smooth base spin. Events only
+    // move the t* targets; frame() eases the applied values toward them.
     let dragYaw = 0, dragPitch = 0, mpx = 0, mpy = 0;
+    let tDragYaw = 0, tDragPitch = 0, tmx = 0, tmy = 0;
+    let flingYaw = 0, flingPitch = 0, vYaw = 0, vPitch = 0;
+    // Keep the drag target inside the range the final pitch clamp can express,
+    // or dragging back after a hard vertical pull has a dead zone.
+    const PT_MIN = -1.2 - pitchBase, PT_MAX = 1.2 - pitchBase;
 
     const resize = () => { DPR = Math.min(window.devicePixelRatio || 1, 1.7); W = wrapEl.clientWidth; H = wrapEl.clientHeight;
       [sky, glc].forEach((c) => { c.width = Math.floor(W * DPR); c.height = Math.floor(H * DPR); }); sctx.setTransform(DPR, 0, 0, DPR, 0, 0);
@@ -108,6 +117,12 @@ export function GodEyeGlobe() {
       GL.depthMask(true); GL.disable(GL.BLEND);
     };
 
+    // Opt-in smoothness probe (#globedebug): records per-frame applied rotation
+    // so an automated browser test can assert there are no single-frame jumps.
+    const probe = location.hash.includes("globedebug")
+      ? ((window as unknown as { __globeFrames: number[] }).__globeFrames = [] as number[])
+      : null;
+
     let raf = 0, running = false, lastF = performance.now(), skyAcc = 0;
     // Draw the globe on every animation frame. Motion is derived from absolute
     // time (tsec = now - t0), so one draw per refresh is smooth at any rate.
@@ -120,6 +135,20 @@ export function GodEyeGlobe() {
       raf = requestAnimationFrame(frame);
       if (!ready) return;
       const dt = now - lastF; lastF = now;
+      // Frame-rate-independent exponential easing (time-constant form, so 60Hz
+      // and 120Hz displays trace the identical curve). Drag is tight (~70ms) so
+      // the globe stays glued to the finger; hover parallax is ambient (~240ms).
+      const kd = 1 - Math.exp(-dt / 70), km = 1 - Math.exp(-dt / 240);
+      if (!dragging) {
+        tDragYaw += flingYaw * dt;
+        tDragPitch = Math.max(PT_MIN, Math.min(PT_MAX, tDragPitch + flingPitch * dt));
+        const decay = Math.exp(-dt / 300); flingYaw *= decay; flingPitch *= decay;
+      }
+      dragYaw += (tDragYaw - dragYaw) * kd;
+      dragPitch += (tDragPitch - dragPitch) * kd;
+      mpx += (tmx - mpx) * km;
+      mpy += (tmy - mpy) * km;
+      if (probe) probe.push(now, dragYaw + mpx * 0.05, dragPitch + mpy * 0.04);
       draw(now);
       skyAcc += dt;
       if (skyAcc > 90) { skyAcc = 0; drawSky(now); }
@@ -127,10 +156,31 @@ export function GodEyeGlobe() {
     const start = () => { if (running) return; running = true; lastF = performance.now(); raf = requestAnimationFrame(frame); };
     const stop = () => { running = false; cancelAnimationFrame(raf); };
 
-    let dragging = false, lx = 0, ly = 0;
-    const onDown = (e: PointerEvent) => { dragging = true; lx = e.clientX; ly = e.clientY; glc.classList.add("dragging"); };
-    const onMove = (e: PointerEvent) => { if (dragging) { dragYaw += (e.clientX - lx) * 0.006; dragPitch += (e.clientY - ly) * 0.006; lx = e.clientX; ly = e.clientY; } else { mpx = e.clientX / W - 0.5; mpy = e.clientY / H - 0.5; } };
-    const onUp = () => { dragging = false; glc.classList.remove("dragging"); };
+    let dragging = false, lx = 0, ly = 0, lts = 0;
+    const onDown = (e: PointerEvent) => {
+      dragging = true; lx = e.clientX; ly = e.clientY; lts = e.timeStamp;
+      flingYaw = flingPitch = vYaw = vPitch = 0;
+      try { glc.setPointerCapture(e.pointerId); } catch { /* capture is best-effort */ }
+      glc.classList.add("dragging");
+    };
+    const onMove = (e: PointerEvent) => {
+      if (dragging) {
+        const dx = (e.clientX - lx) * 0.006, dy = (e.clientY - ly) * 0.006;
+        const dte = Math.max(e.timeStamp - lts, 1);
+        tDragYaw += dx;
+        tDragPitch = Math.max(PT_MIN, Math.min(PT_MAX, tDragPitch + dy));
+        // EMA of release velocity (rad/ms) for the glide after letting go.
+        vYaw = vYaw * 0.7 + (dx / dte) * 0.3; vPitch = vPitch * 0.7 + (dy / dte) * 0.3;
+        lx = e.clientX; ly = e.clientY; lts = e.timeStamp;
+      } else { tmx = e.clientX / W - 0.5; tmy = e.clientY / H - 0.5; }
+    };
+    const onUp = () => {
+      if (dragging) {
+        const cap = (v: number) => Math.max(-0.0025, Math.min(0.0025, v));
+        flingYaw = cap(vYaw); flingPitch = cap(vPitch);
+      }
+      dragging = false; glc.classList.remove("dragging");
+    };
     if (fine) { glc.style.pointerEvents = "auto"; glc.addEventListener("pointerdown", onDown); glc.addEventListener("pointermove", onMove); window.addEventListener("pointerup", onUp); } else glc.style.pointerEvents = "none";
 
     resize();
