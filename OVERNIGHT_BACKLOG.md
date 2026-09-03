@@ -4,15 +4,17 @@ Checked/worked each night by the scheduled Claude Code session. Edit this file
 any time to steer what gets attention — add, remove, or reprioritize items.
 
 ## Always check first (health, ~5 min)
-- [ ] Run the automated smoke test. It covers homepage + every category page,
-      the feeds, `/api/latest` sane count, AND real `/xeber/<slug>` article
-      pages — one CVE slug and one URL-hash slug — asserting each rendered
-      `<title>` matches the story its slug points to. From `ctiaze-web/`:
+- [ ] Run the automated smoke test (rewritten 2026-09-03 for the current
+      two-landing-page surface: skopnix.com landing + /news + story pages +
+      feeds + 404 lead recovery + security canaries, and ctiaze.tech's
+      placeholder + story-rescue redirect). From `ctiaze-web/`:
         `node scripts/health-check.mjs https://ctiaze-web.vercel.app`
       (pass the Vercel alias — the scheduled sandbox's network filter blocks the
-      bare ctiaze.tech domain). Exit 0 = healthy; any `FAIL` line names what broke.
-      WHY the article check exists: on 2026-08-01 the homepage and `/api/latest`
-      were fully green while every CVE article page silently served the wrong
+      bare domains; the two ctiaze.tech checks self-SKIP when unreachable, the
+      funnel monitor Actions workflow covers them externally twice daily).
+      Exit 0 = healthy; any `FAIL` line names what broke.
+      WHY the two-story title check exists: on 2026-08-01 the homepage was
+      fully green while every CVE article page silently served the wrong
       (latest CVE) story — a green homepage does NOT mean article pages are OK.
 - [ ] Latest Vercel deployment status — Ready, no build errors.
 - [ ] Any new console/runtime errors surfaced since the last check.
