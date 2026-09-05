@@ -1,6 +1,7 @@
 // Fourteen days of dispatches as bars — a pure SVG from real counts. Quiet
 // gaps stay quiet: a zero day renders as a hairline stub, never hidden, so the
-// chart is honest about the days the wire was silent.
+// chart is honest about the days the wire was silent. Bars grow from the
+// baseline when the section reveals (CSS, keyed by --i; see globals.css).
 export function Sparkline({ data, className = "" }: { data: { day: string; n: number }[]; className?: string }) {
   const W = 280, H = 72, GAP = 4;
   const max = Math.max(1, ...data.map((d) => d.n));
@@ -12,6 +13,8 @@ export function Sparkline({ data, className = "" }: { data: { day: string; n: nu
         return (
           <rect
             key={d.day}
+            className="spark-bar"
+            style={{ "--i": i } as React.CSSProperties}
             x={i * (bw + GAP)}
             y={H - h}
             width={bw}

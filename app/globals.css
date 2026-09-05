@@ -317,11 +317,40 @@ html.motion-ok [data-sc="4"] { transition-delay: 0.3s; }
 .hl > span {
   display: block;
   transform: translateY(110%);
-  animation: hl-lift 0.7s var(--ease-out) forwards;
+  /* tight, decisive landing (no bounce) — the aurora's load sweep crosses as it locks */
+  animation: hl-lift 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.2s forwards;
 }
-.hl:nth-child(2) > span { animation-delay: 0.09s; }
-.hl:nth-child(3) > span { animation-delay: 0.18s; }
+.hl:nth-child(2) > span { animation-delay: 0.3s; }
+.hl:nth-child(3) > span { animation-delay: 0.4s; }
 @keyframes hl-lift { to { transform: none; } }
+
+/* The first thing on the page: the kicker settles before the headline lifts. */
+.fade-up { animation: fade-up 0.6s var(--ease-out) both; }
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: none; }
+}
+
+/* The triad's top node ignites once on load — the grid coming online. */
+.mark-ignite {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: mark-ignite 1.4s var(--ease-out) 0.35s both;
+}
+@keyframes mark-ignite {
+  0% { opacity: 0.2; transform: scale(0.9); }
+  55% { opacity: 1; transform: scale(1.28); }
+  100% { opacity: 1; transform: scale(1); }
+}
+
+/* Sparkline bars grow from the baseline as their section reveals. */
+html.motion-ok .spark-bar {
+  transform-box: fill-box;
+  transform-origin: bottom;
+  transition: transform 0.7s var(--ease-out);
+  transition-delay: calc(0.15s + var(--i, 0) * 40ms);
+}
+html.motion-ok [data-sc]:not([data-in]) .spark-bar { transform: scaleY(0); }
 
 /* Wire rows arrive one after another, like a feed catching up. */
 html.motion-ok .wire-row {
@@ -383,7 +412,9 @@ html.motion-ok .wire-row {
   }
   html.motion-ok [data-sc] { opacity: 1; transform: none; }
   html.motion-ok .wire-row { opacity: 1; transform: none; animation: none; }
+  html.motion-ok .spark-bar { transform: none; transition: none; }
   .hl > span { transform: none; }
+  .fade-up, .mark-ignite { animation: none; opacity: 1; transform: none; }
 }
 
 @media (prefers-reduced-motion: no-preference) {

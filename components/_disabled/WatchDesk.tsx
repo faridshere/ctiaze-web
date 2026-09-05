@@ -1,4 +1,4 @@
-import { CountUp } from "./CountUp";
+import { CountUp } from "@/components/home/CountUp";
 import { SectorRecall } from "./SectorRecall";
 import type { DoStats } from "@/lib/_disabled/dostats";
 

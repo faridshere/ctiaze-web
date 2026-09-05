@@ -21,12 +21,12 @@ export function CountUp({ value, className }: { value: number; className?: strin
       (entries) => {
         if (!entries.some((e) => e.isIntersecting)) return;
         io.disconnect();
-        const D = 1000;
+        const D = 900;
         let start: number | null = null;
         const step = (ts: number) => {
           if (start === null) start = ts;
           const p = Math.min(1, (ts - start) / D);
-          const eased = 1 - Math.pow(1 - p, 3);
+          const eased = 1 - Math.pow(1 - p, 4); // ease-out-quart: fast start, settles like an instrument
           el.textContent = fmt(Math.round(value * eased));
           if (p < 1) requestAnimationFrame(step);
         };

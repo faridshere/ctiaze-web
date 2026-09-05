@@ -27,7 +27,7 @@ export function Pillars({ data }: { data: HomeData }) {
   const week = data.week.dispatches;
   return (
     <div className="grid gap-4 md:grid-cols-3">
-      <Panel className="flex flex-col p-6 sm:p-7">
+      <Panel interactive className="flex flex-col p-6 sm:p-7">
         <Index n="01" />
         <Title>The wire</Title>
         <Line>
@@ -42,7 +42,7 @@ export function Pillars({ data }: { data: HomeData }) {
         </div>
       </Panel>
 
-      <Panel className="flex flex-col p-6 sm:p-7">
+      <Panel interactive className="flex flex-col p-6 sm:p-7">
         <Index n="02" />
         <Title>The archive</Title>
         <Line>
@@ -61,7 +61,7 @@ export function Pillars({ data }: { data: HomeData }) {
         </div>
       </Panel>
 
-      <Panel className="flex flex-col p-6 sm:p-7">
+      <Panel interactive className="flex flex-col p-6 sm:p-7">
         <div
           aria-hidden
           className="pointer-events-none absolute inset-0"

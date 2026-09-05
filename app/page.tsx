@@ -60,7 +60,7 @@ export default async function LandingPage() {
           {/* the globe dissolves into the page ground under the wire panel */}
           <div aria-hidden className="pointer-events-none absolute inset-x-0 bottom-0 h-72 bg-gradient-to-b from-transparent to-surface" />
           <div className="relative z-10 mx-auto flex min-h-[calc(100svh-3.5rem)] w-full max-w-[46rem] flex-col items-center justify-center px-6 pb-40 pt-20 text-center sm:pb-48">
-            <Kicker live>
+            <Kicker live className="fade-up">
               {data.week.dispatches > 0
                 ? `${data.week.dispatches.toLocaleString("en-US")} dispatches this week`
                 : "live · around the clock"}

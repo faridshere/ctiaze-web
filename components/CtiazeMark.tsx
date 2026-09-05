@@ -1,6 +1,7 @@
 // The skopnix mark — "the triad", liquid-fused: a hub and three sensor nodes
 // merged into one metaball body (SVG goo filter), the top node lit signal-orange.
 // The fusion is the point: one organism, not parts. Echoed in app/icon.svg.
+// On load the top node ignites once (the grid coming online); see .mark-ignite.
 export function CtiazeMark({ className = "size-5" }: { className?: string }) {
   return (
     <svg viewBox="0 0 32 32" className={className} aria-hidden="true">
@@ -22,7 +23,7 @@ export function CtiazeMark({ className = "size-5" }: { className?: string }) {
         <circle cx="24" cy="22" r="3.6" fill="currentColor" />
         <circle cx="16" cy="7" r="3.8" fill="currentColor" />
       </g>
-      <circle cx="16" cy="7" r="3.8" className="fill-brand" />
+      <circle cx="16" cy="7" r="3.8" className="mark-ignite fill-brand" />
     </svg>
   );
 }

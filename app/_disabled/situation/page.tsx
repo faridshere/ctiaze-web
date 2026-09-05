@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Header } from "@/components/_disabled/Header";
 import { Footer } from "@/components/_disabled/Footer";
-import { CountUp } from "@/components/_disabled/CountUp";
+import { CountUp } from "@/components/home/CountUp";
 import { getSituation, type TopActor, type Priority } from "@/lib/_disabled/landscape";
 import { getLocale } from "@/lib/_disabled/i18n-server";
 import { localizedMeta } from "@/lib/_disabled/seo";
