@@ -1,51 +1,36 @@
-import { NextResponse } from "next/server";
-import { createHash } from "crypto";
 import { rateLimit, clientIp } from "@/lib/ratelimit";
 import { verifyPow } from "@/lib/pow";
 import { writeDb } from "@/lib/db-write";
+import { jsonError, jsonOk, readJsonBody, RATE } from "@/lib/api";
+import { parseSignup, uaHash } from "@/lib/signup";
 
 export const revalidate = 0;
-
-const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
 // Early-access signups. Same invisible proof-of-work gate as the tools, so a
 // script can't stuff the list, plus a tight per-IP limit. Stored deduped by
 // email in the `signups` collection.
 export async function POST(req: Request) {
-  if (!rateLimit(`waitlist:${clientIp(req)}`, 6, 60_000)) {
-    return NextResponse.json({ error: "Too many requests — wait a minute" }, { status: 429 });
+  if (!rateLimit(`waitlist:${clientIp(req)}`, RATE.waitlist.limit, RATE.waitlist.windowMs)) {
+    return jsonError(429, "Too many requests — wait a minute");
   }
   if (!verifyPow(req.headers.get("x-pow"))) {
-    return NextResponse.json({ error: "Couldn't verify the request — refresh and try again." }, { status: 403 });
+    return jsonError(403, "Couldn't verify the request — refresh and try again.");
   }
 
-  let body: unknown;
-  try {
-    body = await req.json();
-  } catch {
-    return NextResponse.json({ error: "Bad request" }, { status: 400 });
-  }
-  const b = (body ?? {}) as Record<string, unknown>;
-  const email = String(b.email ?? "").trim().toLowerCase();
-  const source = String(b.source ?? "site").slice(0, 40);
-  if (!EMAIL.test(email) || email.length > 254) {
-    return NextResponse.json({ error: "Enter a valid email address" }, { status: 400 });
-  }
+  const body = await readJsonBody<unknown>(req);
+  if (body === null) return jsonError(400, "Bad request");
+  const parsed = parseSignup(body);
+  if ("error" in parsed) return jsonError(400, parsed.error);
+  const { email, source } = parsed;
 
   const db = writeDb();
   if (!db) {
-    return NextResponse.json(
-      { error: "Early access isn't open just yet — check back soon." },
-      { status: 503 }
-    );
+    return jsonError(503, "Early access isn't open just yet — check back soon.");
   }
 
   try {
     const col = (await db).collection("signups");
-    const ua_hash = createHash("sha256")
-      .update((req.headers.get("user-agent") || "") + "|" + clientIp(req))
-      .digest("hex")
-      .slice(0, 16);
+    const ua_hash = uaHash(req.headers.get("user-agent") || "", clientIp(req));
     await col.updateOne(
       { email },
       {
@@ -63,8 +48,8 @@ export async function POST(req: Request) {
       },
       { upsert: true }
     );
-    return NextResponse.json({ ok: true }, { headers: { "Cache-Control": "no-store" } });
+    return jsonOk({ ok: true });
   } catch {
-    return NextResponse.json({ error: "Couldn't save right now — try again shortly." }, { status: 500 });
+    return jsonError(500, "Couldn't save right now — try again shortly.");
   }
 }

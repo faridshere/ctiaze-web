@@ -1,41 +1,32 @@
 @import "tailwindcss";
 
 /* ---------------------------------------------------------------------------
-   ctiaze — "Növbə" (The Watch Ledger): a Baku signals desk.
+   skopnix — "orbital wire" (v3, 2026-09). See DESIGN.md for the contract.
 
-   The product's default face is cool-ink DARK (#0a0b0d) — a night-shift
-   ledger, signal-orange for interaction only ("ink & signal", 2026-08).
-   Light-preference users and print get a "day-print" newsprint register
-   (gray-tan, not cream). ONE brand hue (signal/burnt-signal) is
-   interaction-only; category color is a single muted ink family; severity
-   is never shown (it is null across the archive).
-
-   Architecture: the SAME token names carry both registers, plus a --cat-* map
-   for the threat-category taxonomy. :root is DARK by default; a
-   `@media (prefers-color-scheme: light)` block remaps to the day-print values;
-   a `.ops` wrapper (tool pages) / `.darkroom` inset force the dark register for
-   their subtree regardless of OS. Hex values live once in --d-* / --l-* so the
-   two registers can never drift.
+   One register on screen: deep ink, cool starlight text, ONE signal-orange
+   accent for interaction and "live", cyan for structure lines only. The light
+   "day-print" values exist for print alone (a forwarded briefing comes out as
+   newsprint, not asphalt). Hex values live once in --d-* / --l-* so the two
+   registers can never drift; the applied tokens below map to --d-* by default.
    ------------------------------------------------------------------------- */
 :root {
-  /* --- DARK "ink" register — SINGLE SOURCE (--d-*). The default face.
-     2026-08 "ink & signal" redesign (Farid-approved live): cool ink ground,
-     ONE signal-orange interaction hue — aligned 1:1 with the /radar.html
-     experience so site + console read as one product. --- */
-  --d-surface: #0a0b0d; /* cool near-black ink */
-  --d-surface-raised: #14161b;
-  --d-ink-primary: #f2efe9; /* warm gauze ~15:1 */
-  --d-ink-secondary: #a7a9b0; /* ~7.5:1 */
-  --d-ink-muted: #82868f; /* ≥4.6:1 on raised surfaces too — AA for 11px mono meta */
-  --d-hairline: #23262e;
-  --d-border: rgba(242, 239, 233, 0.08);
-  --d-brand: #ff5a1f; /* signal orange — interaction ONLY */
+  /* --- DARK register — SINGLE SOURCE (--d-*) --- */
+  --d-void: #05060a;
+  --d-surface: #0a0b0d;
+  --d-surface-raised: #10131a;
+  --d-surface-hover: #171b24;
+  --d-ink-primary: #eef3f8; /* cool starlight ~16:1 */
+  --d-ink-secondary: #a3adbb; /* ~8:1 */
+  --d-ink-muted: #8791a0; /* ~6:1 on surface, ~5.7:1 on raised — AA with margin for 11px mono meta */
+  --d-hairline: #1f2430;
+  --d-border: rgba(238, 243, 248, 0.08);
+  --d-limb: #35c9d6; /* structure lines ONLY — never text */
+  --d-brand: #ff5a1f; /* signal orange — interaction + live ONLY */
   --d-brand-wash: rgba(255, 90, 31, 0.09);
-  --d-accent-critical: #ff4d5e; /* KEV only in the feed */
-  --d-accent-serious: #ff8a4d; /* reserved: tool output */
-  --d-accent-warning: #e0b94a; /* gold — hue-separated from signal */
-  --d-accent-good: #6cc98a; /* live / grounded */
-  --d-shadow-card: none; /* hairlines, never shadows */
+  --d-accent-critical: #ff4d5e;
+  --d-accent-serious: #ff8a4d;
+  --d-accent-warning: #e0b94a;
+  --d-accent-good: #6cc98a;
   --d-cat-vuln: #7ea4cf;
   --d-cat-exploit: #c98a5a;
   --d-cat-malware: #b08fd0;
@@ -45,23 +36,25 @@
   --d-cat-research: #8db98a;
   --d-cat-supply-chain: #a5a7ae;
   --d-cat-policy: #94a0b4;
-  --d-cat-other: #82858f; /* one muted family — cannot scream */
+  --d-cat-other: #82858f;
 
-  /* --- LIGHT "day-print" register — SINGLE SOURCE (--l-*). Newsprint gray-tan. --- */
+  /* --- LIGHT "day-print" register — PRINT ONLY (--l-*) --- */
+  --l-void: #e6e4de;
   --l-surface: #efede7;
   --l-surface-raised: #f7f5f0;
+  --l-surface-hover: #e8e5de;
   --l-ink-primary: #1a1814;
   --l-ink-secondary: #57524a;
   --l-ink-muted: #6e675c;
   --l-hairline: #d8d4ca;
   --l-border: rgba(26, 24, 20, 0.1);
-  --l-brand: #a03d0e; /* burnt signal for print */
+  --l-limb: #1f7f88;
+  --l-brand: #a03d0e;
   --l-brand-wash: #f4e2d6;
   --l-accent-critical: #b3382f;
   --l-accent-serious: #a54a0e;
   --l-accent-warning: #8f6a00;
   --l-accent-good: #22703b;
-  --l-shadow-card: none;
   --l-cat-vuln: #3e6285;
   --l-cat-exploit: #8a4f37;
   --l-cat-malware: #64518a;
@@ -71,23 +64,25 @@
   --l-cat-research: #4c7049;
   --l-cat-supply-chain: #6b655c;
   --l-cat-policy: #565e68;
-  --l-cat-other: #5d584f; /* same family at L≈0.45 */
+  --l-cat-other: #5d584f;
 
-  /* --- APPLIED tokens — DARK by default (the flip vs. the old site) --- */
+  /* --- APPLIED tokens — dark by default --- */
+  --void: var(--d-void);
   --surface: var(--d-surface);
   --surface-raised: var(--d-surface-raised);
+  --surface-hover: var(--d-surface-hover);
   --ink-primary: var(--d-ink-primary);
   --ink-secondary: var(--d-ink-secondary);
   --ink-muted: var(--d-ink-muted);
   --hairline: var(--d-hairline);
   --border: var(--d-border);
+  --limb: var(--d-limb);
   --brand: var(--d-brand);
   --brand-wash: var(--d-brand-wash);
   --accent-critical: var(--d-accent-critical);
   --accent-serious: var(--d-accent-serious);
   --accent-warning: var(--d-accent-warning);
   --accent-good: var(--d-accent-good);
-  --shadow-card: var(--d-shadow-card);
   --cat-vuln: var(--d-cat-vuln);
   --cat-exploit: var(--d-cat-exploit);
   --cat-malware: var(--d-cat-malware);
@@ -99,7 +94,7 @@
   --cat-policy: var(--d-cat-policy);
   --cat-other: var(--d-cat-other);
 
-  /* --- Fluid type scale + spacing (identical intent at every width) --- */
+  /* --- Fluid type scale + spacing --- */
   --t-display: clamp(1.875rem, 1.1rem + 3.2vw, 3rem);
   --t-h2: clamp(1.375rem, 1.15rem + 1.1vw, 1.75rem);
   --t-row: clamp(1.0625rem, 0.98rem + 0.4vw, 1.25rem);
@@ -107,38 +102,41 @@
   --t-meta: clamp(0.6875rem, 0.65rem + 0.18vw, 0.78125rem);
   --t-micro: 0.65625rem;
   --sp-gutter: clamp(1rem, 3.5vw, 2rem);
-  --sp-section: clamp(2.5rem, 6vw, 4.5rem);
+  --sp-section: clamp(3rem, 8vw, 6.5rem);
   --sp-row: clamp(0.875rem, 2vw, 1.25rem);
-  --radius-chip: 2px; /* the only radius in the system (plus focus outline) */
 
-  --font-headline: var(--font-headline);
-  --font-body: var(--font-body);
-  --font-mono: var(--font-mono);
-  --font-display: var(--font-display);
+  /* --- Radius scale: chips stay sharp, panels and buttons are soft (xintra) --- */
+  --radius-chip: 2px;
+  --radius-btn: 6px;
+  --radius-panel: 12px;
+
+  /* --- Motion --- */
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+
+  /* One grotesque for every role; next/font defines --font-schibsted/--font-mono on <html>. */
+  --font-display: var(--font-schibsted);
+  --font-headline: var(--font-schibsted);
+  --font-body: var(--font-schibsted);
 }
 
-/* Day-print register — PRINT ONLY (a CISO forwards/prints a briefing and it
-   comes out as newsprint, not black asphalt). Screen is ALWAYS the dark asphalt
-   identity on every device and every page — the old prefers-color-scheme: light
-   screen switch made editorial pages go light while .ops tool pages stayed dark,
-   so a light-mode phone showed "different colours per page". One register on
-   screen fixes that by construction. */
 @media print {
   :root {
+    --void: var(--l-void);
     --surface: var(--l-surface);
     --surface-raised: var(--l-surface-raised);
+    --surface-hover: var(--l-surface-hover);
     --ink-primary: var(--l-ink-primary);
     --ink-secondary: var(--l-ink-secondary);
     --ink-muted: var(--l-ink-muted);
     --hairline: var(--l-hairline);
     --border: var(--l-border);
+    --limb: var(--l-limb);
     --brand: var(--l-brand);
     --brand-wash: var(--l-brand-wash);
     --accent-critical: var(--l-accent-critical);
     --accent-serious: var(--l-accent-serious);
     --accent-warning: var(--l-accent-warning);
     --accent-good: var(--l-accent-good);
-    --shadow-card: var(--l-shadow-card);
     --cat-vuln: var(--l-cat-vuln);
     --cat-exploit: var(--l-cat-exploit);
     --cat-malware: var(--l-cat-malware);
@@ -153,24 +151,26 @@
   }
 }
 
-/* Tool pages (.ops, always dark) and dark insets (.darkroom) force the dark
-   register for their subtree — including the category map — regardless of OS. */
+/* Dark insets (.darkroom) and tool pages (.ops, shelved) force the dark register
+   for their subtree — including the category map — even when printing. */
 .ops,
 .darkroom {
+  --void: var(--d-void);
   --surface: var(--d-surface);
   --surface-raised: var(--d-surface-raised);
+  --surface-hover: var(--d-surface-hover);
   --ink-primary: var(--d-ink-primary);
   --ink-secondary: var(--d-ink-secondary);
   --ink-muted: var(--d-ink-muted);
   --hairline: var(--d-hairline);
   --border: var(--d-border);
+  --limb: var(--d-limb);
   --brand: var(--d-brand);
   --brand-wash: var(--d-brand-wash);
   --accent-critical: var(--d-accent-critical);
   --accent-serious: var(--d-accent-serious);
   --accent-warning: var(--d-accent-warning);
   --accent-good: var(--d-accent-good);
-  --shadow-card: var(--d-shadow-card);
   --cat-vuln: var(--d-cat-vuln);
   --cat-exploit: var(--d-cat-exploit);
   --cat-malware: var(--d-cat-malware);
@@ -187,13 +187,16 @@
 }
 
 @theme inline {
+  --color-void: var(--void);
   --color-surface: var(--surface);
   --color-surface-raised: var(--surface-raised);
+  --color-surface-hover: var(--surface-hover);
   --color-ink-primary: var(--ink-primary);
   --color-ink-secondary: var(--ink-secondary);
   --color-ink-muted: var(--ink-muted);
   --color-hairline: var(--hairline);
   --color-border: var(--border);
+  --color-limb: var(--limb);
   --color-brand: var(--brand);
   --color-brand-wash: var(--brand-wash);
   --color-accent-critical: var(--accent-critical);
@@ -212,6 +215,7 @@
   --color-cat-policy: var(--cat-policy);
   --color-cat-other: var(--cat-other);
 
+  --font-display: var(--font-display);
   --font-headline: var(--font-headline);
   --font-body: var(--font-body);
   --font-mono: var(--font-mono);
@@ -223,7 +227,7 @@
 
 ::selection {
   background: var(--brand);
-  color: var(--surface); /* register-aware: dark text on amber, light on copper */
+  color: var(--surface);
 }
 
 html {
@@ -237,23 +241,18 @@ body {
   color: var(--ink-primary);
 }
 
-/* Dark tool pages (.ops) sit above the page body; for a light-preference user
-   the newsprint body would flash behind the dark tool page on overscroll — keep
-   the underlay matched to asphalt. */
 body:has(.ops) {
   background-color: var(--d-surface);
 }
 
 /* Visible keyboard focus everywhere — the `*{border-color}` reset defeats
-   focus:border, so use an outline (unaffected by border-color). :where() keeps
-   specificity at 0. */
+   focus:border, so use an outline (unaffected by border-color). */
 :where(a, button, input, select, textarea, [tabindex]):focus-visible {
   outline: 2px solid var(--brand);
   outline-offset: 2px;
-  border-radius: 2px;
+  border-radius: var(--radius-chip);
 }
 
-/* Kill the mobile double-tap-zoom delay on all interactive chip-sized targets. */
 a,
 button,
 input,
@@ -262,20 +261,48 @@ select,
   touch-action: manipulation;
 }
 
+/* Anchored sections sit below the sticky header when jumped to. */
+[id] {
+  scroll-margin-top: 4.5rem;
+}
+
 /* ---------------------------------------------------------------------------
-   Motion layer — "ink & signal" signature moves. All scroll-purposeful, all
-   killed by prefers-reduced-motion. Elements opt in with data-sc (revealed by
-   the MotionRoot observer setting data-in) — no per-element JS.
+   Structure — the cyan "limb": an atmospheric-horizon hairline used where a
+   flat divider would be. Cyan is a line here, never a word.
    ------------------------------------------------------------------------- */
-/* Progressive enhancement: content is VISIBLE by default (no-JS, crawlers,
-   reader modes). MotionRoot stamps html.motion-ok on mount; only then do
-   [data-sc] elements arm and reveal via data-in. */
+.limb-line {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--limb) 28%, var(--limb) 72%, transparent);
+  opacity: 0.55;
+  box-shadow: 0 0 14px rgba(53, 201, 214, 0.35);
+}
+
+/* Crosshair grid: a `+` at every interior intersection (the stat grid). */
+.crosshair {
+  position: relative;
+}
+.crosshair::before,
+.crosshair::after {
+  content: "";
+  position: absolute;
+  background: var(--limb);
+  opacity: 0.6;
+  pointer-events: none;
+}
+.crosshair::before { width: 11px; height: 1px; left: -6px; top: -1px; }
+.crosshair::after { width: 1px; height: 11px; left: -1px; top: -6px; }
+
+/* ---------------------------------------------------------------------------
+   Motion — instrument, not screensaver. All scroll-purposeful, all killed by
+   prefers-reduced-motion. Elements opt in with data-sc (revealed by the
+   MotionRoot observer stamping data-in) — no per-element JS.
+   ------------------------------------------------------------------------- */
 html.motion-ok [data-sc] {
   opacity: 0;
   transform: translateY(22px);
   transition:
-    opacity 0.65s cubic-bezier(0.22, 0.61, 0.36, 1),
-    transform 0.65s cubic-bezier(0.22, 0.61, 0.36, 1);
+    opacity 0.65s var(--ease-out),
+    transform 0.65s var(--ease-out);
 }
 html.motion-ok [data-sc][data-in] {
   opacity: 1;
@@ -283,89 +310,68 @@ html.motion-ok [data-sc][data-in] {
 }
 html.motion-ok [data-sc="2"] { transition-delay: 0.1s; }
 html.motion-ok [data-sc="3"] { transition-delay: 0.2s; }
+html.motion-ok [data-sc="4"] { transition-delay: 0.3s; }
 
 /* Headline line-lift (hero) */
 .hl { display: block; overflow: hidden; }
 .hl > span {
   display: block;
   transform: translateY(110%);
-  animation: hl-lift 0.7s cubic-bezier(0.22, 0.61, 0.36, 1) forwards;
+  animation: hl-lift 0.7s var(--ease-out) forwards;
 }
 .hl:nth-child(2) > span { animation-delay: 0.09s; }
 .hl:nth-child(3) > span { animation-delay: 0.18s; }
 @keyframes hl-lift { to { transform: none; } }
 
-/* Radar sweep — transform-origin pinned to view-box centre (the artifact bug,
-   fixed here from day one). */
-.rsweep {
-  transform-box: view-box;
-  transform-origin: 50% 50%;
-  animation: rsweep-spin 5.5s linear infinite;
+/* Wire rows arrive one after another, like a feed catching up. */
+html.motion-ok .wire-row {
+  opacity: 0;
+  transform: translateY(6px);
+  animation: wire-in 0.5s var(--ease-out) forwards;
+  animation-delay: calc(0.35s + var(--i, 0) * 0.07s);
 }
-@keyframes rsweep-spin { to { transform: rotate(360deg); } }
+@keyframes wire-in { to { opacity: 1; transform: none; } }
 
-/* Tactile light pass on interactive cards */
-.sweepable { position: relative; overflow: hidden; }
-.sweepable::after {
-  content: "";
-  position: absolute;
-  top: 0; bottom: 0; left: -60%;
-  width: 40%;
-  background: linear-gradient(100deg, transparent, var(--brand-wash), transparent);
-  transform: skewX(-18deg);
-  /* transform-only: stays on the compositor, no per-frame reflow */
-  transition: transform 0.45s cubic-bezier(0.22, 0.61, 0.36, 1);
-  pointer-events: none;
-}
-.sweepable:hover::after { transform: translateX(450%) skewX(-18deg); }
-
-/* Signal pulse (live dots) */
+/* Signal pulse (the one live dot per view) */
 @keyframes signal-beat {
   0% { box-shadow: 0 0 0 0 rgba(255, 90, 31, 0.5); }
   70% { box-shadow: 0 0 0 8px rgba(255, 90, 31, 0); }
   100% { box-shadow: 0 0 0 0 rgba(255, 90, 31, 0); }
 }
-.signal-dot { animation: signal-beat 2s ease-out infinite; }
+.signal-dot { animation: signal-beat 2.4s ease-out infinite; }
 
-/* Per-actor sigil pulses: a signal travels each spoke (CSS motion path). */
-.sigil-pulse {
-  offset-rotate: 0deg;
-  animation-name: sigil-travel;
-  animation-timing-function: cubic-bezier(0.22, 0.61, 0.36, 1);
-  animation-iteration-count: infinite;
-  opacity: 0;
-}
-@keyframes sigil-travel {
-  0% { offset-distance: 0%; opacity: 0; }
-  12% { opacity: 0.9; }
-  58% { offset-distance: 100%; opacity: 0.9; }
-  70%, 100% { offset-distance: 100%; opacity: 0; }
-}
-
-/* Ambient triad motif (CTA band): the whole mark floats almost imperceptibly;
-   the detection node breathes. Both die under prefers-reduced-motion via the
-   global kill-switch below. */
-/* Aurora silk streaks (hero): slow lateral drift, killed by reduced-motion. */
+/* Aurora silk streaks (hero): slow lateral drift. */
 .aurora-streak { animation: aurora-drift 26s ease-in-out infinite alternate; }
 @keyframes aurora-drift {
   from { translate: -40px 0; }
   to { translate: 40px 0; }
 }
 
+/* Orbital wireframe (CTA band): a very slow roll so the grid reads as live. */
+.orbital { animation: orbital-roll 90s linear infinite; transform-origin: 50% 50%; }
+@keyframes orbital-roll { to { transform: rotate(360deg); } }
+
+/* ---- motion used only by shelved sections (app/_disabled) — keep for un-shelving ---- */
+.rsweep { transform-box: view-box; transform-origin: 50% 50%; animation: rsweep-spin 5.5s linear infinite; }
+@keyframes rsweep-spin { to { transform: rotate(360deg); } }
+.sweepable { position: relative; overflow: hidden; }
+.sweepable::after {
+  content: ""; position: absolute; top: 0; bottom: 0; left: -60%; width: 40%;
+  background: linear-gradient(100deg, transparent, var(--brand-wash), transparent);
+  transform: skewX(-18deg); transition: transform 0.45s var(--ease-out); pointer-events: none;
+}
+.sweepable:hover::after { transform: translateX(450%) skewX(-18deg); }
+.sigil-pulse { offset-rotate: 0deg; animation-name: sigil-travel; animation-timing-function: var(--ease-out); animation-iteration-count: infinite; opacity: 0; }
+@keyframes sigil-travel {
+  0% { offset-distance: 0%; opacity: 0; }
+  12% { opacity: 0.9; }
+  58% { offset-distance: 100%; opacity: 0.9; }
+  70%, 100% { offset-distance: 100%; opacity: 0; }
+}
 .triad-ambient { animation: triad-drift 16s ease-in-out infinite alternate; }
-@keyframes triad-drift {
-  from { transform: translateY(calc(-50% - 7px)); }
-  to { transform: translateY(calc(-50% + 7px)); }
-}
-.triad-pulse {
-  transform-box: fill-box;
-  transform-origin: center;
-  animation: triad-node 3.4s cubic-bezier(0.22, 0.61, 0.36, 1) infinite;
-}
-@keyframes triad-node {
-  0%, 100% { transform: scale(1); opacity: 0.75; }
-  45% { transform: scale(1.3); opacity: 1; }
-}
+@keyframes triad-drift { from { transform: translateY(calc(-50% - 7px)); } to { transform: translateY(calc(-50% + 7px)); } }
+.triad-pulse { transform-box: fill-box; transform-origin: center; animation: triad-node 3.4s var(--ease-out) infinite; }
+@keyframes triad-node { 0%, 100% { transform: scale(1); opacity: 0.75; } 45% { transform: scale(1.3); opacity: 1; } }
 
 @media (prefers-reduced-motion: reduce) {
   *,
@@ -375,15 +381,11 @@ html.motion-ok [data-sc="3"] { transition-delay: 0.2s; }
     animation-iteration-count: 1 !important;
     transition-duration: 0.001ms !important;
   }
-  html.motion-ok [data-sc] {
-    opacity: 1;
-    transform: none;
-  }
+  html.motion-ok [data-sc] { opacity: 1; transform: none; }
+  html.motion-ok .wire-row { opacity: 1; transform: none; animation: none; }
   .hl > span { transform: none; }
 }
 
-/* Smooth in-page anchor scrolling (e.g. the /actors A-Z jump nav) - gated on the
-   viewer welcoming motion, matching the reduced-motion discipline above. */
 @media (prefers-reduced-motion: no-preference) {
   html { scroll-behavior: smooth; }
 }

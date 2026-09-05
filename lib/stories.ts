@@ -3,12 +3,13 @@ import type { Filter } from "mongodb";
 import { getDb } from "./db";
 import { toStory, type Story, type StoryDoc } from "./types";
 import { storyIdKey } from "./slug";
+import { storyUrl } from "./site";
 
 // Only fully-published, non-retracted, real (non-stub) stories are ever shown —
 // mirrors the exact gate the pipeline itself uses before anything reaches
 // Telegram. The site is a second surface for the same trusted output, never a
 // separate judgment call.
-const PUBLISHED_FILTER: Filter<StoryDoc> = {
+export const PUBLISHED_FILTER: Filter<StoryDoc> = {
   published: true,
   retracted: { $ne: true },
   blocked_unsafe: { $ne: true },
@@ -80,8 +81,6 @@ export async function getLatestSignal(): Promise<{ count: number }> {
   return { count };
 }
 
-const SITE = "https://skopnix.com";
-
 // Public, machine-readable shape for feed.json / RSS / MCP consumers. Only
 // fields that are safe and useful to expose — no internal scoring internals
 // beyond what's already visible on the site. snake_case because this is an
@@ -110,7 +109,7 @@ export async function getFeed(limit = 100): Promise<FeedItem[]> {
     title_en: s.titleEn,
     summary_az: s.bodyAz.slice(0, 300),
     summary_en: s.summaryEn.slice(0, 300),
-    url: `${SITE}/news/${s.slug}`,
+    url: storyUrl(s.slug),
     source_url: s.sourceUrl,
     category: s.category,
     severity: s.severity,

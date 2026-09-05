@@ -1,19 +1,19 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { Header } from "@/components/Header";
-import { Footer } from "@/components/Footer";
+import { Header } from "@/components/_disabled/Header";
+import { Footer } from "@/components/_disabled/Footer";
 import {
   getGuide,
   getGuideEvidence,
   siblingGuides,
   stripCitations,
-} from "@/lib/guides";
-import { getLocale } from "@/lib/i18n-server";
-import { localizedMeta } from "@/lib/seo";
+} from "@/lib/_disabled/guides";
+import { getLocale } from "@/lib/_disabled/i18n-server";
+import { localizedMeta } from "@/lib/_disabled/seo";
 import { jsonLdSafe } from "@/lib/format";
-import { breadcrumbLd } from "@/lib/jsonld";
-import { SeeAlso } from "@/components/SeeAlso";
+import { breadcrumbLd } from "@/lib/_disabled/jsonld";
+import { SeeAlso } from "@/components/_disabled/SeeAlso";
 
 export const revalidate = 604800;
 

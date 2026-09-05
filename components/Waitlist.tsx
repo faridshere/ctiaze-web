@@ -3,13 +3,17 @@
 import { useState } from "react";
 import { getPowToken, primePowToken } from "@/lib/pow-client";
 import { PowBadge } from "@/components/PowBadge";
+import { Button } from "@/components/site/Button";
 
-// Early-access capture: visitors drop an email for free access to more tools +
-// their own login when it opens. Captcha-gated (same invisible PoW as the tools)
-// so the list can't be spammed. `source` tags where the signup came from.
-export function Waitlist({ source = "site", compact = false }: { source?: string; compact?: boolean }) {
+// The email form. Headings belong to the caller (hero, CtaBand); this is the
+// input, the button, the shield badge and the two end states. Captcha-gated by
+// the same invisible proof-of-work as the API, so the list can't be scripted.
+// `source` tags where the signup came from (read back in /admin).
+type State = "idle" | "loading" | "done" | "error";
+
+export function Waitlist({ source = "site" }: { source?: string }) {
   const [email, setEmail] = useState("");
-  const [state, setState] = useState<"idle" | "loading" | "done" | "error">("idle");
+  const [state, setState] = useState<State>("idle");
   const [msg, setMsg] = useState("");
 
   async function submit(e: React.FormEvent) {
@@ -25,17 +29,21 @@ export function Waitlist({ source = "site", compact = false }: { source?: string
         headers: { "content-type": "application/json", "x-pow": pow },
         body: JSON.stringify({ email: v, source }),
       });
-      const j = await r.json().catch(() => ({}));
+      const j = (await r.json().catch(() => ({}))) as { error?: string };
       if (r.ok) {
         setState("done");
-        // "done" is distinct from "seen": one means converted, the other means
-        // shown. Both suppress the modal; only this one means we have them.
+        // "done" means converted; "seen" means shown. Both suppress any modal;
+        // only "done" means we have them.
         try {
           localStorage.setItem("skopnix.waitlist.done", "1");
           localStorage.setItem("skopnix.waitlist.seen", "1");
-        } catch { /* private mode */ }
+        } catch {
+          /* private mode */
+        }
+      } else {
+        setState("error");
+        setMsg(j.error || "Something went wrong — try again.");
       }
-      else { setState("error"); setMsg(j.error || "Something went wrong — try again."); }
     } catch {
       setState("error");
       setMsg("Network error — try again.");
@@ -44,7 +52,10 @@ export function Waitlist({ source = "site", compact = false }: { source?: string
 
   if (state === "done") {
     return (
-      <div className={`mx-auto ${compact ? "max-w-xl" : "max-w-2xl"} rounded-md border border-accent-good/30 bg-accent-good/[0.06] px-5 py-4 text-center`}>
+      <div
+        role="status"
+        className="rounded-[var(--radius-panel)] border border-accent-good/30 bg-accent-good/[0.06] px-5 py-4"
+      >
         <p className="font-display text-lg font-semibold text-ink-primary">You&apos;re on the list.</p>
         <p className="mt-1 text-[14px] leading-relaxed text-ink-secondary">
           One email when your free access is ready. Nothing else, ever — no tracking pixels, no reselling.
@@ -54,20 +65,8 @@ export function Waitlist({ source = "site", compact = false }: { source?: string
   }
 
   return (
-    <div className={compact ? "" : "mx-auto max-w-2xl text-center"}>
-      {!compact && (
-        <>
-          <p className="font-mono text-[11px] uppercase tracking-[0.2em] text-brand">Early access</p>
-          <h2 className="mt-3 font-display text-[clamp(1.6rem,3.5vw,2.4rem)] font-semibold tracking-[-0.02em] text-ink-primary">
-            Want the keys?
-          </h2>
-          <p className="mx-auto mt-3 max-w-lg text-[15px] leading-relaxed text-ink-secondary">
-            Drop your email for <b className="font-medium text-ink-primary">free early access</b> — more tools,
-            deeper data, and your own login when it opens. One email when it&apos;s ready. Nothing else, ever.
-          </p>
-        </>
-      )}
-      <form onSubmit={submit} className={`${compact ? "" : "mt-6"} flex flex-col gap-2 sm:flex-row ${compact ? "" : "mx-auto max-w-md"}`}>
+    <div>
+      <form onSubmit={submit} className="flex flex-col gap-2 sm:flex-row">
         <label className="relative flex flex-1 items-center">
           <span className="sr-only">Your email address</span>
           <input
@@ -76,29 +75,27 @@ export function Waitlist({ source = "site", compact = false }: { source?: string
             aria-label="Your email address"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            // Solve the proof-of-work on first focus rather than on mount. The
-            // landing page is the busiest page on the site and almost nobody who
-            // loads it types an email, so priming for everyone spent a serverless
-            // invocation per visitor for nothing. Focusing the field still gives
-            // far more lead time than the ~200ms solve needs.
+            // Solve the proof-of-work on first focus, not on mount: almost nobody
+            // who loads the landing page types an email, and priming everyone
+            // spent a serverless invocation per visitor for nothing.
             onFocus={() => primePowToken()}
             placeholder="you@company.com"
             autoComplete="email"
             spellCheck={false}
-            className="w-full rounded-sm border border-hairline bg-surface px-3.5 py-2.5 font-mono text-sm text-ink-primary placeholder:text-ink-muted focus:border-brand focus:outline-none"
+            className="h-12 w-full rounded-[var(--radius-btn)] border border-hairline bg-surface px-4 font-mono text-sm text-ink-primary placeholder:text-ink-muted focus:border-brand focus:outline-none"
           />
         </label>
-        <button
-          type="submit"
-          disabled={state === "loading"}
-          className="shrink-0 rounded-sm bg-brand px-5 py-2.5 font-display text-sm font-medium text-[#170a03] transition-transform hover:-translate-y-0.5 disabled:opacity-50"
-        >
-          {state === "loading" ? "…" : "Get early access →"}
-        </button>
+        <Button type="submit" disabled={state === "loading"} glyph="→" className="shrink-0">
+          {state === "loading" ? "Sending" : "Get early access"}
+        </Button>
       </form>
-      <div className={`mt-2.5 flex items-center ${compact ? "" : "justify-center"} gap-3`}>
+      <div className="mt-2.5 flex items-center gap-3">
         <PowBadge />
-        {state === "error" && <span className="font-mono text-[11px] text-accent-critical">{msg}</span>}
+        {state === "error" && (
+          <span role="alert" className="font-mono text-[11px] text-accent-critical">
+            {msg}
+          </span>
+        )}
       </div>
     </div>
   );

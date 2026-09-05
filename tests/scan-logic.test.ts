@@ -5,9 +5,9 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { slugify, storyIdKey } from "../lib/slug.ts";
-import { breachActions } from "../lib/breachactions.ts";
+import { breachActions } from "../lib/_disabled/breachactions.ts";
 import { jsonLdSafe } from "../lib/format.ts";
-import { classifyAddress } from "../lib/addressclass.ts";
+import { classifyAddress } from "../lib/_disabled/addressclass.ts";
 
 // ── slug ↔ _id round-trip ────────────────────────────────────────────────────
 // The invariant getStoryBySlug relies on: for every id family, the key recovered

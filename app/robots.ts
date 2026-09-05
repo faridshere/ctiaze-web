@@ -1,4 +1,5 @@
 import type { MetadataRoute } from "next";
+import { SITE_URL, absoluteUrl } from "@/lib/site";
 
 // The public surface is the landing page and the story pages the Telegram
 // channel links to. Everything else was shelved under app/_disabled and no
@@ -13,7 +14,7 @@ export default function robots(): MetadataRoute.Robots {
         disallow: ["/admin", "/api/"],
       },
     ],
-    sitemap: ["https://skopnix.com/sitemap.xml", "https://skopnix.com/news-sitemap.xml"],
-    host: "https://skopnix.com",
+    sitemap: [absoluteUrl("/sitemap.xml"), absoluteUrl("/news-sitemap.xml")],
+    host: SITE_URL,
   };
 }

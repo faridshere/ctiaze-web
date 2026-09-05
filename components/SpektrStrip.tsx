@@ -4,8 +4,16 @@ import { useMemo } from "react";
 import Link from "next/link";
 import type { Story } from "@/lib/types";
 import { CATEGORY_ORDER, CATEGORY_META, catColor, categoryName, normalizeCategory, type Category } from "@/lib/taxonomy";
-import { useLocale } from "./locale";
-import { getDict } from "@/lib/i18n";
+import type { Locale } from "@/lib/locale";
+
+// The site is English-only; these were lib/i18n's getDict(locale).feed strings,
+// inlined since only the English render ships (categoryName still takes a
+// locale — components/_disabled's Azerbaijani tools pass "az" through it).
+const SPEKTR_FILTER_LABEL = "Category spectrum — filter";
+const DISPATCH_WORD = "dispatches";
+function spektrLabel(n: number): string {
+  return `Last ${n} dispatches · spectrum`;
+}
 
 // SPEKTR ZOLAĞI — the signature instrument. A category-distribution bar computed
 // entirely in-component from the stories actually rendered, so every number is a
@@ -51,6 +59,7 @@ export function SpektrStrip({
   ownCategory,
   caption,
   shown,
+  locale = "en",
 }: {
   stories: Story[];
   variant?: "full" | "mini";
@@ -59,9 +68,9 @@ export function SpektrStrip({
   ownCategory?: string;
   caption?: string;
   shown?: number; // count after filtering, for the "n/total" readout
+  /** Site is English-only; kept for components/_disabled, which may still pass "az". */
+  locale?: Locale;
 }) {
-  const locale = useLocale();
-  const t = getDict(locale).feed;
   const { segments, total, kev, cve, az } = useCounts(stories);
   const anyFilter = active.cat !== null || active.kev || active.cve || active.az;
 
@@ -78,7 +87,7 @@ export function SpektrStrip({
                 key={cat}
                 href={`/?kat=${cat}`}
                 title={`${categoryName(cat, locale)} · ${count}`}
-                aria-label={`${categoryName(cat, locale)}: ${count} ${t.dispatchWord}`}
+                aria-label={`${categoryName(cat, locale)}: ${count} ${DISPATCH_WORD}`}
                 style={{
                   flexGrow: count,
                   flexBasis: 0,
@@ -109,7 +118,7 @@ export function SpektrStrip({
       {/* label row + burn-ticks */}
       <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1.5">
         <span className="font-mono text-[length:var(--t-micro)] uppercase tracking-[0.14em] text-ink-muted">
-          {t.spektr(total)}
+          {spektrLabel(total)}
         </span>
         <div className="flex items-center gap-1.5">
           {kev > 0 && (
@@ -142,7 +151,7 @@ export function SpektrStrip({
       {/* the bar — fixed 14px container so hover-grow never reflows */}
       <div
         role="toolbar"
-        aria-label={t.spektrFilter}
+        aria-label={SPEKTR_FILTER_LABEL}
         className="mt-2 flex h-3.5 w-full items-end gap-px"
       >
         {segments.map(({ cat, count }) => {
@@ -154,7 +163,7 @@ export function SpektrStrip({
               type="button"
               aria-pressed={on}
               title={`${categoryName(cat, locale)} · ${count}`}
-              aria-label={`${categoryName(cat, locale)}: ${count} ${t.dispatchWord}`}
+              aria-label={`${categoryName(cat, locale)}: ${count} ${DISPATCH_WORD}`}
               onClick={() => toggleCat(cat)}
               style={{
                 flexGrow: count,

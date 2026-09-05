@@ -2,7 +2,7 @@
 
 import { ACTOR_TYPE_LABEL, mitreUrl } from "@/lib/actors";
 import type { Actor } from "@/lib/data/actors";
-import { useLocale } from "./locale";
+import type { Locale } from "@/lib/locale";
 
 const TYPE_LABEL_EN: Record<string, string> = {
   state: "State-sponsored", ransomware: "Ransomware",
@@ -16,8 +16,11 @@ const COUNTRY_EN: Record<string, string> = {
 
 // Rendered inside a dark .ops section on the story page. One card per detected
 // group: who they are, how they're attributed, and what they're known for.
-export function ThreatActorCard({ actors }: { actors: Actor[] }) {
-  const en = useLocale() === "en";
+// `locale` replaces the old useLocale() context read — the live site always
+// passes the default "en"; components/_disabled's Azerbaijani tools can still
+// pass "az" explicitly.
+export function ThreatActorCard({ actors, locale = "en" }: { actors: Actor[]; locale?: Locale }) {
+  const en = locale === "en";
   if (actors.length === 0) return null;
   return (
     <div>

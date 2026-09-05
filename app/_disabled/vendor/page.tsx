@@ -1,10 +1,10 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Header } from "@/components/Header";
-import { Footer } from "@/components/Footer";
-import { getVendors } from "@/lib/vendors";
-import { getLocale } from "@/lib/i18n-server";
-import { localizedMeta } from "@/lib/seo";
+import { Header } from "@/components/_disabled/Header";
+import { Footer } from "@/components/_disabled/Footer";
+import { getVendors } from "@/lib/_disabled/vendors";
+import { getLocale } from "@/lib/_disabled/i18n-server";
+import { localizedMeta } from "@/lib/_disabled/seo";
 
 export const revalidate = 86400;
 

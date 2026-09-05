@@ -1,15 +1,15 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { Header } from "@/components/Header";
-import { Footer } from "@/components/Footer";
-import { AttackRose } from "@/components/AttackRose";
-import { getSector } from "@/lib/sectors";
-import { actorInitials, flagEmoji, originLabel } from "@/lib/threatactors";
-import { getLocale } from "@/lib/i18n-server";
-import { localizedMeta } from "@/lib/seo";
+import { Header } from "@/components/_disabled/Header";
+import { Footer } from "@/components/_disabled/Footer";
+import { AttackRose } from "@/components/_disabled/AttackRose";
+import { getSector } from "@/lib/_disabled/sectors";
+import { actorInitials, flagEmoji, originLabel } from "@/lib/_disabled/threatactors";
+import { getLocale } from "@/lib/_disabled/i18n-server";
+import { localizedMeta } from "@/lib/_disabled/seo";
 import { jsonLdSafe } from "@/lib/format";
-import { breadcrumbLd } from "@/lib/jsonld";
+import { breadcrumbLd } from "@/lib/_disabled/jsonld";
 
 export const revalidate = 604800;
 

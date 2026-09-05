@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import { getFeed } from "@/lib/stories";
-
-const SITE = "https://skopnix.com";
+import { SITE_URL } from "@/lib/site";
 
 // Public JSON Feed (jsonfeed.org 1.1) — the machine-readable substrate for feed
 // readers, AI answer engines and agents. English + global. CDN-cached 5 min.
@@ -11,8 +10,8 @@ export async function GET() {
     {
       version: "https://jsonfeed.org/version/1.1",
       title: "skopnix — cyber-threat intelligence",
-      home_page_url: SITE,
-      feed_url: `${SITE}/feed.json`,
+      home_page_url: SITE_URL,
+      feed_url: `${SITE_URL}/feed.json`,
       description:
         "Global cyber-threat intelligence, off the wire — grounded, refreshed around the clock, nothing invented.",
       language: "en",

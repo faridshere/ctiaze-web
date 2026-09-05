@@ -1,14 +1,14 @@
 import type { Metadata } from "next";
-import { Header } from "@/components/Header";
-import { Footer } from "@/components/Footer";
+import { Header } from "@/components/_disabled/Header";
+import { Footer } from "@/components/_disabled/Footer";
 import {
   getLatestSnapshot,
   getTotalsTrend,
   type RiskyService,
-} from "@/lib/exposure";
-import { ExposureLookup } from "@/components/ExposureLookup";
-import { getLocale } from "@/lib/i18n-server";
-import { localizedMeta } from "@/lib/seo";
+} from "@/lib/_disabled/exposure";
+import { ExposureLookup } from "@/components/_disabled/ExposureLookup";
+import { getLocale } from "@/lib/_disabled/i18n-server";
+import { localizedMeta } from "@/lib/_disabled/seo";
 import { AZ_MONTHS } from "@/lib/format";
 
 export const revalidate = 3600; // snapshot changes weekly; hourly ISR is ample

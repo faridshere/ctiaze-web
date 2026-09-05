@@ -18,6 +18,12 @@ any time to steer what gets attention — add, remove, or reprioritize items.
       (latest CVE) story — a green homepage does NOT mean article pages are OK.
 - [ ] Latest Vercel deployment status — Ready, no build errors.
 - [ ] Any new console/runtime errors surfaced since the last check.
+- [ ] NOTE: `scripts/health-check.mjs` asserts on literal page copy — it greps
+      the landing/404 HTML for "See it", "Get early access" and "/news/". The
+      v3 "orbital wire" redesign (see `DESIGN.md`, dated 2026-09-05) kept that
+      copy, but any future copy change to the hero or the early-access CTA
+      must update the health check in the same commit or it will false-alarm
+      (report FAIL against a perfectly healthy site).
 
 ## Investigate / improve (pick 1-2 per night, don't boil the ocean)
 - [ ] Vercel Analytics — any real traffic yet? Which posts are getting

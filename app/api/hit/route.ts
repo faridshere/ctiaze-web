@@ -1,6 +1,6 @@
-import { NextResponse } from "next/server";
 import { rateLimit, clientIp } from "@/lib/ratelimit";
 import { writeDb } from "@/lib/db-write";
+import { jsonOk, readJsonBody, RATE } from "@/lib/api";
 
 export const revalidate = 0;
 
@@ -15,23 +15,17 @@ let ttlEnsured = false;
 
 export async function POST(req: Request) {
   // 30/min is generous for a human and cheap for us.
-  if (!rateLimit(`hit:${clientIp(req)}`, 30, 60_000)) {
-    return NextResponse.json({ ok: true }); // silently drop; never error a beacon
+  if (!rateLimit(`hit:${clientIp(req)}`, RATE.hit.limit, RATE.hit.windowMs)) {
+    return jsonOk({ ok: true }); // silently drop; never error a beacon
   }
   const db = writeDb();
-  if (!db) return NextResponse.json({ ok: true });
+  if (!db) return jsonOk({ ok: true });
 
-  let path = "/";
-  let ref = "";
-  let src = "";
-  try {
-    const body = (await req.json()) as { path?: unknown; ref?: unknown; src?: unknown };
-    path = String(body.path ?? "/").slice(0, 200);
-    ref = String(body.ref ?? "").slice(0, 200);
-    src = String(body.src ?? "").slice(0, 40);
-  } catch {
-    /* beacon with no body is still a visit */
-  }
+  // beacon with no body (or malformed JSON) is still a visit — fall back to defaults
+  const body = (await readJsonBody<{ path?: unknown; ref?: unknown; src?: unknown }>(req)) ?? {};
+  const path = String(body.path ?? "/").slice(0, 200);
+  const ref = String(body.ref ?? "").slice(0, 200);
+  const src = String(body.src ?? "").slice(0, 40);
 
   try {
     const d = await db;
@@ -54,5 +48,5 @@ export async function POST(req: Request) {
   } catch {
     /* analytics must never break a page */
   }
-  return NextResponse.json({ ok: true });
+  return jsonOk({ ok: true });
 }

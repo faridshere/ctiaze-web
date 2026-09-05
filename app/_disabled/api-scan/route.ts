@@ -2,12 +2,12 @@ import { NextResponse } from "next/server";
 import { createHash } from "crypto";
 import { rateLimit, clientIp, withinSharedDailyBudget } from "@/lib/ratelimit";
 import { verifyPow } from "@/lib/pow";
-import { generateLookalikes, brandMatch, splitDomain } from "@/lib/lookalikes";
-import { RDAP_TLDS } from "@/lib/domain-data";
+import { generateLookalikes, brandMatch, splitDomain } from "@/lib/_disabled/lookalikes";
+import { RDAP_TLDS } from "@/lib/_disabled/domain-data";
 import { getDb } from "@/lib/db";
-import { getLatestSnapshot } from "@/lib/exposure";
+import { getLatestSnapshot } from "@/lib/_disabled/exposure";
 import { toStory, type StoryDoc } from "@/lib/types";
-import { classifyAddress } from "@/lib/addressclass";
+import { classifyAddress } from "@/lib/_disabled/addressclass";
 
 // Explicit function budget: the exposure branch can chain a DNS resolve + a 9s
 // InternetDB fetch + a 6s 404-probe, so cap the whole request well above that

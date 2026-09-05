@@ -1,16 +1,16 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { unstable_cache } from "next/cache";
-import { Header } from "@/components/Header";
-import { Footer } from "@/components/Footer";
+import { Header } from "@/components/_disabled/Header";
+import { Footer } from "@/components/_disabled/Footer";
 import { SpektrStrip } from "@/components/SpektrStrip";
 import { GlyphChip } from "@/components/GlyphChip";
-import { getCveIndex } from "@/lib/cve";
+import { getCveIndex } from "@/lib/_disabled/cve";
 import { getStories } from "@/lib/stories";
 import { kevSet, epssMap, nvdLookup, type NvdInfo } from "@/lib/cveintel";
-import { cveIntelIdSet } from "@/lib/cveintel-page";
-import { getLocale } from "@/lib/i18n-server";
-import { localizedMeta } from "@/lib/seo";
+import { cveIntelIdSet } from "@/lib/_disabled/cveintel-page";
+import { getLocale } from "@/lib/_disabled/i18n-server";
+import { localizedMeta } from "@/lib/_disabled/seo";
 
 export const revalidate = 43200; // 6h — CVE authority data moves slowly
 

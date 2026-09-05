@@ -1,6 +1,5 @@
 import { getStories } from "@/lib/stories";
-
-const SITE = "https://skopnix.com";
+import { SITE_URL, storyUrl } from "@/lib/site";
 
 function esc(s: string): string {
   return s
@@ -57,11 +56,11 @@ export async function GET(req: Request) {
     .filter(Boolean)
     .join(" · ");
   const selfQs = q.toString();
-  const self = `${SITE}/rss.xml${selfQs ? `?${selfQs}` : ""}`;
+  const self = `${SITE_URL}/rss.xml${selfQs ? `?${selfQs}` : ""}`;
 
   const items = stories
     .map((s) => {
-      const link = `${SITE}/news/${s.slug}`;
+      const link = storyUrl(s.slug);
       // Fall back to AZ when an English field is missing (e.g. digest items) so a
       // single title-less doc can't 500 the whole feed via esc(undefined).
       const title = (en ? s.titleEn || s.titleAz : s.titleAz || s.titleEn) || ""; // en path uses titleEn (filtered above)
@@ -84,7 +83,7 @@ export async function GET(req: Request) {
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
     <title>${esc(`skopnix — cyber-threat intelligence${suffix ? ` · ${suffix}` : ""}`)}</title>
-    <link>${SITE}</link>
+    <link>${SITE_URL}</link>
     <atom:link href="${esc(self)}" rel="self" type="application/rss+xml"/>
     <description>${esc(en ? "Global cyber-threat intelligence, off the wire — actively-exploited CVEs, threat actors and live IOCs." : "Qlobal kibertəhlükə kəşfiyyatı.")}</description>
     <language>${en ? "en" : "az"}</language>

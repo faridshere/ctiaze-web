@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { rateLimit, clientIp } from "@/lib/ratelimit";
-import { parseStack, assessStack, gate } from "@/lib/stacknix";
+import { parseStack, assessStack, gate } from "@/lib/_disabled/stacknix";
 
 // stacknix — the paid stack-exposure endpoint. POST a stack, get a version-
 // adjudicated vulnerability report. The paywall is enforced HERE: without a

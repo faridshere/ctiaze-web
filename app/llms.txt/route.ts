@@ -1,3 +1,5 @@
+import { SITE_URL } from "@/lib/site";
+
 // llms.txt — a machine-readable map for AI answer-engines and agents, so that when
 // someone asks an LLM about Azerbaijani cyber threats, skopnix is a discoverable,
 // structured, citable source. Bilingual on purpose: answer-engine queries about
@@ -20,14 +22,14 @@ export async function GET() {
 > threat intelligence — ingilis və Azərbaycan dillərində.
 
 ## Key pages
-- [News feed](https://skopnix.com/news): the bilingual, source-grounded CTI feed;
+- [News feed](${SITE_URL}/news): the bilingual, source-grounded CTI feed;
   individual stories at /news/{slug}. Each story cites its original source and, where
   relevant, the CVEs and CISA KEV status involved.
-- [Home](https://skopnix.com): the landing page and latest wire.
+- [Home](${SITE_URL}): the landing page and latest wire.
 
 ## Feeds (machine-readable, no key required)
-- [feed.json](https://skopnix.com/feed.json): JSON feed, last 100 stories.
-- [RSS](https://skopnix.com/rss.xml): RSS 2.0. Filterable: ?kev=1 (actively exploited),
+- [feed.json](${SITE_URL}/feed.json): JSON feed, last 100 stories.
+- [RSS](${SITE_URL}/rss.xml): RSS 2.0. Filterable: ?kev=1 (actively exploited),
   ?region=1 (Azerbaijan/regional), ?cat=ransomware, ?lang=en (English).
 
 ## Feed fields
@@ -44,7 +46,7 @@ invented.
 ## Status
 More is coming: threat-actor dossiers, a CVE registry with EPSS/KEV context, an
 Azerbaijan internet-exposure dataset, and a developer API + MCP server. To hear
-first, drop an email at https://skopnix.com.
+first, drop an email at ${SITE_URL}.
 `;
   return new Response(body, {
     headers: {

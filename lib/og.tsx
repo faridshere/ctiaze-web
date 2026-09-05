@@ -13,8 +13,8 @@ export const OG_CONTENT_TYPE = "image/png";
 // the share cards match the page a click lands on (satori can't resolve var(),
 // so these are the literal token values).
 const BG = "#0a0b0d";
-const INK = "#f2efe9";
-const DIM = "#a7a9b0";
+const INK = "#eef3f8";
+const DIM = "#a3adbb";
 const BRAND = "#ff5a1f";
 const CRIT = "#ff4d5e";
 const LINE = "rgba(255,255,255,0.09)";
@@ -59,9 +59,19 @@ export async function ogCard(title: string, tagline: string, meta: Meta = {}) {
           backgroundImage: `radial-gradient(1100px 500px at 85% -10%, rgba(255,90,31,0.10), transparent)`,
         }}
       >
-        {/* wordmark */}
+        {/* wordmark — the triad mark (components/CtiazeMark.tsx geometry), flattened
+            to plain path/circle elements: satori has no SVG filter support, so the
+            goo-fusion effect the live mark uses is dropped for a crisp stroked glyph. */}
         <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
-          <div style={{ width: 34, height: 34, borderRadius: 8, border: `2px solid ${BRAND}`, display: "flex" }} />
+          <svg width="34" height="34" viewBox="0 0 32 32">
+            <path d="M16 15.5 L16 7" stroke={INK} strokeWidth={4.4} strokeLinecap="round" />
+            <path d="M16 15.5 L8 22" stroke={INK} strokeWidth={4.4} strokeLinecap="round" />
+            <path d="M16 15.5 L24 22" stroke={INK} strokeWidth={4.4} strokeLinecap="round" />
+            <circle cx={16} cy={15.5} r={3.4} fill={INK} />
+            <circle cx={8} cy={22} r={3.6} fill={INK} />
+            <circle cx={24} cy={22} r={3.6} fill={INK} />
+            <circle cx={16} cy={7} r={3.8} fill={BRAND} />
+          </svg>
           <div style={{ fontSize: 30, fontWeight: 700, letterSpacing: -0.5 }}>skopnix</div>
           <div style={{ marginLeft: 8, fontSize: 20, color: DIM, letterSpacing: 4, textTransform: "uppercase" }}>
             {meta.cve ? "· Threat Intel" : "· CTI"}

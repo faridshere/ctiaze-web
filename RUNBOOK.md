@@ -104,7 +104,15 @@ Visits expire after 30 days (TTL); emails keep forever.
 
 ## Bringing a shelved section back
 
+`components/site/` is the design system (see `DESIGN.md`) — a section coming
+back should be rebuilt on its primitives (`SiteHeader`/`SiteFooter`/`PageHead`/
+`Kicker`/`Button`/`Panel`), not on whatever markup it shipped with pre-shelving.
+
 1. `git mv app/_disabled/<section> app/<section>` (its API: `app/_disabled/api-<x>` → `app/api/<x>`)
+   and, if it has its own components/lib, `git mv components/_disabled/<X>.tsx components/<X>.tsx`
+   and `git mv lib/_disabled/<x>.ts lib/<x>.ts` — then rewrite every
+   `@/components/_disabled/…` / `@/lib/_disabled/…` import the moved files (and
+   anything that imports them) still have, back to the un-shelved path.
 2. Remove its line from the `shelved` list in `next.config.ts` redirects()
 3. Add it back to NAV in `components/Header.tsx` and to `app/sitemap.ts`
 4. Restore any pointers that were neutralized (grep `_disabled` in comments —

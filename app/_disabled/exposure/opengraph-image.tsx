@@ -1,5 +1,5 @@
 import { ogCard, OG_SIZE, OG_CONTENT_TYPE } from "@/lib/og";
-import { getLatestSnapshot } from "@/lib/exposure";
+import { getLatestSnapshot } from "@/lib/_disabled/exposure";
 
 export const size = OG_SIZE;
 export const contentType = OG_CONTENT_TYPE;

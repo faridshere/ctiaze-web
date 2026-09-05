@@ -1,13 +1,13 @@
 import type { Metadata } from "next";
-import { Header } from "@/components/Header";
-import { Footer } from "@/components/Footer";
-import { ThreatLookup } from "@/components/ThreatLookup";
-import { NewsIocFeed } from "@/components/NewsIocFeed";
+import { Header } from "@/components/_disabled/Header";
+import { Footer } from "@/components/_disabled/Footer";
+import { ThreatLookup } from "@/components/_disabled/ThreatLookup";
+import { NewsIocFeed } from "@/components/_disabled/NewsIocFeed";
 import { infraBoard, lookupThreatFox, type TfKind } from "@/lib/threatfox";
-import { getIocFeed, groupIocsByType } from "@/lib/iocfeed";
+import { getIocFeed, groupIocsByType } from "@/lib/_disabled/iocfeed";
 import type { IocType } from "@/lib/ioc";
-import { getLocale } from "@/lib/i18n-server";
-import { localizedMeta } from "@/lib/seo";
+import { getLocale } from "@/lib/_disabled/i18n-server";
+import { localizedMeta } from "@/lib/_disabled/seo";
 
 const IOC_WINDOW = 150;
 

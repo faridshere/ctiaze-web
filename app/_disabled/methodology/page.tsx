@@ -1,11 +1,11 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Header } from "@/components/Header";
-import { Footer } from "@/components/Footer";
-import { CountUp } from "@/components/CountUp";
-import { getAuditSummary, type AuditSummary } from "@/lib/audit";
-import { getLocale } from "@/lib/i18n-server";
-import { localizedMeta } from "@/lib/seo";
+import { Header } from "@/components/_disabled/Header";
+import { Footer } from "@/components/_disabled/Footer";
+import { CountUp } from "@/components/_disabled/CountUp";
+import { getAuditSummary, type AuditSummary } from "@/lib/_disabled/audit";
+import { getLocale } from "@/lib/_disabled/i18n-server";
+import { localizedMeta } from "@/lib/_disabled/seo";
 import { jsonLdSafe } from "@/lib/format";
 
 export const revalidate = 86400; // methodology is near-static; numbers via ISR

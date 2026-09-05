@@ -1,6 +1,13 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { dilAlternates, localizedMeta } from "../lib/seo.ts";
+import { register } from "node:module";
+
+// lib/seo.ts now imports the canonical origin from lib/site.ts via an
+// extensionless relative specifier (see tests/ts-ext-loader.mjs for why that
+// needs a resolve hook under Node's native test runner). Must run before the
+// dynamic import below.
+register("./ts-ext-loader.mjs", import.meta.url);
+const { dilAlternates, localizedMeta } = await import("../lib/_disabled/seo.ts");
 
 // The site went English-only + global (2026-08-30): getLocale() is hardcoded
 // "en", the ?dil= language split is dead, and the brand domain is skopnix.com.

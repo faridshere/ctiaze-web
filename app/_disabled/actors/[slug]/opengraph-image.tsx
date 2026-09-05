@@ -1,5 +1,5 @@
 import { ogCard, OG_SIZE, OG_CONTENT_TYPE } from "@/lib/og";
-import { getActorById, originLabel } from "@/lib/threatactors";
+import { getActorById, originLabel } from "@/lib/_disabled/threatactors";
 
 export const size = OG_SIZE;
 export const contentType = OG_CONTENT_TYPE;

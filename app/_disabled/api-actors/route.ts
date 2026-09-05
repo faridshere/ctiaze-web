@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { rateLimit, clientIp } from "@/lib/ratelimit";
 import { verifyPow } from "@/lib/pow";
-import { searchActors } from "@/lib/threatactors";
+import { searchActors } from "@/lib/_disabled/threatactors";
 
 export const revalidate = 0;
 export const maxDuration = 60;

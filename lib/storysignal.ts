@@ -1,5 +1,5 @@
 import type { Story } from "./types";
-import type { Locale } from "./i18n";
+import type { Locale } from "./locale";
 
 // Web parity with the Telegram post: the same deterministic urgency header, EPSS
 // read-out, "~N exposed in Azerbaijan" line, and a "what to do" list — all pure

@@ -1,4 +1,4 @@
-// Regenerates lib/domain-data.ts from two public sources:
+// Regenerates lib/_disabled/domain-data.ts from two public sources:
 //   1. publicsuffix.org  — the two-label public suffixes splitDomain() needs
 //   2. data.iana.org/rdap/dns.json — which TLDs actually publish RDAP
 // Run:  node scripts/gen-domain-data.mjs
@@ -58,7 +58,7 @@ export const RDAP_TLDS: ReadonlySet<string> = new Set(RDAP_TLD_RAW.split(" "));
 const out = path.join(ROOT, "lib", "domain-data.ts");
 fs.writeFileSync(out, body);
 const kb = (fs.statSync(out).size / 1024).toFixed(0);
-console.log(`✓ lib/domain-data.ts — ${twoLabel.length} suffixes, ${rdapTlds.length} rdap tlds, ${kb}KB`);
+console.log(`✓ lib/_disabled/domain-data.ts — ${twoLabel.length} suffixes, ${rdapTlds.length} rdap tlds, ${kb}KB`);
 const azOk = ["com.az", "net.az", "gov.az", "org.az"].every((x) => twoLabel.includes(x));
 console.log(`  .az suffixes present: ${azOk ? "yes" : "NO — regeneration failed"}`);
 console.log(`  rdap has .az/.io: ${rdapTlds.includes("az")}/${rdapTlds.includes("io")} (expected false/false)`);

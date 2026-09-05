@@ -1,6 +1,6 @@
 import { ImageResponse } from "next/og";
 import { OG_SIZE, OG_CONTENT_TYPE } from "@/lib/og";
-import { getCveIntel, type CvePriority } from "@/lib/cveintel-page";
+import { getCveIntel, type CvePriority } from "@/lib/_disabled/cveintel-page";
 import { cveBadges, type CveBadge } from "@/lib/cveintel";
 
 export const size = OG_SIZE;

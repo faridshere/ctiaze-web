@@ -1,6 +1,5 @@
 import { getStories } from "@/lib/stories";
-
-const SITE = "https://skopnix.com";
+import { SITE_URL } from "@/lib/site";
 
 function esc(s: string): string {
   return s
@@ -27,7 +26,7 @@ export async function GET() {
     .map((s) => {
       const title = s.titleEn || s.titleAz;
       return `  <url>
-    <loc>${SITE}/news/${esc(s.slug)}</loc>
+    <loc>${SITE_URL}/news/${esc(s.slug)}</loc>
     <news:news>
       <news:publication>
         <news:name>skopnix</news:name>

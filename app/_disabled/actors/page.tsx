@@ -1,14 +1,14 @@
 import type { Metadata } from "next";
-import { Header } from "@/components/Header";
-import { Footer } from "@/components/Footer";
-import { ActorSearch } from "@/components/ActorSearch";
+import { Header } from "@/components/_disabled/Header";
+import { Footer } from "@/components/_disabled/Footer";
+import { ActorSearch } from "@/components/_disabled/ActorSearch";
 import { Waitlist } from "@/components/Waitlist";
-import { WaitlistModal } from "@/components/WaitlistModal";
-import { ActorRow } from "@/components/ActorRow";
+import { WaitlistModal } from "@/components/_disabled/WaitlistModal";
+import { ActorRow } from "@/components/_disabled/ActorRow";
 import Link from "next/link";
-import { getActorsPageData } from "@/lib/threatactors";
-import { getDict } from "@/lib/i18n";
-import { getLocale } from "@/lib/i18n-server";
+import { getActorsPageData } from "@/lib/_disabled/threatactors";
+import { getDict } from "@/lib/_disabled/i18n";
+import { getLocale } from "@/lib/_disabled/i18n-server";
 
 export const revalidate = 10800;
 export const maxDuration = 60;

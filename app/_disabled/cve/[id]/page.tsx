@@ -1,18 +1,18 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { Header } from "@/components/Header";
-import { Footer } from "@/components/Footer";
-import { getCveIntel, getTopCveIds, type CvePriority } from "@/lib/cveintel-page";
+import { Header } from "@/components/_disabled/Header";
+import { Footer } from "@/components/_disabled/Footer";
+import { getCveIntel, getTopCveIds, type CvePriority } from "@/lib/_disabled/cveintel-page";
 import { cveBadges } from "@/lib/cveintel";
-import { getLocale } from "@/lib/i18n-server";
-import { localizedMeta } from "@/lib/seo";
+import { getLocale } from "@/lib/_disabled/i18n-server";
+import { localizedMeta } from "@/lib/_disabled/seo";
 import { jsonLdSafe } from "@/lib/format";
-import { breadcrumbLd } from "@/lib/jsonld";
-import { getQaForCve } from "@/lib/qa";
-import { getVendorsForCve } from "@/lib/vendors";
-import { QaBlock, faqPageJsonLd } from "@/components/QaBlock";
-import { SeeAlso } from "@/components/SeeAlso";
+import { breadcrumbLd } from "@/lib/_disabled/jsonld";
+import { getQaForCve } from "@/lib/_disabled/qa";
+import { getVendorsForCve } from "@/lib/_disabled/vendors";
+import { QaBlock, faqPageJsonLd } from "@/components/_disabled/QaBlock";
+import { SeeAlso } from "@/components/_disabled/SeeAlso";
 
 export const revalidate = 604800; // weekly: static engine output, and 7.9k pages is the
 // largest ISR-write surface on the site (daily revalidation alone was ~237k writes/month,

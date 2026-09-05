@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { IOC_TYPE_LABEL, type Ioc, type IocType } from "@/lib/ioc";
-import { useLocale } from "./locale";
+import type { Locale } from "@/lib/locale";
 
 const IOC_TYPE_LABEL_EN: Record<string, string> = {
   ipv4: "IPv4", ipv6: "IPv6", domain: "Domains", url: "URLs",
@@ -60,12 +60,15 @@ export function IocPanel({
   extracted,
   familyName,
   familyIocs,
+  locale = "en",
 }: {
   extracted: ExtractedIoc[];
   familyName: string;
   familyIocs: FamilyIoc[];
+  /** Site is English-only; kept for components/_disabled, which may still pass "az". */
+  locale?: Locale;
 }) {
-  const en = useLocale() === "en";
+  const en = locale === "en";
   const hasExtracted = extracted.length > 0;
   const hasFamily = familyIocs.length > 0;
 
@@ -88,7 +91,7 @@ export function IocPanel({
         </p>
       )}
 
-      {hasExtracted && <ExtractedGroups iocs={extracted} />}
+      {hasExtracted && <ExtractedGroups iocs={extracted} locale={locale} />}
 
       {hasFamily && (
         <div className="mt-6">
@@ -107,15 +110,15 @@ export function IocPanel({
           <p className="mt-1 font-mono text-[length:var(--t-micro)] text-ink-muted">
             {en ? "the threat this story names — its currently-active indicators on abuse.ch; tied to the threat, not the story" : "bu xəbərin adını çəkdiyi təhdidin hazırda abuse.ch-də aktiv göstəriciləri — xəbərə deyil, təhdidə aiddir"}
           </p>
-          <FamilyList iocs={familyIocs} />
+          <FamilyList iocs={familyIocs} locale={locale} />
         </div>
       )}
     </div>
   );
 }
 
-function ExtractedGroups({ iocs }: { iocs: ExtractedIoc[] }) {
-  const en = useLocale() === "en";
+function ExtractedGroups({ iocs, locale }: { iocs: ExtractedIoc[]; locale: Locale }) {
+  const en = locale === "en";
   const groups = useMemo(() => {
     const m = new Map<IocType, ExtractedIoc[]>();
     for (const i of iocs) {
@@ -134,7 +137,7 @@ function ExtractedGroups({ iocs }: { iocs: ExtractedIoc[] }) {
           {en ? "Extracted from this story" : "Bu xəbərdən çıxarılan"} · {iocs.length}
           {flagged > 0 && <span className="ml-2 text-accent-critical">· {flagged} {en ? "malicious" : "zərərli"}</span>}
         </span>
-        <CopyAll values={iocs.map((i) => i.value)} />
+        <CopyAll values={iocs.map((i) => i.value)} locale={locale} />
       </div>
       <div className="divide-y divide-hairline rounded-[var(--radius-chip)] border border-hairline bg-surface-raised">
         {groups.map(([type, list]) => (
@@ -145,7 +148,7 @@ function ExtractedGroups({ iocs }: { iocs: ExtractedIoc[] }) {
             <div className="flex flex-1 flex-col gap-1.5">
               {list.map((i) => (
                 <div key={i.value} className="flex flex-wrap items-center gap-x-2 gap-y-1">
-                  <IocRow defanged={i.defanged} value={i.value} />
+                  <IocRow defanged={i.defanged} value={i.value} locale={locale} />
                   {i.rep && (
                     <span
                       className="rounded-[var(--radius-chip)] border border-accent-critical/50 px-1 font-mono text-[length:var(--t-micro)] uppercase tracking-wider text-accent-critical"
@@ -164,14 +167,14 @@ function ExtractedGroups({ iocs }: { iocs: ExtractedIoc[] }) {
   );
 }
 
-function FamilyList({ iocs }: { iocs: FamilyIoc[] }) {
-  const en = useLocale() === "en";
+function FamilyList({ iocs, locale }: { iocs: FamilyIoc[]; locale: Locale }) {
+  const en = locale === "en";
   const [expanded, setExpanded] = useState(false);
   const shown = expanded ? iocs : iocs.slice(0, 15);
   return (
     <div className="mt-3">
       <div className="mb-2 flex items-center justify-end">
-        <CopyAll values={iocs.map((i) => (i.port ? `${i.ioc}:${i.port}` : i.ioc))} />
+        <CopyAll values={iocs.map((i) => (i.port ? `${i.ioc}:${i.port}` : i.ioc))} locale={locale} />
       </div>
       <div className="divide-y divide-hairline rounded-[var(--radius-chip)] border border-hairline bg-surface-raised">
         {shown.map((i, idx) => (
@@ -183,6 +186,7 @@ function FamilyList({ iocs }: { iocs: FamilyIoc[] }) {
               <IocRow
                 defanged={defangFamily(i.kind, i.ioc) + (i.port ? `:${i.port}` : "")}
                 value={i.port ? `${i.ioc}:${i.port}` : i.ioc}
+                locale={locale}
               />
             </div>
             <div className="flex items-center gap-2 font-mono text-[length:var(--t-micro)] text-ink-muted">
@@ -210,8 +214,8 @@ function FamilyList({ iocs }: { iocs: FamilyIoc[] }) {
   );
 }
 
-function IocRow({ defanged, value }: { defanged: string; value: string }) {
-  const en = useLocale() === "en";
+function IocRow({ defanged, value, locale }: { defanged: string; value: string; locale: Locale }) {
+  const en = locale === "en";
   const [copied, setCopied] = useState(false);
   const copy = async () => {
     try {
@@ -238,8 +242,8 @@ function IocRow({ defanged, value }: { defanged: string; value: string }) {
   );
 }
 
-function CopyAll({ values }: { values: string[] }) {
-  const en = useLocale() === "en";
+function CopyAll({ values, locale }: { values: string[]; locale: Locale }) {
+  const en = locale === "en";
   const [copied, setCopied] = useState(false);
   const copy = async () => {
     try {

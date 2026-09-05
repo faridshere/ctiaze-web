@@ -1,27 +1,24 @@
-import { NextResponse } from "next/server";
 import { ADMIN_COOKIE, tokenIsValid, newSessionValue } from "@/lib/admin-auth";
 import { rateLimit, clientIp } from "@/lib/ratelimit";
+import { jsonError, jsonOk, readJsonBody, RATE } from "@/lib/api";
 
 export const revalidate = 0;
 
 // Exchange the admin token for a session cookie. Tightly rate-limited: this is
 // the one endpoint where guessing gets you the email list.
 export async function POST(req: Request) {
-  if (!rateLimit(`adminlogin:${clientIp(req)}`, 5, 300_000)) {
-    return NextResponse.json({ error: "Too many attempts — wait a few minutes." }, { status: 429 });
+  if (!rateLimit(`adminlogin:${clientIp(req)}`, RATE.adminLogin.limit, RATE.adminLogin.windowMs)) {
+    return jsonError(429, "Too many attempts — wait a few minutes.");
   }
-  let token = "";
-  try {
-    token = String(((await req.json()) as { token?: unknown })?.token ?? "");
-  } catch {
-    return NextResponse.json({ error: "Bad request" }, { status: 400 });
-  }
+  const body = await readJsonBody<{ token?: unknown }>(req);
+  if (body === null) return jsonError(400, "Bad request");
+  const token = String(body.token ?? "");
   const session = newSessionValue();
   if (!session || !tokenIsValid(token)) {
     // Same response either way: never reveal whether ADMIN_TOKEN is even set.
-    return NextResponse.json({ error: "Wrong token." }, { status: 401 });
+    return jsonError(401, "Wrong token.");
   }
-  const res = NextResponse.json({ ok: true });
+  const res = jsonOk({ ok: true });
   res.cookies.set(ADMIN_COOKIE, session, {
     httpOnly: true,
     sameSite: "lax",
@@ -34,7 +31,7 @@ export async function POST(req: Request) {
 
 // Sign out.
 export async function DELETE() {
-  const res = NextResponse.json({ ok: true });
+  const res = jsonOk({ ok: true });
   res.cookies.set(ADMIN_COOKIE, "", { httpOnly: true, path: "/", maxAge: 0 });
   return res;
 }
