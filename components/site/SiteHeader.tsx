@@ -8,7 +8,8 @@ import { SiteNavLink } from "./SiteNavLink";
 // actions right. Sticky over a hairline; the ground is the page surface at 88%
 // with a blur so the globe shows through on the landing.
 const NAV: { href: string; label: string; phone: boolean }[] = [
-  { href: "/news", label: "Archive", phone: true },
+  { href: "/actors", label: "Adversaries", phone: true },
+  { href: "/news", label: "Archive", phone: false },
   { href: "/about", label: "About", phone: false },
 ];
 

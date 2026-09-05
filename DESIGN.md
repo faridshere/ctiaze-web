@@ -65,6 +65,32 @@ nav, buttons, timestamps, counts, CVE ids — uppercase + tracked when it is a l
 6. `CtaBand` — black rounded card over an orbital wireframe, second email form.
 7. `SiteFooter`
 
+## Adversaries (`/actors`, `/actors/[slug]`)
+
+The threat-actor section is the first product surface released on top of the
+three pages. Same primitives, same honesty: every field is what a source
+states (MISP galaxy, ransomware.live, MITRE ATT&CK, APTnotes) or a count the
+engine derived from data we hold. Wording is fixed — **assessed origin**,
+**observed targets (as stated by the sources)**, **last observed on leak site**,
+**attribution confidence N/100 (source-stated)**; never "from", "targets",
+"inactive", "dead".
+
+- Index: `PageHead` + client search over a static `/actors/index.json`
+  (no per-keystroke function), "On the wire" (actors our own dispatches named
+  in the last 90 days — `lib/actor-wire.ts`, precise alias matching), the
+  leading ledger, a by-origin strip, the crawlable A–Z.
+- Dossier: header with the attack rose / sigil, the engine's analyst brief,
+  the **targeting map** (`DotMap` — the world as dashed strokes from our own
+  NASA texture's land mask, origin pings, targets light in turn), the
+  **kill chain** (`KillChain` — techniques by tactic; tap for the plain-English
+  note and "used by N roster actors"; pick a country/sector to light the
+  techniques that matter there, from the engine's TTP profiles), arsenal with
+  "used by N actors", leak-site victim stats with velocity, the wire mentions,
+  primary-source reports, similar adversaries with the shared-TTP count,
+  references.
+- Cost: index hourly ISR from one blob, dossiers daily on-demand ISR, all
+  intel readers daily `unstable_cache`. The map is ~400 SVG elements.
+
 ## Rules
 
 - Real data or nothing: no placeholder logos, quotes, or invented numbers.

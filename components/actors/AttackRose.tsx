@@ -1,5 +1,5 @@
-import type { ThreatActor, Ttp } from "@/lib/_disabled/threatactors";
-import { actorInitials } from "@/lib/_disabled/threatactors";
+import type { ThreatActor, Ttp } from "@/lib/threatactors";
+import { actorInitials } from "@/lib/threatactors";
 
 /**
  * Attack-rose — the actor's signature generative emblem, drawn server-side
@@ -87,7 +87,7 @@ export function AttackRose({
       <title>{label}</title>
       {/* ring grid */}
       {[R_OUT, 70, 44].map((r) => (
-        <circle key={r} cx={C} cy={C} r={r} fill="none" stroke="#23262e" strokeWidth="1" />
+        <circle key={r} cx={C} cy={C} r={r} fill="none" stroke="#1f2430" strokeWidth="1" />
       ))}
       {/* tactic spokes */}
       {ORDER.map((_, i) => {
@@ -99,7 +99,7 @@ export function AttackRose({
             y1={py(a, 16)}
             x2={px(a, R_OUT)}
             y2={py(a, R_OUT)}
-            stroke="#181a20"
+            stroke="#161a22"
             strokeWidth="1"
           />
         );
@@ -134,7 +134,7 @@ export function AttackRose({
         ));
       })}
       {/* centre seal */}
-      <circle cx={C} cy={C} r="15" fill="#0a0b0d" stroke="#23262e" strokeWidth="1" />
+      <circle cx={C} cy={C} r="15" fill="#0a0b0d" stroke="#1f2430" strokeWidth="1" />
       <text
         x={C}
         y={C + 4}
@@ -144,7 +144,7 @@ export function AttackRose({
         style={{ fontFamily: "var(--font-mono), ui-monospace, monospace" }}
         fontSize="11"
         fontWeight="700"
-        fill="#f2efe9"
+        fill="#eef3f8"
       >
         {actorInitials(actor.name)}
       </text>

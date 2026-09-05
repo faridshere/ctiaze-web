@@ -7,6 +7,7 @@ import { Button } from "./Button";
 // serves (pages and machine feeds alike), and the two outbound doors.
 const PAGES = [
   { href: "/", label: "The wire" },
+  { href: "/actors", label: "Adversaries" },
   { href: "/news", label: "Archive" },
   { href: "/about", label: "About" },
 ];

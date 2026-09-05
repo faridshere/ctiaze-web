@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ActorSigil, actorIsLive } from "@/components/_disabled/ActorSigil";
+import { ActorSigil, actorIsLive } from "@/components/actors/ActorSigil";
 
 // Module-load epoch keeps the 90-day liveness check out of render (purity rule);
 // a lambda lives minutes, the window is months — staleness is irrelevant.
@@ -11,7 +11,7 @@ import {
   type NamedRef,
   type ThreatActor,
   type Ttp,
-} from "@/lib/_disabled/threatactors";
+} from "@/lib/_disabled/threatactors-legacy";
 import { getDict, type Locale } from "@/lib/_disabled/i18n";
 
 const TYPE_CHIP: Record<string, string> = {

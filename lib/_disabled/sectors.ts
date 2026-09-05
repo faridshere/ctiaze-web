@@ -1,5 +1,5 @@
 import { getDb } from "../db";
-import { getActorById, type ThreatActor } from "./threatactors";
+import { getActorById, type ThreatActor } from "./threatactors-legacy";
 
 // Read-only view of the engine's `sector_intel` collection — 11 grounded
 // defender hubs, one per CISA-style critical-infrastructure sector. Each doc's

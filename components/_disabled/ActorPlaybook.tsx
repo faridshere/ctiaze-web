@@ -1,4 +1,4 @@
-import type { ThreatActor } from "@/lib/_disabled/threatactors";
+import type { ThreatActor } from "@/lib/_disabled/threatactors-legacy";
 
 // T1566.001 → attack.mitre.org/techniques/T1566/001
 function techUrl(id: string): string {

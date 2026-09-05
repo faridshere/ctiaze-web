@@ -1,7 +1,7 @@
 import { cache } from "react";
 import { getDb } from "../db";
 import { cveIntelIdSet, normalizeCveId } from "./cveintel-page";
-import { getActorById } from "./threatactors";
+import { getActorById } from "./threatactors-legacy";
 import { getGuideSlugs } from "./guides";
 import { getTermAny } from "./glossary-db";
 

@@ -1,6 +1,6 @@
 import Link from "next/link";
-import { ActorSigil, actorIsLive } from "@/components/_disabled/ActorSigil";
-import { originLabel, type ThreatActor } from "@/lib/_disabled/threatactors";
+import { ActorSigil, actorIsLive } from "@/components/actors/ActorSigil";
+import { originLabel, type ThreatActor } from "@/lib/_disabled/threatactors-legacy";
 import type { Locale } from "@/lib/_disabled/i18n";
 
 const RENDER_EPOCH = Date.now();

@@ -74,9 +74,9 @@ const nextConfig: NextConfig = {
     // Shelved product sections plus their legacy AZ-era aliases. ":path*"
     // matches the bare section and any depth beneath it.
     const shelved = [
-      "actors", "cve", "vendor", "sectors", "attacks", "glossary", "scan-me",
+      "cve", "vendor", "sectors", "attacks", "glossary", "scan-me",
       "ioc", "exposure", "situation", "stacknix", "developers", "pricing",
-      "methodology", "apt", "radar", "hucum", "sektor", "lugat", "veziyyet",
+      "methodology", "radar", "hucum", "sektor", "lugat", "veziyyet",
     ].map((seg) => ({ source: `/${seg}/:path*`, destination: "/", permanent: false }));
 
     return [
@@ -86,6 +86,9 @@ const nextConfig: NextConfig = {
       { source: "/metodologiya", destination: "/about", permanent: true },
       { source: "/xeber/:slug", destination: "/news/:slug", permanent: true },
       { source: "/radar.html", destination: "/", permanent: false },
+      // the old APT atlas lives inside the adversaries section now
+      { source: "/apt", destination: "/actors", permanent: true },
+      { source: "/apt/:path*", destination: "/actors", permanent: true },
       ...shelved,
     ];
   },

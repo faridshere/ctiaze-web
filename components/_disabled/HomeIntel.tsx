@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ActorSigil } from "@/components/_disabled/ActorSigil";
+import { ActorSigil } from "@/components/actors/ActorSigil";
 import type { ExposureSnapshot } from "@/lib/_disabled/exposure";
 import type { DoStats } from "@/lib/_disabled/dostats";
 

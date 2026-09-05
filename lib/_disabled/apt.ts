@@ -1,5 +1,5 @@
 import { getDb } from "../db";
-import { originLabel, type ThreatActor, type Ttp } from "./threatactors";
+import { originLabel, type ThreatActor, type Ttp } from "./threatactors-legacy";
 import type { Locale } from "./i18n";
 
 // Read-only, geopolitical view of the engine's `threat_actors` collection: the

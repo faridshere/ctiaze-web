@@ -113,6 +113,16 @@ async function main() {
     return { ok, detail: ok ? `"${ta.slice(0, 40)}…" ≠ "${tb.slice(0, 40)}…"`
       : `a=${ra.status} "${ta.slice(0, 40)}" b=${rb.status} "${tb.slice(0, 40)}"` };
   });
+  await check("/actors index renders + links dossiers", async () => {
+    const { status, body } = await get("/actors");
+    return { ok: status === 200 && body.includes("Adversaries") && body.includes("/actors/"), detail: `status ${status}` };
+  });
+
+  await check("one dossier renders (apt28)", async () => {
+    const { status, body } = await get("/actors/apt28");
+    return { ok: status === 200 && body.includes("APT28") && body.includes("Get early access"), detail: `status ${status}` };
+  });
+
   await check("/news archive renders", async () => {
     const { status, body } = await get("/news");
     return { ok: status === 200 && body.includes("/news/"), detail: `status ${status}` };

@@ -1,5 +1,5 @@
 import { getDb } from "../db";
-import { getActorById } from "./threatactors";
+import { getActorById } from "./threatactors-legacy";
 
 // Read-only view of ctiaze-engine's monthly situation snapshots, assembled for the
 // /situation ("Vəziyyət") report. Three collections, one current snapshot each:

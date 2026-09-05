@@ -376,6 +376,24 @@ html.motion-ok .wire-row {
   to { translate: 40px 0; }
 }
 
+/* Targeting map: the assessed-origin node pings; target nodes arrive in turn. */
+.map-ping {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: map-ping 3.2s var(--ease-out) infinite;
+}
+@keyframes map-ping {
+  0% { transform: scale(1); opacity: 0.9; }
+  70% { transform: scale(4.5); opacity: 0; }
+  100% { transform: scale(4.5); opacity: 0; }
+}
+html.motion-ok .map-target {
+  opacity: 0;
+  animation: map-target-in 0.6s var(--ease-out) forwards;
+  animation-delay: calc(0.3s + var(--i, 0) * 45ms);
+}
+@keyframes map-target-in { to { opacity: 1; } }
+
 /* Orbital wireframe (CTA band): a very slow roll so the grid reads as live. */
 .orbital { animation: orbital-roll 90s linear infinite; transform-origin: 50% 50%; }
 @keyframes orbital-roll { to { transform: rotate(360deg); } }
@@ -413,6 +431,8 @@ html.motion-ok .wire-row {
   html.motion-ok [data-sc] { opacity: 1; transform: none; }
   html.motion-ok .wire-row { opacity: 1; transform: none; animation: none; }
   html.motion-ok .spark-bar { transform: none; transition: none; }
+  html.motion-ok .map-target { opacity: 1; animation: none; }
+  .map-ping { animation: none; opacity: 0; }
   .hl > span { transform: none; }
   .fade-up, .mark-ignite { animation: none; opacity: 1; transform: none; }
 }

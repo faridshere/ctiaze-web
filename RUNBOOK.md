@@ -15,6 +15,7 @@ something breaks (or when future-Claude needs the map). Kept honest as of
 
 ctiaze-web (Vercel, repo public) serves BOTH domains from one project:
   skopnix.com   = landing (globe + email + "on the wire" strip) + /news/* stories
+                  + /actors (adversaries: index + ~1,300 dossiers — released 2026-09-05)
   ctiaze.tech   = "Something is coming" placeholder + email (host rewrite)
   full product (actors/cve/scan-me/…) = SHELVED in app/_disabled — not deleted
 ```
@@ -25,7 +26,7 @@ The whole business right now: **turn Telegram readers and old links into emails.
 
 | var | where | breaks without it |
 |---|---|---|
-| `MONGO_URI_READONLY` | Vercel | stories, wire strip, sitemaps go empty |
+| `MONGO_URI_READONLY` | Vercel | stories, wire strip, sitemaps go empty | (and the adversaries section: roster, actor_pack, graph, ttp_profiles, mitre_techniques)
 | `MONGO_URI_WRITE` | Vercel | **emails + visits silently not stored** (form says "not open yet") |
 | `ADMIN_TOKEN` | Vercel | /admin locked for everyone (fails closed — by design) |
 | `MONGO_URI` | GitHub secret, ctiaze-engine | pipeline can't store/publish |

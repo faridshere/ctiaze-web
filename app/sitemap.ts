@@ -1,5 +1,6 @@
 import type { MetadataRoute } from "next";
 import { getStories } from "@/lib/stories";
+import { getActorIds } from "@/lib/threatactors";
 import { SITE_URL, storyUrl } from "@/lib/site";
 
 export const revalidate = 21600;
@@ -10,7 +11,7 @@ export const revalidate = 21600;
 // than a small one: it wastes crawl budget and teaches crawlers to distrust it.
 // Re-add a section here and in app/robots.ts together when a tool comes back.
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const stories = await getStories(500).catch(() => []);
+  const [stories, actorIds] = await Promise.all([getStories(500).catch(() => []), getActorIds(800).catch(() => [])]);
   const newest = stories[0] ? new Date(stories[0].publishedAt) : new Date();
 
   return [

@@ -1,4 +1,4 @@
-import type { ThreatActor } from "@/lib/_disabled/threatactors";
+import type { ThreatActor } from "@/lib/threatactors";
 
 // The sigil only needs identity, type and documented depth — accept that
 // structural subset so lean teasers can render it without full dossiers.
