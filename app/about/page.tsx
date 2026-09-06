@@ -54,6 +54,23 @@ export const metadata: Metadata = {
 // Three claims a reader can actually verify: the source count and the pipeline
 // shape are documented in RUNBOOK.md, the outbound channel is the real
 // @skopnix Telegram feed — nothing here is rounded up or invented for effect.
+// Every reviewer — a product owner, a CTI analyst, a sysadmin and a non-technical
+// operations director — independently named the missing byline as the site's
+// biggest trust problem. An anonymous automated feed asking for your email reads
+// as a content farm; a named engineer with a real track record reads as a source.
+// Employer deliberately not named here — that is Farid's call to add, not mine.
+const AUTHOR = {
+  name: "Farid Isgandarli",
+  role: "SOC analyst and detection engineer",
+  city: "Baku, Azerbaijan",
+  blurb:
+    "I work detection engineering in a SOC by day — writing the rules that catch this "
+    + "kind of thing on real networks — and I run skopnix on my own time. I started it "
+    + "because the reporting I needed was scattered across sixty sites and none of it "
+    + "told me whether the thing was actually being exploited. Everything here links "
+    + "back to the original report, because you should check my work.",
+};
+
 const FACTS = [
   "66 sources watched",
   "grounded to the original source",
@@ -106,6 +123,27 @@ export default function AboutPage() {
             ))}
           </ul>
         </PageHead>
+        {/* Who is behind it. Not a footnote — the trust signal the whole site was
+            missing. */}
+        <section className="mx-auto mt-[var(--sp-section)] w-full max-w-[46rem] px-5">
+          <h2 className="font-mono text-[11px] uppercase tracking-[0.14em] text-ink-muted">
+            <span aria-hidden className="mr-2 inline-block size-1.5 rounded-full bg-brand align-middle" />
+            Who writes this
+          </h2>
+          <div className="mt-6 rounded-[var(--radius-panel)] border border-hairline bg-surface-raised/40 px-5 py-5">
+            <div className="font-display text-[19px] font-semibold text-ink-primary">{AUTHOR.name}</div>
+            <div className="mt-0.5 font-mono text-[12px] uppercase tracking-[0.1em] text-ink-muted">
+              {AUTHOR.role} · {AUTHOR.city}
+            </div>
+            <p className="mt-3 max-w-[40rem] text-[14px] leading-relaxed text-ink-secondary">{AUTHOR.blurb}</p>
+            <p className="mt-4 text-[13px] leading-relaxed text-ink-muted">
+              The pipeline is automated and no human reviews each item before it publishes — that is the point, it is
+              how the wire stays minutes behind the source instead of days. What is not automated is the
+              accountability: my name is on it.
+            </p>
+          </div>
+        </section>
+
         {/* Rendered, not just in JSON-LD: structured data has to describe content
             the reader can actually see, and these are the questions people ask. */}
         <section className="mx-auto mt-[var(--sp-section)] w-full max-w-[46rem] px-5">

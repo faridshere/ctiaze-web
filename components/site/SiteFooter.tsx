@@ -10,8 +10,10 @@ const PAGES = [
   { href: "/actors", label: "Adversaries" },
   { href: "/news", label: "Archive" },
   { href: "/about", label: "About" },
+  { href: "/privacy", label: "Privacy" },
 ];
 const FEEDS = [
+  { href: "/api-docs", label: "API" },
   { href: LINKS.rss, label: "RSS" },
   { href: LINKS.jsonFeed, label: "JSON feed" },
   { href: LINKS.llms, label: "llms.txt" },
@@ -53,6 +55,10 @@ export function SiteFooter() {
               than replacing it. */}
           <p className="mt-3 font-mono text-[11px] uppercase tracking-[0.14em] text-ink-muted">
             worldwide coverage · sensor-backed in the Caucasus
+          </p>
+          {/* A name in the footer, on every page — not buried on /about. */}
+          <p className="mt-2 text-[12px] leading-relaxed text-ink-muted">
+            Built and maintained by Farid Isgandarli, detection engineer, Baku.
           </p>
         </div>
         <DotList items={PAGES} label="Pages" />

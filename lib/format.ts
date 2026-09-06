@@ -92,8 +92,29 @@ export function formatDayDivider(iso: string, locale: "az" | "en" = "az"): strin
 // ---------------------------------------------------------------------------
 const SENTENCE_END = /[.!?](?=["'”’)\]]*(\s|$))/g;
 
+// Syndication cruft that rides along in RSS descriptions. Measured across the
+// published set: "The post … appeared first on <outlet>" on 58 stories, a literal
+// "[...]" truncation marker on 56, Reddit's "submitted by /u/… [link] [comments]"
+// on 10. Rendering it verbatim is what makes an automated wire look unattended.
+const BOILERPLATE: RegExp[] = [
+  /\s*The post\b[\s\S]*?\bappeared first on\b[^.]*\.?\s*$/i,
+  /\s*submitted by\s+\/u\/\S+[\s\S]*$/i,
+  /\s*\[link\]\s*\[comments\]\s*/gi,
+  /\s*(Read more|Continue reading)\b[^.]*\.?\s*$/i,
+];
+
+/** Strip feed boilerplate. "[...]" marks where the publisher cut the text, so we
+ *  cut there too and let completeSentences() end it honestly. */
+export function stripBoilerplate(text: string): string {
+  let out = (text || "").trim();
+  for (const rx of BOILERPLATE) out = out.replace(rx, "");
+  const marker = out.search(/\[\s*(\.\.\.|…)\s*\]/);
+  if (marker > 0) out = out.slice(0, marker);
+  return out.replace(/\s+/g, " ").trim();
+}
+
 export function completeSentences(text: string, opts: { min?: number } = {}): string {
-  const s = (text || "").trim();
+  const s = stripBoilerplate(text);
   if (!s) return "";
   // Already ends cleanly (allowing a closing quote/bracket) — leave it alone.
   if (/[.!?]["'”’)\]]*$/.test(s)) return s;

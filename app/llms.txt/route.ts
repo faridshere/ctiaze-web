@@ -30,21 +30,36 @@ export async function GET() {
   origin, targeted sectors and observed MITRE ATT&CK techniques.
 - [Home](${SITE_URL}): the landing page and latest wire.
 
-## Feeds (machine-readable, no key required)
-- [feed.json](${SITE_URL}/feed.json): JSON feed, last 100 stories.
-- [RSS](${SITE_URL}/rss.xml): RSS 2.0, English by default. Filterable:
-  ?kev=1 (actively exploited), ?cat=ransomware, ?region=1 (Caspian/regional
-  relevance), ?lang=az (Azerbaijani titles and summaries).
+## API (no key required)
+- [/api/v1/items](${SITE_URL}/api/v1/items): the wire as JSON. 60 req/min per IP, CORS open.
+  Filters: ?kev=1 (on CISA KEV), ?cve=CVE-2026-81578, ?category=ransomware,
+  ?since=2026-09-01 (ISO 8601), ?limit=1..200.
+- [Field documentation](${SITE_URL}/api-docs).
 
-## Feed fields
-Each item: id, title_en, title_az, summary_en, summary_az, url (stable permalink),
-source_url, category, severity, kev (CISA Known Exploited Vulnerabilities), cve_ids,
-region_relevant (Caspian/regional relevance flag), published_at (ISO 8601).
+## Feeds
+- [feed.json](${SITE_URL}/feed.json): JSON Feed 1.1, last 100 stories. JSON Feed keys
+  (id, url, title, content_text, date_published, tags) plus a _skopnix object
+  carrying category, severity, kev, cve_ids and source_url. For the full field set
+  use /api/v1/items.
+- [RSS](${SITE_URL}/rss.xml): RSS 2.0, English by default. Filters: ?kev=1,
+  ?cat=ransomware, ?region=1, ?lang=az.
 
-## Exposure figures
-Where a story names a product skopnix measures, it carries a worldwide
-internet-exposure count from Shodan, stamped with the date it was measured. The
-figure is an approximate live scan total, not an inventory, and is rounded as such.
+## Item fields (/api/v1/items)
+id, url, source_url, title_en, title_az, summary_en, summary_az, truncated,
+category, severity, cvss, epss, kev, cve_ids, region_relevant, published_at,
+exposure {product, worldwide, measured_at}, also_reported_by.
+
+## How to read the signals
+- kev is an OBSERVATION — CISA has confirmed exploitation in the wild.
+- epss is a FORECAST — probability of exploitation in the next 30 days (0-1).
+- When the two disagree, kev is the one to act on; a low epss beside kev usually
+  means targeted rather than mass exploitation.
+- severity null means no CVE severity data exists for that story. It does not
+  mean low. The same applies to cvss and epss.
+- truncated true means the source feed published a cut description; we end it at
+  the last complete sentence rather than mid-word. Fetch source_url for the full text.
+- exposure.worldwide is a Shodan scan count on measured_at — hosts reachable on
+  the internet, NOT hosts confirmed vulnerable, and not an inventory.
 
 ## Attribution
 Every story links to its original source (source_url). skopnix aggregates, verifies
@@ -53,8 +68,8 @@ facts are drawn from MITRE ATT&CK, ransomware.live, NVD and CISA — cited, neve
 invented.
 
 ## Status
-More is coming: a CVE registry with EPSS/KEV context, a worldwide exposure dataset,
-and a developer API + MCP server. To hear first, drop an email at ${SITE_URL}.
+The JSON API above is live and free. Still to come: a CVE registry with EPSS/KEV
+context, a worldwide exposure dataset, and an MCP server.
 `;
   return new Response(body, {
     headers: {
