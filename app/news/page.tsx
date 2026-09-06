@@ -35,7 +35,11 @@ const getPage = unstable_cache(
       })),
     };
   },
-  ["news-archive-v3"],
+  // NOTE: this caches the COMPUTED slug, and Next's Data Cache survives a
+  // deployment — so a change to slugify() keeps serving the old URLs until this
+  // key changes. Bump the version whenever the shape or derivation of `rows`
+  // changes (v3 -> v4: permalinks moved from Azerbaijani to English).
+  ["news-archive-v4"],
   { revalidate: 3600 }
 );
 

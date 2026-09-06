@@ -84,7 +84,7 @@ async function computeHomeData(): Promise<HomeData> {
   };
 }
 
-export const getHomeData = unstable_cache(computeHomeData, ["home-data-v3"], { revalidate: 3600 });
+export const getHomeData = unstable_cache(computeHomeData, ["home-data-v4"], { revalidate: 3600 });
 
 // The landing page must render even if Mongo is unreachable — an empty wire is
 // a quiet page, a thrown error is a dead landing page.
