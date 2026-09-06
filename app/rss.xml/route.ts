@@ -16,7 +16,7 @@ function esc(s: string): string {
 //   ?kev=1         only actively-exploited (KEV) stories
 //   ?region=1      only Azerbaijan / regional stories
 //   ?cat=ransomware   only that category
-//   ?lang=en       English titles/summaries (default Azerbaijani)
+//   ?lang=az       Azerbaijani titles/summaries (English is the default)
 export async function GET(req: Request) {
   const q = new URL(req.url).searchParams;
   const en = q.get("lang") !== "az"; // English/global by default

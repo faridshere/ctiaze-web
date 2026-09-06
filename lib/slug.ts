@@ -9,10 +9,25 @@
 
 const ID_PREFIX = /^(cve:|url:|digest:|spike:)/;
 
-export function slugify(id: string, titleAz: string): string {
-  const base = titleAz
-    .toLowerCase()
-    .replace(/[^a-z0-9əıöüğşç\s-]/gi, "")
+// Azerbaijani letters -> their closest ASCII form. skopnix publishes to a global
+// audience, so a permalink must be typeable, quotable and copy-pasteable on any
+// keyboard: percent-encoding turns "mikrotik-router-lƏri" into
+// "mikrotik-router-l%C9%99ri" the moment it is shared, mailed or logged.
+// Transliterating (not dropping) keeps the word readable.
+const AZ_TRANSLITERATE: Record<string, string> = {
+  ə: "e", ı: "i", ö: "o", ü: "u", ğ: "g", ş: "s", ç: "c", i̇: "i",
+};
+
+function toAscii(s: string): string {
+  return s.replace(/[əıöüğşçi̇]/g, (ch) => AZ_TRANSLITERATE[ch] ?? ch);
+}
+
+// `title` is the slug text — English is passed first by callers so the public URL
+// reads in the same language as the page. The parameter stays positional for the
+// engine's Python port (cti/publish.py story_slug) to mirror exactly.
+export function slugify(id: string, title: string): string {
+  const base = toAscii(title.toLowerCase())
+    .replace(/[^a-z0-9\s-]/g, "")
     .trim()
     .replace(/\s+/g, "-")
     .slice(0, 60);

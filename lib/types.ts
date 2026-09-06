@@ -23,7 +23,7 @@ export type StoryDoc = {
   epss?: number;             // FIRST.org exploit probability 0..1
   sev_rank?: number;         // 0..4
   kind?: string;             // e.g. "exposure_spike" (deterministic, never model-set)
-  az_exposure?: { product?: string; count?: number; as_of?: string };
+  az_exposure?: { product?: string; count?: number; as_of?: string; as_of_iso?: string; global_count?: number; global_as_of_iso?: string };
   // Precomputed semantic neighbours (ops/embed_related.py) — small denormalized
   // list so the story page can render "related" with no extra query / no live inference.
   related?: { id: string; slug: string; az_title?: string; title?: string; sim?: number }[];
@@ -50,7 +50,12 @@ export type Story = {
   epss: number | null;
   sevRank: number;
   kind: string | null;
-  azExposure: { product: string; count: number; asOf: string } | null;
+  // Shodan exposure for a product named in the story. `count` is Azerbaijan-only
+  // (the engine's country:AZ sweep); `globalCount` is worldwide. The global site
+  // renders the worldwide figure — an Azerbaijan-only number is a footnote to a
+  // reader anywhere else — and stays silent when only the AZ number exists rather
+  // than passing it off as worldwide.
+  azExposure: { product: string; count: number; globalCount: number | null; asOf: string; asOfIso: string; globalAsOfIso: string } | null;
 };
 
 export function toStory(doc: StoryDoc): Story {
@@ -66,7 +71,7 @@ export function toStory(doc: StoryDoc): Story {
   }
   return {
     id: doc._id,
-    slug: slugify(doc._id, doc.az_title || doc.title || "xəbər"),
+    slug: slugify(doc._id, doc.title || doc.az_title || "news"),
     titleAz: doc.az_title || doc.title,
     bodyAz: doc.az_body || "",
     related: (doc.related ?? [])
@@ -89,11 +94,19 @@ export function toStory(doc: StoryDoc): Story {
     sevRank: typeof doc.sev_rank === "number" ? doc.sev_rank : 0,
     kind: doc.kind ?? null,
     azExposure:
-      doc.az_exposure && doc.az_exposure.product && (doc.az_exposure.count ?? 0) > 0
+      doc.az_exposure &&
+      doc.az_exposure.product &&
+      ((doc.az_exposure.count ?? 0) > 0 || (doc.az_exposure.global_count ?? 0) > 0)
         ? {
             product: String(doc.az_exposure.product),
-            count: Number(doc.az_exposure.count),
+            count: Number(doc.az_exposure.count ?? 0),
+            globalCount:
+              (doc.az_exposure.global_count ?? 0) > 0 ? Number(doc.az_exposure.global_count) : null,
             asOf: String(doc.az_exposure.as_of ?? ""),
+            asOfIso: String(doc.az_exposure.as_of_iso ?? ""),
+            // the worldwide figure is measured on its own date — never borrow the
+            // Azerbaijan sweep's date for it
+            globalAsOfIso: String(doc.az_exposure.global_as_of_iso ?? ""),
           }
         : null,
   };

@@ -60,6 +60,17 @@ export default async function StoryPage({ params }: { params: Promise<Params> })
   const story = await getStoryBySlug(slug);
   if (!story) notFound();
 
+  // NOTE: a stale title tail (every link shared before permalinks switched from
+  // Azerbaijani to English) still resolves here, because only the first 12 chars
+  // of a slug address the story. That means two URLs can serve one article, which
+  // `alternates.canonical` in generateMetadata above already resolves for search
+  // engines — it points at story.slug regardless of how the page was reached.
+  // Do NOT try to upgrade that to a 301 from inside this component: app/loading.tsx
+  // puts the route behind Suspense, so Next commits 200 and starts streaming before
+  // this function runs, and permanentRedirect() degrades to a soft client-side hop
+  // (verified 2026-09-07). A real 308 would need middleware, which this project
+  // deliberately avoids for its per-request cost.
+
   const [recent, badges] = await Promise.all([
     getStories(60).catch(() => []),
     cveBadges(story.cveIds).catch(() => new Map()),

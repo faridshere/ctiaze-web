@@ -90,3 +90,25 @@ test("placeholder, role and disposable addresses are flagged shared; personal is
   assert.equal(personal.shared, false);
   assert.ok(classifyAddress("test@example.com").shared);
 });
+
+// --- global permalinks -------------------------------------------------------
+test("slugify produces ASCII-only slugs (no percent-encoding when shared)", () => {
+  const slug = slugify("url:d49a120f4499aa", "MikroTik router-ləri internetə açıq SSH");
+  assert.equal(slug, encodeURIComponent(slug), "slug must survive a URL round-trip unchanged");
+  assert.ok(/^[a-z0-9-]+$/i.test(slug), `expected ASCII slug, got ${slug}`);
+  assert.match(slug, /mikrotik-router-leri-internete-aciq-ssh/);
+});
+
+test("Azerbaijani letters transliterate rather than vanish", () => {
+  // dropping them would mangle words into "gvnl"; transliteration keeps them readable
+  assert.match(slugify("url:abc123def456", "Zəiflik göstərici çətin şəkil"), /zeiflik-gosterici-cetin-sekil/);
+});
+
+test("old Azerbaijani slugs still resolve to the same story id", () => {
+  // the title tail is decorative: only the first 12 chars address the story, so
+  // links shared before the ASCII change must keep working
+  const id = "url:d49a120f4499aa";
+  const oldSlug = "d49a120f4499-mikrotik-router-ləri-internetə-açıq-ssh";
+  const newSlug = slugify(id, "Attackers Hijack MikroTik Routers");
+  assert.equal(storyIdKey(oldSlug), storyIdKey(newSlug));
+});
