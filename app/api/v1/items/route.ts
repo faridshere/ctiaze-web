@@ -3,6 +3,7 @@ import { completeSentences } from "@/lib/format";
 import { storyUrl } from "@/lib/site";
 import { rateLimit, clientIp } from "@/lib/ratelimit";
 import { jsonError } from "@/lib/api";
+import { clusterStories, clusterId } from "@/lib/dedup";
 import type { Story } from "@/lib/types";
 
 export const revalidate = 300;
@@ -41,9 +42,15 @@ type ApiItem = {
   published_at: string;
   exposure: { product: string; worldwide: number | null; measured_at: string | null } | null;
   also_reported_by: string[];
+  // Same real-world event, different outlets. Dedup on this and cite the
+  // individual id. Conservative by design: an exact shared CVE, or a strong
+  // headline overlap inside 72h. Two outlets describing one event in completely
+  // different words stay separate, because a false merge is worse than a dupe.
+  cluster_id: string;
+  is_duplicate: boolean;
 };
 
-function toApiItem(s: Story): ApiItem {
+function toApiItem(s: Story, cluster: { id: string; isDupe: boolean }): ApiItem {
   const summary = completeSentences(s.summaryEn);
   return {
     id: s.id,
@@ -71,6 +78,8 @@ function toApiItem(s: Story): ApiItem {
         }
       : null,
     also_reported_by: s.altSources,
+    cluster_id: cluster.id,
+    is_duplicate: cluster.isDupe,
   };
 }
 
@@ -100,7 +109,21 @@ export async function GET(req: Request) {
   if (category) items = items.filter((s) => s.category.toLowerCase() === category);
   if (!Number.isNaN(sinceMs)) items = items.filter((s) => Date.parse(s.publishedAt) >= sinceMs);
 
-  const page = items.slice(0, limit).map(toApiItem);
+  // Cluster across the whole filtered set, then page — otherwise a duplicate
+  // split across a page boundary would look unique.
+  const clusters = clusterStories(
+    items.map((s) => ({ id: s.id, title: s.titleEn || s.titleAz, publishedAt: s.publishedAt, cveIds: s.cveIds }))
+  );
+  const clusterOf = new Map<string, { id: string; isDupe: boolean }>();
+  for (const c of clusters) {
+    const cid = clusterId(c.lead);
+    clusterOf.set(c.lead.id, { id: cid, isDupe: false });
+    for (const o of c.others) clusterOf.set(o.id, { id: cid, isDupe: true });
+  }
+
+  const page = items
+    .slice(0, limit)
+    .map((s) => toApiItem(s, clusterOf.get(s.id) ?? { id: clusterId({ id: s.id, title: s.titleEn, publishedAt: s.publishedAt }), isDupe: false }));
 
   return new Response(
     JSON.stringify(

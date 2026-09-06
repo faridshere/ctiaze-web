@@ -148,3 +148,28 @@ test("EPSS is suppressed on a KEV story (they answer different questions)", asyn
   assert.equal(epssBadge(predicted), "EPSS 83%");
   assert.match(signalExplainer(predicted)!, /forecast, not a report/);
 });
+
+// --- cross-source clustering -------------------------------------------------
+test("clusters the same event across outlets, and only the same event", async () => {
+  const { clusterStories, titleSimilarity } = await import("../lib/dedup.ts");
+  const at = "2026-09-06T10:00:00Z";
+  const items = [
+    { id: "a1", title: "SonicWall SMA1000 flaw exploited in the wild", publishedAt: at, cveIds: ["CVE-2026-1111"] },
+    { id: "a2", title: "Attackers exploit SonicWall SMA1000 appliances", publishedAt: at, cveIds: ["CVE-2026-1111"] },
+    { id: "b1", title: "PostgreSQL Fixes 12-Year-Old Logical Decoding Flaw", publishedAt: at, cveIds: [] },
+  ];
+  const clusters = clusterStories(items);
+  assert.equal(clusters.length, 2, "the two SonicWall reports are one event");
+  assert.deepEqual(clusters[0].others.map((o) => o.id), ["a2"]);
+  assert.equal(clusters[1].lead.id, "b1", "an unrelated story must never be folded in");
+  assert.equal(titleSimilarity(items[0].title, items[2].title), 0);
+});
+
+test("a story outside the 72h window is not clustered", async () => {
+  const { clusterStories } = await import("../lib/dedup.ts");
+  const items = [
+    { id: "x", title: "SonicWall SMA1000 flaw exploited", publishedAt: "2026-09-06T10:00:00Z", cveIds: [] },
+    { id: "y", title: "SonicWall SMA1000 flaw exploited", publishedAt: "2026-08-01T10:00:00Z", cveIds: [] },
+  ];
+  assert.equal(clusterStories(items).length, 2, "a month later is a different event");
+});

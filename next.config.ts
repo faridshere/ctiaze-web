@@ -1,3 +1,4 @@
+import { ACTOR_ALIAS_CANONICAL } from "./lib/actor-aliases";
 import type { NextConfig } from "next";
 
 // Security headers (flagged by the pentest review). CSP keeps 'unsafe-inline'
@@ -86,6 +87,14 @@ const nextConfig: NextConfig = {
       { source: "/metodologiya", destination: "/about", permanent: true },
       { source: "/xeber/:slug", destination: "/news/:slug", permanent: true },
       { source: "/radar.html", destination: "/", permanent: false },
+      // Alias actors fold into their canonical dossier (see lib/actor-aliases.ts).
+      // A real 308 rather than a runtime hop, so crawlers consolidate the pages
+      // and the duplicate stops competing with the original.
+      ...Object.entries(ACTOR_ALIAS_CANONICAL).map(([alias, canonical]) => ({
+        source: `/actors/${alias}`,
+        destination: `/actors/${canonical}`,
+        permanent: true,
+      })),
       // the old APT atlas lives inside the adversaries section now
       { source: "/apt", destination: "/actors", permanent: true },
       { source: "/apt/:path*", destination: "/actors", permanent: true },

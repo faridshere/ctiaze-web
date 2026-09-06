@@ -1,6 +1,7 @@
 import { unstable_cache } from "next/cache";
 import { getDb } from "./db";
 import { countryName, resolveCountry } from "./geo";
+import { isAliasActorId } from "./actor-aliases";
 import { getWireMentions, type WireMention } from "./actor-wire";
 
 export { flagEmoji } from "./geo";
@@ -246,7 +247,10 @@ export const getActorsPageData = unstable_cache(computeActorsPageData, ["actors-
 // Every substantive actor slug for the sitemap, richest first, capped.
 export async function getActorIds(limit = 800): Promise<string[]> {
   const docs = await indexActors();
+  // Alias dossiers 308 to their canonical page, so advertising them in the
+  // sitemap would just hand crawlers a list of redirects.
   return [...docs]
+    .filter((a) => !isAliasActorId(a._id))
     .sort((a, b) => substance(b) - substance(a) || activity(b) - activity(a) || byName(a, b))
     .slice(0, limit)
     .map((a) => a._id);

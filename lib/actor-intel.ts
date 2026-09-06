@@ -19,6 +19,9 @@ export type SoftwareUsage = Record<string, number>; // "S0002" → distinct acto
 
 const DAY = 86400;
 
+// Upstream import artifacts that must never reach the page as a real value.
+const PLACEHOLDER_LABEL = /^(not found|unknown|n\/a|none|null|undefined|-+)$/i;
+
 async function readActorPack(id: string): Promise<ActorPack | null> {
   const db = await getDb();
   const doc = await db.collection("actor_pack").findOne({ _id: id } as never, { projection: { intel: 1, similar_actors: 1, technique_count: 1 } });
@@ -75,7 +78,11 @@ async function readTtpProfiles(): Promise<TtpProfile[]> {
       actors: Number((d as { actor_count?: number }).actor_count ?? 0),
       ids: (((d as { top_techniques?: { techniqueID?: string }[] }).top_techniques ?? []).map((t) => String(t.techniqueID ?? "").toUpperCase()).filter(Boolean)),
     }))
-    .filter((p) => p.label && p.ids.length > 0 && p.actors >= 2)
+    // "Not Found" is a failed lookup from the upstream import that got stored as
+    // a sector and then rendered as intelligence — it appears on APT29, Sandworm
+    // and ShinyHunters beside Government and Energy, and as an option in the
+    // filter dropdown. Drop these placeholder labels rather than publish them.
+    .filter((p) => p.label && !PLACEHOLDER_LABEL.test(p.label) && p.ids.length > 0 && p.actors >= 2)
     .sort((a, b) => a.kind.localeCompare(b.kind) || b.actors - a.actors);
 }
 export const getTtpProfiles = unstable_cache(readTtpProfiles, ["ttp-profiles-v1"], { revalidate: DAY });
