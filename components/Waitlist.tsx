@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useSyncExternalStore } from "react";
 import { getPowToken, primePowToken } from "@/lib/pow-client";
 import { PowBadge } from "@/components/PowBadge";
 import { Button } from "@/components/site/Button";
@@ -9,12 +9,57 @@ import { Button } from "@/components/site/Button";
 // input, the button, the shield badge and the two end states. Captcha-gated by
 // the same invisible proof-of-work as the API, so the list can't be scripted.
 // `source` tags where the signup came from (read back in /admin).
-type State = "idle" | "loading" | "done" | "error";
+type State = "idle" | "loading" | "error";
+
+// "done" means converted; "seen" means shown. Both suppress any modal; only
+// "done" means we have them.
+const DONE_KEY = "skopnix.waitlist.done";
+const SEEN_KEY = "skopnix.waitlist.seen";
+
+// ---------------------------------------------------------------------------
+// The confirmation has to survive a refresh: without this, someone who already
+// signed up comes back to an empty form and can't tell whether it worked.
+//
+// Read through useSyncExternalStore rather than an effect, for two reasons:
+// these pages are statically rendered, so the server snapshot (`false`) keeps
+// first paint identical to the server's markup and hydration stays clean; and
+// subscribing to `storage` syncs the state across the visitor's other tabs.
+//
+// This is a per-browser courtesy, not authoritative state — the database is.
+// A new device or cleared storage just shows the form again, and re-submitting
+// is a harmless upsert (the API dedupes on email).
+// ---------------------------------------------------------------------------
+const listeners = new Set<() => void>();
+
+function subscribeDone(cb: () => void) {
+  listeners.add(cb);
+  window.addEventListener("storage", cb);
+  return () => {
+    listeners.delete(cb);
+    window.removeEventListener("storage", cb);
+  };
+}
+
+// `storage` only fires in *other* tabs, so same-tab writes notify by hand.
+function emitDone() {
+  for (const l of listeners) l();
+}
+
+function readDone(): boolean {
+  try {
+    return localStorage.getItem(DONE_KEY) === "1";
+  } catch {
+    return false; // private mode — just show the form
+  }
+}
 
 export function Waitlist({ source = "site" }: { source?: string }) {
   const [email, setEmail] = useState("");
   const [state, setState] = useState<State>("idle");
   const [msg, setMsg] = useState("");
+
+  // getSnapshot returns a primitive, so React can compare it by value.
+  const done = useSyncExternalStore(subscribeDone, readDone, () => false);
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -31,15 +76,14 @@ export function Waitlist({ source = "site" }: { source?: string }) {
       });
       const j = (await r.json().catch(() => ({}))) as { error?: string };
       if (r.ok) {
-        setState("done");
-        // "done" means converted; "seen" means shown. Both suppress any modal;
-        // only "done" means we have them.
+        setState("idle");
         try {
-          localStorage.setItem("skopnix.waitlist.done", "1");
-          localStorage.setItem("skopnix.waitlist.seen", "1");
+          localStorage.setItem(DONE_KEY, "1");
+          localStorage.setItem(SEEN_KEY, "1");
         } catch {
           /* private mode */
         }
+        emitDone();
       } else {
         setState("error");
         setMsg(j.error || "Something went wrong — try again.");
@@ -50,7 +94,21 @@ export function Waitlist({ source = "site" }: { source?: string }) {
     }
   }
 
-  if (state === "done") {
+  // Escape hatch: someone who mistyped their address must not be locked out of
+  // the form forever by their own browser.
+  function reset() {
+    try {
+      localStorage.removeItem(DONE_KEY);
+    } catch {
+      /* ignore */
+    }
+    emitDone();
+    setEmail("");
+    setMsg("");
+    setState("idle");
+  }
+
+  if (done) {
     return (
       <div
         role="status"
@@ -60,6 +118,13 @@ export function Waitlist({ source = "site" }: { source?: string }) {
         <p className="mt-1 text-[14px] leading-relaxed text-ink-secondary">
           One email when your free access is ready. Nothing else, ever — no tracking pixels, no reselling.
         </p>
+        <button
+          type="button"
+          onClick={reset}
+          className="mt-2 font-mono text-[11px] uppercase tracking-wider text-ink-muted underline-offset-4 hover:text-ink-secondary hover:underline"
+        >
+          Use a different email
+        </button>
       </div>
     );
   }
