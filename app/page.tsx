@@ -11,7 +11,7 @@ import { StatGrid } from "@/components/home/StatGrid";
 import { RelativeTime } from "@/components/home/RelativeTime";
 import { jsonLdSafe } from "@/lib/format";
 import { getHomeData, EMPTY_HOME_DATA } from "@/lib/home-data";
-import { SITE_NAME, SITE_TAGLINE, SITE_URL } from "@/lib/site";
+import { SAME_AS, SITE_NAME, SITE_TAGLINE, SITE_URL } from "@/lib/site";
 
 // The landing page. Its whole job is an email — everything else on it is
 // evidence that the wire is real: the live panel, the fortnight of dispatches,
@@ -40,18 +40,57 @@ function utcHHMM(iso: string): string {
 export default async function LandingPage() {
   // Never let the data layer take the landing page down: no data → quiet page.
   const data = await getHomeData().catch(() => EMPTY_HOME_DATA);
+  // Two graphs, on purpose. Organization is the entity ("what is skopnix?") and
+  // WebSite carries the name a search engine prints under the result. `logo` must
+  // be a raster Google can index — it pointed at icon.svg, and an SVG is not a
+  // safe choice for the logo property. `sameAs` is the entity-resolution signal
+  // that was missing entirely.
   const orgLd = {
     "@context": "https://schema.org",
     "@type": "Organization",
+    "@id": `${SITE_URL}/#organization`,
     name: SITE_NAME,
+    alternateName: "skopnix threat intelligence",
+    url: SITE_URL,
+    description:
+      "skopnix is a cyber threat intelligence service. It reads international " +
+      "security reporting, vulnerability and exploitation feeds around the clock, " +
+      "verifies each item against its original source, and publishes it as a free " +
+      "global threat wire with worldwide internet-exposure figures.",
+    slogan: SITE_TAGLINE,
+    logo: {
+      "@type": "ImageObject",
+      url: `${SITE_URL}/icon-512.png`,
+      width: 512,
+      height: 512,
+    },
+    image: `${SITE_URL}/icon-512.png`,
+    knowsAbout: [
+      "cyber threat intelligence",
+      "vulnerability management",
+      "CISA Known Exploited Vulnerabilities",
+      "ransomware",
+      "threat actors",
+      "internet exposure",
+    ],
+    sameAs: SAME_AS,
+  };
+  const siteLd = {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    "@id": `${SITE_URL}/#website`,
+    name: SITE_NAME,
+    alternateName: "skopnix",
     url: SITE_URL,
     description: SITE_TAGLINE,
-    logo: `${SITE_URL}/icon.svg`,
+    inLanguage: "en",
+    publisher: { "@id": `${SITE_URL}/#organization` },
   };
 
   return (
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLdSafe(orgLd) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLdSafe(siteLd) }} />
       <SiteHeader />
       <main id="main">
         {/* ---- hero: the ask, over the globe ---- */}

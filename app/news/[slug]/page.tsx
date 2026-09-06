@@ -18,7 +18,7 @@ import { extractIocs } from "@/lib/ioc";
 import { detectActors, specificPivots } from "@/lib/actors";
 import { outletCode, outletHost } from "@/lib/outlets";
 import { cveBadges } from "@/lib/cveintel";
-import { storyUrl } from "@/lib/site";
+import { SITE_NAME, SITE_URL, storyUrl } from "@/lib/site";
 
 export const revalidate = 86400; // a published dispatch never changes; this was 180s,
 // i.e. up to 480 regenerations/day across every article — the top ISR-write burner.
@@ -107,8 +107,8 @@ export default async function StoryPage({ params }: { params: Promise<Params> })
     datePublished: story.publishedAt,
     dateModified: story.publishedAt,
     inLanguage: "en",
-    author: { "@type": "Organization", name: "Hackxana" },
-    publisher: { "@type": "Organization", name: "skopnix" },
+    author: { "@type": "Organization", name: SITE_NAME, url: SITE_URL },
+    publisher: { "@type": "Organization", name: SITE_NAME, url: SITE_URL, logo: { "@type": "ImageObject", url: `${SITE_URL}/icon-512.png` } },
     mainEntityOfPage: url,
     ...(story.summaryEn ? { description: story.summaryEn.slice(0, 200) } : {}),
     ...(story.cveIds.length

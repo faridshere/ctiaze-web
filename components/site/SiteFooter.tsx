@@ -47,8 +47,12 @@ export function SiteFooter() {
             </span>
           </div>
           <p className="mt-4 max-w-xs text-[14px] leading-relaxed text-ink-secondary">{SITE_TAGLINE}</p>
+          {/* Global first: the standalone regional line read as "this is a
+              Caucasus site". The sensor coverage is real and stays as the
+              differentiator it is, but it qualifies the global claim rather
+              than replacing it. */}
           <p className="mt-3 font-mono text-[11px] uppercase tracking-[0.14em] text-ink-muted">
-            sensor-backed across the Caucasus
+            worldwide coverage · sensor-backed in the Caucasus
           </p>
         </div>
         <DotList items={PAGES} label="Pages" />
