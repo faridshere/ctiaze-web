@@ -1,4 +1,4 @@
-import { urgencyHeader, exposureLine, storyActions } from "@/lib/storysignal";
+import { urgencyHeader, exposureLine, storyActions, signalExplainer } from "@/lib/storysignal";
 import type { Story } from "@/lib/types";
 
 // Web parity with the Telegram post: the same deterministic urgency, exposure and
@@ -10,6 +10,7 @@ export function StorySignals({ story }: { story: Story }) {
   const urgency = urgencyHeader(story, "en");
   const exposure = exposureLine(story, "en");
   const actions = storyActions(story, "en");
+  const explainer = signalExplainer(story);
   if (!urgency && !exposure && actions.length === 0) return null;
 
   return (
@@ -36,6 +37,9 @@ export function StorySignals({ story }: { story: Story }) {
           </span>
           <span className="font-mono text-[12.5px] leading-snug">{exposure}</span>
         </div>
+      )}
+      {explainer && (
+        <p className="text-[12px] leading-relaxed text-ink-muted">{explainer}</p>
       )}
       {actions.length > 0 && (
         <div className="rounded-[var(--radius-panel)] border border-hairline bg-surface-raised/40 px-4 py-3">

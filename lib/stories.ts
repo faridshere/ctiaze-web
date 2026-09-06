@@ -2,7 +2,7 @@ import { cache } from "react";
 import type { Filter } from "mongodb";
 import { getDb } from "./db";
 import { toStory, type Story, type StoryDoc } from "./types";
-import { storyIdKey } from "./slug";
+import { slugify, storyIdKey } from "./slug";
 import { completeSentences } from "./format";
 import { storyUrl } from "./site";
 
@@ -63,8 +63,35 @@ export const getStoryBySlug = cache(async (slug: string): Promise<Story | null> 
     ...PUBLISHED_FILTER,
     _id: { $regex: `^(cve:|url:|digest:|spike:)${escaped}` },
   };
-  const doc = await col.findOne(filter);
-  return doc ? toStory(doc) : null;
+
+  // A 12-char key is a PREFIX, not an identity: a CVE id is 14+ chars, so
+  // "CVE-2026-202" matches both CVE-2026-20200 and CVE-2026-20212. findOne()
+  // returned whichever Mongo reached first, so five permalinks served a
+  // different vulnerability than the URL named — fatal in a product whose whole
+  // claim is "grounded to source". Collect every candidate and pick the one the
+  // slug actually names; the full CVE lives in the title tail, so the regenerated
+  // slug disambiguates exactly.
+  const docs = await col.find(filter).limit(25).toArray();
+  if (docs.length === 0) return null;
+  if (docs.length === 1) return toStory(docs[0]);
+
+  const exact = docs.find(
+    (d) =>
+      slugify(d._id, d.title || d.az_title || "news") === slug ||
+      // pre-2026-09-07 permalinks were built from the Azerbaijani title
+      slugify(d._id, d.az_title || d.title || "news") === slug
+  );
+  if (exact) return toStory(exact);
+
+  // No exact match (a hand-typed or stale tail): choose deterministically by the
+  // longest shared prefix rather than letting Mongo's ordering decide.
+  const score = (d: StoryDoc) => {
+    const cand = slugify(d._id, d.title || d.az_title || "news");
+    let i = 0;
+    while (i < cand.length && i < slug.length && cand[i] === slug[i]) i++;
+    return i;
+  };
+  return toStory([...docs].sort((a, b) => score(b) - score(a))[0]);
 });
 
 export async function getStats() {

@@ -58,6 +58,15 @@ export type Story = {
   azExposure: { product: string; count: number; globalCount: number | null; asOf: string; asOfIso: string; globalAsOfIso: string } | null;
 };
 
+// Mirrors cti/store.py `_SEV_RANK` / `_RANK_SEV`. 0 means "no CVE severity data
+// for this story", which is honest as null — not "low".
+const RANK_SEVERITY: Record<number, Story["severity"]> = {
+  1: "low",
+  2: "medium",
+  3: "high",
+  4: "critical",
+};
+
 export function toStory(doc: StoryDoc): Story {
   const publishedAt = doc.published_at
     ? new Date(doc.published_at).toISOString()
@@ -84,7 +93,11 @@ export function toStory(doc: StoryDoc): Story {
     category: doc.ai_category || "other",
     score: doc.ai_score ?? 0,
     kev: Boolean(doc.kev),
-    severity: doc.severity ?? null,
+    // The pipeline never writes a `severity` string — it stores sev_rank (0-4)
+    // and reconstructs the label on read (cti/store.py _RANK_SEV). Reading
+    // doc.severity therefore yielded null on all 434 stories while the JSON
+    // feed advertised the field. Derive it from the rank the same way.
+    severity: RANK_SEVERITY[doc.sev_rank ?? 0] ?? null,
     region: Boolean(doc.ai_region),
     cveIds: doc.cve_ids ?? [],
     publishedAt,

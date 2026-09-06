@@ -63,9 +63,27 @@ export function urgencyHeader(s: Story, locale: Locale): Urgency | null {
   return null;
 }
 
-// A compact EPSS chip for the feed/story, only when the score is actually alarming.
+// A compact EPSS chip, only when the score is actually alarming.
+//
+// EPSS and KEV answer different questions and routinely disagree: EPSS PREDICTS
+// the probability of exploitation in the next 30 days, KEV RECORDS exploitation
+// that has already been observed. Showing "EPSS 2%" beside a KEV badge reads to a
+// non-specialist as "2% risk" on a vulnerability that is being exploited right
+// now — the opposite of the truth. When KEV is set it is the stronger, observed
+// signal, so the prediction is suppressed rather than shown alongside it.
 export function epssBadge(s: Story): string | null {
+  if (s.kev) return null;
   return s.epss !== null && s.epss >= EPSS_HIGH ? `EPSS ${Math.round(s.epss * 100)}%` : null;
+}
+
+// Plain-language gloss for the signals, so a reader who does not work in vuln
+// management can still act. Rendered as a footnote under the signal block.
+export function signalExplainer(s: Story): string | null {
+  if (s.kev)
+    return "CISA KEV means this flaw has been seen exploited in real attacks — not predicted, observed. Treat it as urgent regardless of its score.";
+  if (s.epss !== null && s.epss >= EPSS_HIGH)
+    return `EPSS estimates the chance this flaw is exploited somewhere in the next 30 days (${Math.round(s.epss * 100)}%). It is a forecast, not a report of an attack.`;
+  return null;
 }
 
 export function exposureLine(s: Story, locale: Locale): string | null {

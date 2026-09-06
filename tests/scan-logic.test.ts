@@ -112,3 +112,22 @@ test("old Azerbaijani slugs still resolve to the same story id", () => {
   const newSlug = slugify(id, "Attackers Hijack MikroTik Routers");
   assert.equal(storyIdKey(oldSlug), storyIdKey(newSlug));
 });
+
+// --- permalink collisions ----------------------------------------------------
+// The 12-char id key is a PREFIX, not an identity. A CVE id is 14+ chars, so
+// "CVE-2026-202" prefix-matches both CVE-2026-20200 and CVE-2026-20212 — five
+// live permalinks served a different vulnerability than the URL named.
+test("two CVEs sharing a 12-char key produce different slugs", () => {
+  const a = slugify("cve:CVE-2026-20200", "A vulnerability in the web-based interface");
+  const b = slugify("cve:CVE-2026-20212", "Cisco Nexus 9000 RCE Flaw");
+  assert.notEqual(a, b, "slugs must differ or the pages are indistinguishable");
+  // both still reduce to the SAME ambiguous db key — which is exactly why
+  // getStoryBySlug must disambiguate on the full slug rather than findOne()
+  assert.equal(storyIdKey(a), storyIdKey(b));
+  assert.equal(storyIdKey(a), "CVE-2026-202");
+});
+
+test("the full CVE survives in the slug tail, so the slug can disambiguate", () => {
+  const s = slugify("cve:CVE-2026-20212", "CVE-2026-20212: Cisco Nexus 9000 RCE Flaw");
+  assert.match(s, /cve-2026-20212/, "the tail must carry the identifying detail");
+});

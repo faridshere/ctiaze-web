@@ -127,3 +127,24 @@ test("a complete body is left exactly as-is", async () => {
   const done = "A complete sentence that ends properly.";
   assert.equal(completeSentences(done), done);
 });
+
+// --- signal honesty ----------------------------------------------------------
+test("severity is derived from sev_rank, not the absent severity field", () => {
+  // the pipeline stores sev_rank only; reading doc.severity gave null on all 434
+  assert.equal(toStory(minimalDoc({ sev_rank: 4 })).severity, "critical");
+  assert.equal(toStory(minimalDoc({ sev_rank: 3 })).severity, "high");
+  assert.equal(toStory(minimalDoc({ sev_rank: 0 })).severity, null, "0 means unknown, not low");
+});
+
+test("EPSS is suppressed on a KEV story (they answer different questions)", async () => {
+  const { epssBadge, signalExplainer } = await import("../lib/storysignal.ts");
+  // EPSS predicts; KEV observes. "EPSS 2%" beside KEV reads as "2% risk" on
+  // something actively exploited — the opposite of the truth.
+  const kevStory = toStory(minimalDoc({ kev: true, epss: 0.02 }));
+  assert.equal(epssBadge(kevStory), null);
+  assert.match(signalExplainer(kevStory)!, /seen exploited in real attacks/);
+
+  const predicted = toStory(minimalDoc({ kev: false, epss: 0.83 }));
+  assert.equal(epssBadge(predicted), "EPSS 83%");
+  assert.match(signalExplainer(predicted)!, /forecast, not a report/);
+});
