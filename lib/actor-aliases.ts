@@ -15,11 +15,21 @@
 // you are not certain, leave it out.
 // ---------------------------------------------------------------------------
 export const ACTOR_ALIAS_CANONICAL: Record<string, string> = {
+  // APT29 — MITRE folded UNC2452/NOBELIUM/Dark Halo into G0016 in ATT&CK v10.
   unc2452: "apt29",
   nobelium: "apt29",
   "midnight-blizzard": "apt29",
   "dark-halo": "apt29",
   darkhalo: "apt29",
+  // UNC1549 — the same Iran-nexus cluster under four vendors' names: Mandiant
+  // calls it UNC1549, Check Point Nimbus Manticore, Microsoft Smoke Sandstorm,
+  // Proofpoint TA455, Kaspersky Mirage Kitten. Each of those pages was a
+  // soft-404 while /actors/unc1549 carried the real dossier.
+  "nimbus-manticore": "unc1549",
+  "mirage-kitten": "unc1549",
+  "smoke-sandstorm": "unc1549",
+  ta455: "unc1549",
+  bohrium: "unc1549",
 };
 
 /** The id this actor should be published under, or the id itself. */
