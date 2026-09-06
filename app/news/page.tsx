@@ -35,11 +35,17 @@ const getPage = unstable_cache(
       })),
     };
   },
-  // NOTE: this caches the COMPUTED slug, and Next's Data Cache survives a
-  // deployment — so a change to slugify() keeps serving the old URLs until this
-  // key changes. Bump the version whenever the shape or derivation of `rows`
-  // changes (v3 -> v4: permalinks moved from Azerbaijani to English).
-  ["news-archive-v4"],
+  // NOTE: this caches the COMPUTED rows, and Next's Data Cache survives a
+  // deployment — so neither a change to slugify() nor a retraction in the
+  // database shows up here until this key changes or the hour elapses. Bump the
+  // version to flush it (v3 -> v4: permalinks moved from Azerbaijani to English;
+  // v4 -> v5: four regional digests were retracted and had to leave the feed now,
+  // not in an hour).
+  //
+  // A retraction taking up to an hour to disappear is the wrong behaviour for a
+  // threat-intel site — the fix is a revalidate endpoint the pipeline can call
+  // (revalidateTag) rather than a version bump per incident.
+  ["news-archive-v5"],
   { revalidate: 3600 }
 );
 
