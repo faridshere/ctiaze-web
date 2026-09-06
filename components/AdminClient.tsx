@@ -55,11 +55,25 @@ export function AdminLogin() {
   );
 }
 
+// RFC 4180 quoting plus a formula guard. The validator now rejects addresses
+// that could act as spreadsheet formulas, but rows already in the database
+// predate it, so the export must be safe on its own: a cell beginning =, +, -,
+// @, tab or CR is executed by Excel, Sheets and LibreOffice on open, which turns
+// "copy as CSV" into code execution on the one machine that holds the whole list.
+function csvCell(value: string): string {
+  const risky = /^[=+\-@\t\r]/.test(value);
+  const cell = risky ? `'${value}` : value;
+  return `"${cell.replace(/"/g, '""')}"`;
+}
+
 export function AdminTools({ emails }: { emails: string[] }) {
   const [copied, setCopied] = useState<string | null>(null);
 
   async function copy(what: "list" | "csv") {
-    const text = what === "list" ? emails.join(", ") : "email\n" + emails.join("\n");
+    const text =
+      what === "list"
+        ? emails.join(", ")
+        : ["email", ...emails.map(csvCell)].join("\r\n"); // CRLF per RFC 4180
     try {
       await navigator.clipboard.writeText(text);
       setCopied(what);

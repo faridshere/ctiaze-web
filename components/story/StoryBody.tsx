@@ -1,5 +1,6 @@
 import { SpektrStrip } from "@/components/SpektrStrip";
 import type { Story } from "@/lib/types";
+import { completeSentences } from "@/lib/format";
 
 // The article text, preceded by the mini category-spectrum strip (real counts
 // from the recent-dispatch sample actually fetched) so a reader sees where this
@@ -19,7 +20,7 @@ export function StoryBody({ story, recent }: { story: Story; recent: Story[] }) 
       )}
       <div className="mt-6 h-px w-full bg-hairline" />
       <p className="mt-7 max-w-[42rem] whitespace-pre-line text-[length:var(--t-body)] leading-[1.75] text-ink-secondary">
-        {story.summaryEn || story.bodyAz}
+        {completeSentences(story.summaryEn || story.bodyAz)}
       </p>
     </>
   );

@@ -3,6 +3,7 @@ import type { Filter } from "mongodb";
 import { getDb } from "./db";
 import { toStory, type Story, type StoryDoc } from "./types";
 import { storyIdKey } from "./slug";
+import { completeSentences } from "./format";
 import { storyUrl } from "./site";
 
 // Only fully-published, non-retracted, real (non-stub) stories are ever shown —
@@ -108,7 +109,7 @@ export async function getFeed(limit = 100): Promise<FeedItem[]> {
     title_az: s.titleAz,
     title_en: s.titleEn,
     summary_az: s.bodyAz.slice(0, 300),
-    summary_en: s.summaryEn.slice(0, 300),
+    summary_en: completeSentences(s.summaryEn.slice(0, 300)),
     url: storyUrl(s.slug),
     source_url: s.sourceUrl,
     category: s.category,

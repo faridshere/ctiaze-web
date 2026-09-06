@@ -1,4 +1,5 @@
 import { getStories } from "@/lib/stories";
+import { completeSentences } from "@/lib/format";
 import { SITE_URL, storyUrl } from "@/lib/site";
 
 function esc(s: string): string {
@@ -64,7 +65,7 @@ export async function GET(req: Request) {
       // Fall back to AZ when an English field is missing (e.g. digest items) so a
       // single title-less doc can't 500 the whole feed via esc(undefined).
       const title = (en ? s.titleEn || s.titleAz : s.titleAz || s.titleEn) || ""; // en path uses titleEn (filtered above)
-      const body = ((en ? s.summaryEn : s.bodyAz) || "").slice(0, 500);
+      const body = completeSentences(((en ? s.summaryEn : s.bodyAz) || "").slice(0, 500));
       const cats = [s.category, ...(s.kev ? ["kev"] : []), ...(s.region ? ["azerbaijan"] : []), ...s.cveIds]
         .map((c) => `<category>${esc(c)}</category>`)
         .join("");

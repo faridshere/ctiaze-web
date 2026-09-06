@@ -105,3 +105,25 @@ test("an AZ-only count is published but labelled as a regional sample", async ()
   assert.match(line, /\(03 Sep\)$/);
   assert.ok(storyActions(azOnly, "en").some((l) => /regional sample/.test(l)));
 });
+
+// --- source-truncated bodies -------------------------------------------------
+// Feeds publish truncated descriptions, so a body can arrive ending mid-word.
+// Rendering that verbatim reads as a broken scraper; three reviewers named it
+// the worst thing about the content.
+test("a mid-word body is cut back to the last complete sentence", async () => {
+  const { completeSentences } = await import("../lib/format.ts");
+  const real =
+    "Attackers are exploiting MikroTik routers, according to CERT Polska's warning, " +
+    "published on September 5. Successful attacks date to at least September 2. " +
+    "The Hacker News's September 6 review of the warning found no victim count or";
+  const out = completeSentences(real);
+  assert.ok(out.endsWith("…"), "must signal that text was dropped");
+  assert.ok(!/victim count or/.test(out), "must not keep the dangling fragment");
+  assert.match(out, /at least September 2\./, "must keep the last whole sentence");
+});
+
+test("a complete body is left exactly as-is", async () => {
+  const { completeSentences } = await import("../lib/format.ts");
+  const done = "A complete sentence that ends properly.";
+  assert.equal(completeSentences(done), done);
+});

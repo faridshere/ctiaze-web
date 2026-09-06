@@ -79,3 +79,31 @@ export function formatDayDivider(iso: string, locale: "az" | "en" = "az"): strin
   const wd = (locale === "en" ? EN_WEEKDAYS : AZ_WEEKDAYS)[get("weekday")] ?? "";
   return `${get("day")} ${month} · ${wd}`;
 }
+
+// ---------------------------------------------------------------------------
+// Source feeds often publish a truncated description, so a story body can end
+// mid-word ("…found no victim count or"). Rendering that verbatim reads as a
+// broken scraper and undercuts the "grounded to source" claim — three separate
+// reviewers flagged it as the worst thing about the content.
+//
+// Cut back to the last COMPLETE sentence instead, and only mark it with an
+// ellipsis when something was actually dropped. Never adds words: the text
+// still says exactly what the source said, it just stops at a full stop.
+// ---------------------------------------------------------------------------
+const SENTENCE_END = /[.!?](?=["'”’)\]]*(\s|$))/g;
+
+export function completeSentences(text: string, opts: { min?: number } = {}): string {
+  const s = (text || "").trim();
+  if (!s) return "";
+  // Already ends cleanly (allowing a closing quote/bracket) — leave it alone.
+  if (/[.!?]["'”’)\]]*$/.test(s)) return s;
+
+  const min = opts.min ?? 80; // don't shrink a short body to almost nothing
+  let cut = -1;
+  for (const m of s.matchAll(SENTENCE_END)) cut = m.index + 1;
+
+  // No sentence break, or cutting would leave too little: keep the text and end
+  // it honestly with an ellipsis rather than pretending it is complete.
+  if (cut < min) return `${s.replace(/[\s,;:—–-]+$/, "")}…`;
+  return `${s.slice(0, cut)} …`;
+}
