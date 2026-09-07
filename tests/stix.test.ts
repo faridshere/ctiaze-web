@@ -110,6 +110,22 @@ test("aliases lead with the name, drop the ATT&CK group id, and drop case-only r
   assert.deepEqual(g.aliases, ["APT28", "Fancy Bear", "Sofacy"]);
 });
 
+test("the TLP marking is the one STIX 2.1 defines, not the newer TLP 2.0 name", () => {
+  // OASIS's own stix2-validator rejects TLP:CLEAR against this id: STIX 2.1's
+  // normative marking for unlimited distribution is still called TLP:WHITE,
+  // and a bundle that fails the reference validator is not "spec-valid".
+  const [m] = byType("marking-definition");
+  assert.deepEqual(m, {
+    type: "marking-definition",
+    spec_version: "2.1",
+    id: "marking-definition--613f2e26-407d-48c7-9eca-b8e91df99dc9",
+    created: "2017-01-20T00:00:00.000Z",
+    definition_type: "tlp",
+    name: "TLP:WHITE",
+    definition: { tlp: "white" },
+  });
+});
+
 test("attack-patterns reference ATT&CK and carry the tactics as kill-chain phases", () => {
   const patterns = byType("attack-pattern");
   for (const p of patterns) {

@@ -36,13 +36,15 @@ function ago(iso: string | null | undefined, now: number): string | null {
   return months < 12 ? `${months} mo ago` : `${Math.round(days / 365)} y ago`;
 }
 
-function Stat({ n, label }: { n: number; label: string }) {
+function Stat({ n, one, many }: { n: number; one: string; many: string }) {
   return (
     <div>
       <div className="font-display text-3xl font-semibold leading-none text-ink-primary tabular-nums">
         {n.toLocaleString("en-US")}
       </div>
-      <div className="mt-1.5 font-mono text-[11px] uppercase tracking-[0.14em] text-ink-muted">{label}</div>
+      <div className="mt-1.5 font-mono text-[11px] uppercase tracking-[0.14em] text-ink-muted">
+        {n === 1 ? one : many}
+      </div>
     </div>
   );
 }
@@ -77,12 +79,16 @@ export function ActorPulse({
 
         {live && (
           <div className="mt-6 grid grid-cols-3 gap-6 sm:max-w-md">
-            <Stat n={activity!.stories} label="dispatches" />
-            <Stat n={activity!.victims} label="victims" />
-            <Stat n={activity!.cves_new} label="new CVEs" />
+            <Stat n={activity!.stories} one="dispatch" many="dispatches" />
+            <Stat n={activity!.victims} one="victim" many="victims" />
+            <Stat n={activity!.cves_new} one="CVE seen" many="CVEs seen" />
           </div>
         )}
 
+        {/* "CVEs seen" counts every CVE that appeared in a dispatch naming this
+            actor. The list further down the page is the smaller, evidence-gated
+            set — the ones where a sentence actually ties the group to the flaw —
+            so the two numbers differ on purpose and neither means "exploits". */}
         {(countries.length > 0 || sectors.length > 0) && (
           <div className="mt-6 space-y-2 text-[13px] leading-relaxed text-ink-secondary">
             {countries.length > 0 && (
