@@ -38,7 +38,15 @@ const SECURITY_HEADERS = [
 const nextConfig: NextConfig = {
   poweredByHeader: false,
   async headers() {
-    return [{ source: "/:path*", headers: SECURITY_HEADERS }];
+    return [
+      { source: "/:path*", headers: SECURITY_HEADERS },
+      // Long-lived immutable share cards: they are pure functions of a slug and
+      // were being re-rendered per request (~0.9 s a piece, uncached).
+      {
+        source: "/:path*/opengraph-image",
+        headers: [{ key: "Cache-Control", value: "public, s-maxage=31536000, max-age=3600, immutable" }],
+      },
+    ];
   },
   // Two jobs here, in priority order:
   //

@@ -8,9 +8,8 @@ export const alt = "skopnix";
 export default async function Image({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
   const story = await getStoryBySlug(slug);
-  if (!story) {
-    return ogCard("skopnix", "Global cyber-threat intelligence", {});
-  }
+  // Same as the dossier card: an unknown slug is 404, not a free PNG render.
+  if (!story) return new Response("Not found", { status: 404 });
   return ogCard(story.titleEn || story.titleAz, "Global cyber-threat intelligence", {
     category: story.category,
     cve: story.cveIds[0],

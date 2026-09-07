@@ -32,8 +32,7 @@ export function AdminLogin() {
     <form onSubmit={submit} className="mx-auto mt-24 w-full max-w-sm">
       <h1 className="font-display text-2xl font-semibold text-ink-primary">Admin</h1>
       <p className="mt-2 text-[13px] leading-relaxed text-ink-secondary">
-        Enter the admin token. It&apos;s the <code className="font-mono text-ink-primary">ADMIN_TOKEN</code> you set
-        in the Vercel environment variables.
+        Sign in to continue.
       </p>
       <input
         type="password"

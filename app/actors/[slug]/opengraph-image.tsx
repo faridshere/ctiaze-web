@@ -10,9 +10,9 @@ export const alt = "skopnix — threat actor dossier";
 export default async function Image({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
   const a = await getActorById(slug);
-  if (!a) {
-    return ogCard("skopnix", "Global cyber-threat intelligence", {});
-  }
+  // An unknown slug used to render a generic card, so any of infinitely many
+  // made-up URLs cost a function invocation and a PNG render. Unknown is 404.
+  if (!a) return new Response("Not found", { status: 404 });
   const origin = originLabel(a);
   const alias = (a.aliases || []).filter((x) => x && x !== a.name)[0];
   const title = alias ? `${a.name} (${alias})` : a.name;
