@@ -1,7 +1,15 @@
 import { MongoClient } from "mongodb";
 
 // Server-only: never imported by a Client Component, so this connection string
-// (a dedicated READ-ONLY user — see README) never reaches the browser bundle.
+// never reaches the browser bundle.
+//
+// ⚠ 2026-09-07: a pentest found this variable holding the PIPELINE'S atlasAdmin
+// superuser — same user, same password as the engine's MONGO_URI — while the
+// comment here claimed the opposite. atlasAdmin can drop any collection in the
+// project, so any env disclosure on this PUBLIC website was cluster-wide.
+// Remediation is in docs/HANDOVER-2026-09-07.md and requires the Atlas console;
+// scripts/check-db-privileges.mjs asserts it, and the health check runs it, so
+// the claim in this comment is now verified rather than asserted.
 const uri = process.env.MONGO_URI_READONLY;
 
 if (!uri) {
