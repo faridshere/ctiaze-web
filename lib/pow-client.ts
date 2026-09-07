@@ -62,18 +62,31 @@ function leadingZeroBits(hex: string): number {
   return bits;
 }
 
-function solve(c: string, d: number): string {
-  for (let nonce = 0; ; nonce++) {
-    const n = nonce.toString(36);
-    if (leadingZeroBits(sha256hex(`${c}:${n}`)) >= d) return n;
-  }
+// Yields to the event loop every few thousand hashes. The loop used to run to
+// completion synchronously, which was tolerable at 16 bits and is not at 18 —
+// a mid-range phone would visibly freeze while solving.
+const SLICE = 4000;
+function solve(c: string, d: number, signal?: AbortSignal): Promise<string> {
+  return new Promise((resolve, reject) => {
+    let nonce = 0;
+    const step = () => {
+      if (signal?.aborted) return reject(new Error("aborted"));
+      const end = nonce + SLICE;
+      for (; nonce < end; nonce++) {
+        const n = nonce.toString(36);
+        if (leadingZeroBits(sha256hex(`${c}:${n}`)) >= d) return resolve(n);
+      }
+      setTimeout(step, 0);
+    };
+    step();
+  });
 }
 
 async function build(): Promise<string> {
   const r = await fetch("/api/challenge", { cache: "no-store" });
   if (!r.ok) throw new Error("challenge");
   const { c, t, s, d } = await r.json();
-  return `${c}.${t}.${s}.${solve(c, d)}`;
+  return `${c}.${t}.${s}.${await solve(c, d)}`;
 }
 
 let cached: string | null = null;

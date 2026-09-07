@@ -10,5 +10,6 @@ export async function GET(req: Request) {
   if (!rateLimit(`chal:${clientIp(req)}`, RATE.challenge.limit, RATE.challenge.windowMs)) {
     return jsonError(429, "Too many requests");
   }
-  return jsonOk(issueChallenge());
+  // Signed for THIS caller — see lib/pow.ts.
+  return jsonOk(issueChallenge(clientIp(req)));
 }

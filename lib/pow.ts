@@ -8,25 +8,44 @@ import { createHmac, randomBytes, createHash } from "crypto";
 // it (the token is pre-solved on mount); scripted bulk abuse pays CPU + a
 // round-trip per call, on top of the per-IP rate limit.
 //
-// SECRET is NOT a real secret — it ships in the server bundle. It only stops a
-// caller forging "this challenge came from us"; the actual cost is the work.
+// A pentest (2026-09-07) forged a valid token offline in 14 ms: the key was a
+// hardcoded constant and nothing bound a challenge to the caller, so a script
+// never had to call /api/challenge at all. Two changes since:
+//   * the key comes from POW_SECRET when set, so it can be rotated without a
+//     deploy of this file (the literal below is only a last-resort default);
+//   * a challenge is signed for ONE caller — the token minted for your IP is
+//     worthless from another, so a botnet pays the work per node instead of
+//     minting once and replaying everywhere.
+// Be honest about what this is: at any difficulty a browser can bear, native
+// code solves it cheaply. It raises the cost of casual scripting; the control
+// that actually bounds abuse is the per-IP rate limit in lib/ratelimit.ts.
 // Bumping the version string invalidates every outstanding challenge.
 // ---------------------------------------------------------------------------
-const SECRET = "skopnix.pow.v1";
-export const POW_DIFFICULTY = 16; // leading zero BITS the solution hash must have
+const SECRET = process.env.POW_SECRET || "skopnix.pow.v2";
+export const POW_DIFFICULTY = 18; // leading zero BITS the solution hash must have
 const TTL_MS = 120_000; // a solved challenge is accepted for ~2 minutes
 const SKEW_MS = 5_000; // tolerate a little clock skew into the future
 
 export type Challenge = { c: string; t: number; s: string; d: number };
 
-function sign(c: string, t: number): string {
-  return createHmac("sha256", SECRET).update(`${c}.${t}`).digest("hex").slice(0, 24);
+// Who a challenge was minted for. Coarse on purpose: the last octet of an IPv4
+// (and the last 80 bits of an IPv6) are dropped, so a phone that changes
+// address inside its carrier's block still submits successfully, while a token
+// stays useless to an unrelated network.
+function callerTag(ip: string): string {
+  const v4 = /^(\d{1,3}\.\d{1,3}\.\d{1,3})\.\d{1,3}$/.exec(ip);
+  const net = v4 ? v4[1] : ip.split(":").slice(0, 3).join(":");
+  return createHmac("sha256", SECRET).update(`net.${net}`).digest("hex").slice(0, 12);
 }
 
-export function issueChallenge(): Challenge {
+function sign(c: string, t: number, tag: string): string {
+  return createHmac("sha256", SECRET).update(`${c}.${t}.${tag}`).digest("hex").slice(0, 24);
+}
+
+export function issueChallenge(ip: string): Challenge {
   const c = randomBytes(12).toString("hex");
   const t = Date.now();
-  return { c, t, s: sign(c, t), d: POW_DIFFICULTY };
+  return { c, t, s: sign(c, t, callerTag(ip)), d: POW_DIFFICULTY };
 }
 
 function sha256hex(input: string): string {
@@ -57,7 +76,7 @@ function seenBefore(key: string): boolean {
 }
 
 // header format: `${c}.${t}.${s}.${nonce}`
-export function verifyPow(header: string | null | undefined): boolean {
+export function verifyPow(header: string | null | undefined, ip: string): boolean {
   if (!header) return false;
   const parts = header.split(".");
   if (parts.length !== 4) return false;
@@ -68,7 +87,7 @@ export function verifyPow(header: string | null | undefined): boolean {
   if (now - t > TTL_MS || t - now > SKEW_MS) return false; // fresh only
   if (!/^[0-9a-f]{24}$/.test(c) || !/^[0-9a-f]{24}$/.test(s)) return false;
   if (nonce.length > 32 || !/^[0-9a-z]+$/i.test(nonce)) return false;
-  if (sign(c, t) !== s) return false; // we issued this challenge
+  if (sign(c, t, callerTag(ip)) !== s) return false; // we issued this challenge, to this caller
   if (leadingZeroBits(sha256hex(`${c}:${nonce}`)) < POW_DIFFICULTY) return false; // work done
   if (seenBefore(`${c}:${nonce}`)) return false; // not replayed
   return true;

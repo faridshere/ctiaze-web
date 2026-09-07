@@ -23,9 +23,15 @@ export async function POST(req: Request) {
 
   // beacon with no body (or malformed JSON) is still a visit — fall back to defaults
   const body = (await readJsonBody<{ path?: unknown; ref?: unknown; src?: unknown }>(req)) ?? {};
-  const path = String(body.path ?? "/").slice(0, 200);
-  const ref = String(body.ref ?? "").slice(0, 200);
-  const src = String(body.src ?? "").slice(0, 40);
+  // The beacon is unauthenticated, so treat every field as attacker-supplied:
+  // this is the owner's only analytics dataset and anything shaped wrong is
+  // noise at best. Values that don't match are dropped, not stored raw.
+  const rawPath = String(body.path ?? "/").slice(0, 200);
+  const path = /^\/[\w\-./%?=&#]*$/.test(rawPath) ? rawPath : "/";
+  const rawRef = String(body.ref ?? "").slice(0, 200);
+  const ref = /^https?:\/\/[\w.-]+(?::\d+)?[\w\-./%?=&#]*$/.test(rawRef) ? rawRef : "";
+  const rawSrc = String(body.src ?? "").slice(0, 40);
+  const src = /^[\w-]{1,40}$/.test(rawSrc) ? rawSrc : "";
 
   try {
     const d = await db;

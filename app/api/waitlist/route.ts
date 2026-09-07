@@ -13,7 +13,7 @@ export async function POST(req: Request) {
   if (!rateLimit(`waitlist:${clientIp(req)}`, RATE.waitlist.limit, RATE.waitlist.windowMs)) {
     return jsonError(429, "Too many requests — wait a minute");
   }
-  if (!verifyPow(req.headers.get("x-pow"))) {
+  if (!verifyPow(req.headers.get("x-pow"), clientIp(req))) {
     return jsonError(403, "Couldn't verify the request — refresh and try again.");
   }
 

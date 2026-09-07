@@ -1053,7 +1053,7 @@ export async function GET(req: Request) {
   if (!rateLimit(`scan:${clientIp(req)}`, 12, 60_000)) {
     return NextResponse.json({ error: "Too many requests — wait a minute" }, { status: 429 });
   }
-  if (!verifyPow(req.headers.get("x-pow"))) {
+  if (!verifyPow(req.headers.get("x-pow"), clientIp(req))) {
     return NextResponse.json({ error: "Couldn't verify the request — refresh the page and try again." }, { status: 403 });
   }
   const target = (new URL(req.url).searchParams.get("q") || "").trim();

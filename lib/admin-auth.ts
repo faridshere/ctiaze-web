@@ -9,24 +9,30 @@ import { cookies } from "next/headers";
 //     history, and access logs) — it is posted once and exchanged for a cookie.
 //   * the cookie stores an HMAC derived from the token, not the token itself.
 //   * comparisons are timing-safe.
+//   * the cookie VALUE expires, not just the Set-Cookie maxAge. It used to be a
+//     constant HMAC with no timestamp (found in the 2026-09-07 pentest), so a
+//     copy taken from a log or a backup stayed valid for as long as the token
+//     did and could not be revoked short of rotating ADMIN_TOKEN.
 export const ADMIN_COOKIE = "skx_admin";
-const SESSION_MESSAGE = "skopnix-admin-session-v1";
+const SESSION_MESSAGE = "skopnix-admin-session-v2";
+const SESSION_TTL_MS = 7 * 86_400_000; // matches the Set-Cookie maxAge
 
 function secret(): string | null {
   const t = process.env.ADMIN_TOKEN;
   return t && t.length >= 16 ? t : null;
 }
 
-/** The value we expect to find in the session cookie for the current token. */
-function sessionValue(token: string): string {
-  return createHmac("sha256", token).update(SESSION_MESSAGE).digest("hex");
+/** The signature half of a session cookie issued at `iat` for `token`. */
+function sessionSig(token: string, iat: number): string {
+  return createHmac("sha256", token).update(`${SESSION_MESSAGE}.${iat}`).digest("hex");
 }
 
+// Compares fixed-length digests of both sides, so an early length return can't
+// leak how long ADMIN_TOKEN is.
 function safeEqual(a: string, b: string): boolean {
-  const ab = Buffer.from(a);
-  const bb = Buffer.from(b);
-  if (ab.length !== bb.length) return false;
-  return timingSafeEqual(ab, bb);
+  const ha = createHmac("sha256", SESSION_MESSAGE).update(a).digest();
+  const hb = createHmac("sha256", SESSION_MESSAGE).update(b).digest();
+  return timingSafeEqual(ha, hb);
 }
 
 /** True when the supplied token matches ADMIN_TOKEN. */
@@ -38,7 +44,9 @@ export function tokenIsValid(candidate: string): boolean {
 
 export function newSessionValue(): string | null {
   const s = secret();
-  return s ? sessionValue(s) : null;
+  if (!s) return null;
+  const iat = Date.now();
+  return `${iat}.${sessionSig(s, iat)}`;
 }
 
 /** True when the current request carries a valid admin session cookie. */
@@ -48,7 +56,12 @@ export async function isAdmin(): Promise<boolean> {
   const jar = await cookies();
   const got = jar.get(ADMIN_COOKIE)?.value;
   if (!got) return false;
-  return safeEqual(got, sessionValue(s));
+  const [iatStr, sig] = got.split(".");
+  const iat = Number(iatStr);
+  if (!Number.isFinite(iat) || !sig) return false;
+  const age = Date.now() - iat;
+  if (age < 0 || age > SESSION_TTL_MS) return false; // the VALUE expires, not just the cookie
+  return safeEqual(sig, sessionSig(s, iat));
 }
 
 /** Whether an ADMIN_TOKEN is configured at all — used to explain the locked state. */

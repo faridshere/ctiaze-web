@@ -7,7 +7,8 @@ import { Button } from "@/components/site/Button";
 
 // The email form. Headings belong to the caller (hero, CtaBand); this is the
 // input, the button, the shield badge and the two end states. Captcha-gated by
-// the same invisible proof-of-work as the API, so the list can't be scripted.
+// the same invisible proof-of-work as the API. That raises the cost of casual
+// scripting; it does not make the list unscriptable (see lib/pow.ts).
 // `source` tags where the signup came from (read back in /admin).
 type State = "idle" | "loading" | "error";
 
