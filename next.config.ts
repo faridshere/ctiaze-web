@@ -101,6 +101,7 @@ const nextConfig: NextConfig = {
       // retire them when the campaign moves on.
       { source: "/turtle", destination: "/actors/sea-turtle", permanent: false },
       { source: "/seaturtle", destination: "/actors/sea-turtle", permanent: false },
+      { source: "/turla", destination: "/actors/turla", permanent: false },
       // the old APT atlas lives inside the adversaries section now
       { source: "/apt", destination: "/actors", permanent: true },
       { source: "/apt/:path*", destination: "/actors", permanent: true },
