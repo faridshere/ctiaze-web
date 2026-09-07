@@ -47,6 +47,16 @@ const EXAMPLES: { label: string; cmd: string; note: string }[] = [
     cmd: `curl "${SITE_URL}/api/v1/actors/turla"`,
     note: "Techniques, tools, targets, the dispatches that named it, and — once the engine has computed them — the CVEs it uses and recent reports. Alias ids 308 to the canonical actor.",
   },
+  {
+    label: "A dossier as an ATT&CK Navigator layer",
+    cmd: `curl "${SITE_URL}/actors/apt28/navigator.json"`,
+    note: "Layer format 4.5, Enterprise — open it at mitre-attack.github.io/attack-navigator and diff it against your own coverage. 404 when we hold no techniques for the group: an empty layer loads cleanly and reads as a group that does nothing.",
+  },
+  {
+    label: "A dossier as a STIX 2.1 bundle",
+    cmd: `curl "${SITE_URL}/actors/apt28/stix.json"`,
+    note: "intrusion-set, one attack-pattern per technique, malware, tools, and the uses relationships between them — the shape a TIP ingests without anyone writing a parser for us. Alias ids 308 to the canonical actor.",
+  },
 ];
 
 const FIELDS: { name: string; type: string; note: string }[] = [
@@ -132,6 +142,12 @@ export default function ApiDocsPage() {
             <li>
               <strong className="text-ink-primary">exposure is a scan count.</strong> It measures hosts reachable on the
               internet on the date given — not hosts that are vulnerable, and not an inventory.
+            </li>
+            <li>
+              <strong className="text-ink-primary">The exports carry no scoring of ours.</strong> Every technique in a
+              Navigator layer scores the same, because we hold no per-technique confidence or frequency and a graded
+              heatmap would be invented. STIX object ids are deterministic (UUIDv5), so re-fetching a dossier diffs
+              against the last one instead of looking like a fresh set of objects.
             </li>
             <li>
               <strong className="text-ink-primary">We are not the source.</strong> Every item links to the original

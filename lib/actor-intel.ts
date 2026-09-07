@@ -33,7 +33,7 @@ async function readActorPack(id: string): Promise<ActorPack | null> {
     .map((s) => ({ id: s.id, name: s.name, score: Number(s.score) || 0 }));
   return { intel, similar, techniqueCount: Number((doc as { technique_count?: number }).technique_count ?? 0) };
 }
-export const getActorPack = unstable_cache(readActorPack, ["actor-pack-v1"], { revalidate: DAY });
+export const getActorPack = unstable_cache(readActorPack, ["actor-pack-v2"], { revalidate: DAY });
 
 // Every technique any roster actor uses (360), with the engine's one-line note
 // and how many roster actors the graph says use it — one blob, daily.

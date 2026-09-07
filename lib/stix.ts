@@ -89,21 +89,29 @@ const CREATED = "2026-09-07T00:00:00.000Z";
 
 const IDENTITY_ID = stixId("identity", SITE_NAME);
 
-// TLP:CLEAR as defined in STIX 2.1 §7.2.1.4 — fixed id, fixed created, and no
-// `modified` property (marking-definitions do not have one). Shipped inside
-// the bundle rather than referenced by id alone so the bundle stays valid on
-// its own in a TIP that has not seen the predefined markings.
-const TLP_CLEAR: StixObject = {
+// The unlimited-distribution marking, byte-for-byte as STIX 2.1 §7.2.1.4
+// defines it: fixed id, fixed created, and no `modified` property (marking
+// definitions do not have one). Shipped inside the bundle rather than
+// referenced by id alone so it stays valid on its own in a TIP that has not
+// seen the predefined markings.
+//
+// It says TLP:WHITE, not TLP:CLEAR. FIRST renamed WHITE to CLEAR in TLP 2.0,
+// but STIX 2.1's normative marking is still TLP:WHITE against that same id —
+// emitting the newer name is what the OASIS validator rejects (checked:
+// stix2-validator flags "TLP marking definitions must match one of those
+// defined in the STIX specification"). Same id, same meaning, and the name
+// the consumers' schemas actually accept.
+const TLP_WHITE: StixObject = {
   type: "marking-definition",
   spec_version: "2.1",
   id: "marking-definition--613f2e26-407d-48c7-9eca-b8e91df99dc9",
-  created: "2022-10-01T00:00:00.000Z",
+  created: "2017-01-20T00:00:00.000Z",
   definition_type: "tlp",
-  name: "TLP:CLEAR",
-  definition: { tlp: "clear" },
+  name: "TLP:WHITE",
+  definition: { tlp: "white" },
 };
 
-const MARKINGS = [TLP_CLEAR.id];
+const MARKINGS = [TLP_WHITE.id];
 
 const iso = (d: Date | string | null | undefined): string | null => {
   if (!d) return null;
@@ -214,7 +222,7 @@ export function stixBundle(a: ThreatActor): StixBundle {
     external_references: actorExternalRefs(a, dossier),
   };
 
-  const objects: StixObject[] = [TLP_CLEAR, identity, intrusionSet];
+  const objects: StixObject[] = [TLP_WHITE, identity, intrusionSet];
   const relationships: StixObject[] = [];
 
   const link = (target: StixObject) => {

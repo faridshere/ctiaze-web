@@ -1,4 +1,5 @@
 import { absoluteUrl } from "./site";
+import { TACTICS } from "./attack";
 import type { ThreatActor } from "./threatactors";
 
 // ---------------------------------------------------------------------------
@@ -13,7 +14,10 @@ import type { ThreatActor } from "./threatactors";
 //
 // Only the type-level import from ./threatactors is used here: that module
 // imports ./db, which throws at import time without MONGO_URI_READONLY, and
-// this file must stay importable (and testable) without a database.
+// this file must stay importable (and testable) without a database. The
+// tactic list comes from ./attack rather than @/lib/attack for the same
+// reason the rest of lib/ uses relative specifiers: the test runner's resolve
+// hook (tests/ts-ext-loader.mjs) has no tsconfig path aliases.
 // ---------------------------------------------------------------------------
 
 // The 15 Enterprise tactic shortnames, verified against MITRE's own TAXII
@@ -21,25 +25,14 @@ import type { ThreatActor } from "./threatactors";
 // v19 retired Defense Evasion: TA0005 was renamed Stealth and the tampering
 // half split off as Defense Impairment (TA0112), so a list written before
 // April 2026 places two tactics' worth of techniques nowhere at all.
-export const NAVIGATOR_TACTICS: readonly string[] = [
-  "reconnaissance",
-  "resource-development",
-  "initial-access",
-  "execution",
-  "persistence",
-  "privilege-escalation",
-  "stealth",
-  "defense-impairment",
-  "credential-access",
-  "discovery",
-  "lateral-movement",
-  "collection",
-  "command-and-control",
-  "exfiltration",
-  "impact",
-];
+//
+// It is re-exported from ./attack rather than declared twice, so the kill
+// chain, the masthead's coverage count and this layer can never disagree about
+// what a tactic is — they did until 2026-09-07, when the dossier folded two
+// live tactics into one ATT&CK had retired.
+export const NAVIGATOR_TACTICS: readonly string[] = TACTICS;
 
-const TACTIC_SET = new Set(NAVIGATOR_TACTICS);
+const TACTIC_SET = new Set<string>(NAVIGATOR_TACTICS);
 
 /**
  * Our stored tactic as a Navigator tactic shorthand, or null when it is not

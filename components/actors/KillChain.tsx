@@ -1,13 +1,13 @@
 "use client";
 
-import { normTactic } from "@/lib/attack";
+import { normTactic, TACTIC_COUNT } from "@/lib/attack";
 
 import { useMemo, useState } from "react";
 import type { Ttp } from "@/lib/threatactors";
 import type { TechniqueNote, TtpProfile } from "@/lib/actor-intel";
 
-// The actor's ATT&CK techniques laid along the kill chain — fourteen tactics in
-// order, one column each, a chip per technique. Two interactions make it a tool
+// The actor's ATT&CK techniques laid along the kill chain — the fifteen live
+// Enterprise tactics in order, one column each, a chip per technique. Two interactions make it a tool
 // rather than a poster: hover/tap a chip for the plain-English note and how
 // many roster actors share it; pick a target country or sector and the chips
 // that sit in that profile's top techniques light up, the rest step back —
@@ -19,7 +19,8 @@ const ORDER: { key: string; label: string }[] = [
   { key: "execution", label: "Execution" },
   { key: "persistence", label: "Persistence" },
   { key: "privilege-escalation", label: "Priv. esc." },
-  { key: "defense-evasion", label: "Evasion" },
+  { key: "stealth", label: "Stealth" },
+  { key: "defense-impairment", label: "Def. impairment" },
   { key: "credential-access", label: "Credentials" },
   { key: "discovery", label: "Discovery" },
   { key: "lateral-movement", label: "Lateral" },
@@ -68,7 +69,7 @@ export function KillChain({
     <div>
       <div className="flex flex-wrap items-center justify-between gap-3">
         <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-ink-muted">
-          {techniques.length} techniques · {columns.length} of 14 tactics
+          {techniques.length} techniques · {columns.length} of {TACTIC_COUNT} tactics
           {profile && (
             <span className="text-ink-secondary">
               {" "}· {litCount} in the top techniques against {profile.label}

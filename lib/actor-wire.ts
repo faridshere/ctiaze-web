@@ -78,4 +78,4 @@ async function computeWireMentions(): Promise<WireMentions> {
   return { byActor, recent, generatedAt: new Date().toISOString() };
 }
 
-export const getWireMentions = unstable_cache(computeWireMentions, ["actor-wire-v4"], { revalidate: 3600 });
+export const getWireMentions = unstable_cache(computeWireMentions, ["actor-wire-v5"], { revalidate: 3600 });

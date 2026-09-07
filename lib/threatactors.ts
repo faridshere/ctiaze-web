@@ -121,7 +121,10 @@ export async function getActorById(id: string): Promise<ThreatActor | null> {
 }
 
 // Per-dossier shared cache (daily, like the page). Dates round-trip to strings.
-export const getActorByIdCached = unstable_cache(async (id: string) => getActorById(id), ["actor-by-id-v3"], {
+// Key bumped 2026-09-07: the weekly refresh raised APT28 from 16 techniques to
+// 93 (the old MITRE cap), and unstable_cache survives deployments — a version
+// key is the only way to make the site show data that already changed.
+export const getActorByIdCached = unstable_cache(async (id: string) => getActorById(id), ["actor-by-id-v4"], {
   revalidate: 86400,
 });
 
@@ -275,7 +278,7 @@ async function computeActorsPageData(): Promise<ActorsPageData> {
   };
 }
 
-export const getActorsPageData = unstable_cache(computeActorsPageData, ["actors-page-v3"], { revalidate: 3600 });
+export const getActorsPageData = unstable_cache(computeActorsPageData, ["actors-page-v4"], { revalidate: 3600 });
 
 // Every substantive actor slug for the sitemap, richest first, capped.
 export async function getActorIds(limit = 800): Promise<string[]> {
