@@ -22,6 +22,9 @@ export const revalidate = 300;
 // determine is null with the reason stated in the docs rather than guessed.
 // ---------------------------------------------------------------------------
 const MAX_LIMIT = 200;
+// How many stories are pulled before filtering. Bounded so one caller cannot ask
+// the read connection to walk the whole collection.
+const WINDOW = 500;
 
 type ApiItem = {
   id: string;
@@ -95,14 +98,28 @@ export async function GET(req: Request) {
   const wantKev = q.get("kev") === "1" || q.get("kev") === "true";
   const cve = (q.get("cve") ?? "").trim().toUpperCase();
   const category = (q.get("category") ?? "").trim().toLowerCase();
+  // Date.parse() accepts a lot of implementation-defined junk, so a string that
+  // violates the documented contract could still be accepted and then read
+  // differently on another runtime. Require the shape we actually document.
   const since = q.get("since");
+  const ISO = /^\d{4}-\d{2}-\d{2}(?:[T ]\d{2}:\d{2}(?::\d{2})?(?:\.\d+)?(?:Z|[+-]\d{2}:?\d{2})?)?$/;
   const sinceMs = since ? Date.parse(since) : NaN;
-  if (since && Number.isNaN(sinceMs)) {
-    return jsonError(400, "`since` must be an ISO 8601 date, e.g. 2026-09-01");
+  if (since && (!ISO.test(since) || Number.isNaN(sinceMs))) {
+    return jsonError(400, "`since` must be an ISO 8601 date, e.g. 2026-09-01 or 2026-09-01T12:00:00Z");
   }
 
   // Pull a wider window than `limit` so filters have something to bite on.
-  const stories = await getStories(500).catch(() => []);
+  //
+  // This used to be `.catch(() => [])`, which turned a database outage into a
+  // perfectly cheerful `200 {count: 0}`. A consumer then cannot tell "nothing
+  // matched" from "the feed is down", and a polling client would quietly treat
+  // an outage as an empty day. Fail loudly instead.
+  let stories: Story[];
+  try {
+    stories = await getStories(WINDOW);
+  } catch {
+    return jsonError(503, "Upstream feed unavailable — this is an error, not an empty result.");
+  }
   let items = stories;
   if (wantKev) items = items.filter((s) => s.kev);
   if (cve) items = items.filter((s) => s.cveIds.some((c) => c.toUpperCase() === cve));
@@ -132,7 +149,11 @@ export async function GET(req: Request) {
         version: 1,
         generated_at: new Date().toISOString(),
         count: page.length,
-        total_matching: items.length,
+        // Honest about its own scope: this is the number that matched INSIDE the
+        // window, not the number that exists. Reporting it as a total would be a
+        // lie for any `since` reaching further back than the window covers.
+        matched_in_window: items.length,
+        window: { size: WINDOW, stories_seen: stories.length, complete: stories.length < WINDOW },
         filters: { kev: wantKev, cve: cve || null, category: category || null, since: since || null, limit },
         items: page,
       },

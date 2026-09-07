@@ -30,7 +30,7 @@ const EXAMPLES: { label: string; cmd: string; note: string }[] = [
   {
     label: "Since a date, ransomware only",
     cmd: `curl "${SITE_URL}/api/v1/items?category=ransomware&since=2026-09-01&limit=100"`,
-    note: "since takes any ISO 8601 date. An unparseable date is a 400, not a silent empty list.",
+    note: "since takes an ISO 8601 date. A malformed one is a 400, not a silent empty list.",
   },
 ];
 
@@ -116,6 +116,16 @@ export default function ApiDocsPage() {
             <li>
               <strong className="text-ink-primary">We are not the source.</strong> Every item links to the original
               report. Cite that, not us.
+            </li>
+            <li>
+              <strong className="text-ink-primary">A failure is a 503, never an empty list.</strong> If the feed is
+              unavailable you get an error. A <code>200</code> with no items means nothing matched, and you can rely on
+              that difference.
+            </li>
+            <li>
+              <strong className="text-ink-primary">matched_in_window is not a total.</strong> Filters run over the most
+              recent {"{"}window.size{"}"} stories. <code>window.complete</code> tells you whether that window covered
+              the whole archive, so a far-back <code>since</code> cannot quietly look like &ldquo;no results&rdquo;.
             </li>
           </ul>
         </section>
