@@ -8,15 +8,24 @@ import type { ActorCve } from "@/lib/threatactors";
 // again: a story can name a group and a flaw without the group having used the
 // flaw. Calling that "exploits" would be the single easiest way for this site
 // to start publishing attribution it cannot support, so it does not.
-export function ActorCves({ cves, actorName }: { cves: ActorCve[]; actorName: string }) {
-  if (cves.length === 0) return null;
+export function ActorCves({ cves, actorName }: { cves: ActorCve[] | null | undefined; actorName: string }) {
+  const all = cves ?? [];
+  if (all.length === 0) return null;
   // KEV first (observed exploitation), then by EPSS, then newest.
-  const rows = [...cves]
+  // null EPSS means UNKNOWN, not zero — the same rule the rest of the site
+  // states. Unknowns sort after every known score rather than below the lowest.
+  const byEpss = (x: ActorCve, y: ActorCve) => {
+    if (x.epss == null && y.epss == null) return 0;
+    if (x.epss == null) return 1;
+    if (y.epss == null) return -1;
+    return y.epss - x.epss;
+  };
+  const rows = [...all]
     .sort(
       (a, b) =>
         Number(!!b.kev) - Number(!!a.kev) ||
-        (b.epss ?? 0) - (a.epss ?? 0) ||
-        (b.date ?? "").localeCompare(a.date ?? "")
+        byEpss(a, b) ||
+        String(b.date ?? "").localeCompare(String(a.date ?? ""))
     )
     .slice(0, 24);
   const kevCount = rows.filter((r) => r.kev).length;

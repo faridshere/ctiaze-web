@@ -59,7 +59,7 @@ export function ActorPulse({
   /** Fixed once per render so an hourly-cached page cannot claim two "ago"s. */
   renderedAt: number;
 }) {
-  const recent = (changes ?? []).slice(0, 6);
+  const recent = (changes ?? []).filter((c) => c && c.kind && c.detail).slice(0, 6);
   const live = !!activity && (activity.stories > 0 || activity.victims > 0 || activity.cves_new > 0);
   if (!live && recent.length === 0) return null;
 
@@ -113,7 +113,10 @@ export function ActorPulse({
               {recent.map((c, i) => (
                 <li key={`${c.at}-${c.kind}-${i}`} className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
                   <span className="whitespace-nowrap font-mono text-[11px] tabular-nums text-ink-muted">
-                    {ago(c.at, renderedAt) ?? c.at.slice(0, 10)}
+                    {/* ago() already rejects a missing or unparseable date; the
+                        fallback must too, or a change written without `at`
+                        takes the whole dossier down. */}
+                    {ago(c.at, renderedAt) ?? (typeof c.at === "string" ? c.at.slice(0, 10) : "—")}
                   </span>
                   <span className="rounded-[var(--radius-chip)] border border-brand/40 px-1.5 py-px font-mono text-[10px] uppercase tracking-[0.12em] text-brand">
                     {KIND_LABEL[c.kind] ?? c.kind}

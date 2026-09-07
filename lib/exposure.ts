@@ -47,20 +47,25 @@ const entries = (w: Snapshot["watchlist_global"]): WatchEntry[] =>
 async function computeCensus(): Promise<ExposureCensus> {
   const db = await getDb();
   // Two sweeps: the newest for the figures, the one before it for movement.
+  // Deliberately NOT filtered on "watchlist_global.0": that only matches an
+  // array, and the field is stored as an object map keyed "0","1",…. It works
+  // by accident today and would return an empty census the day the shape moves.
+  // Fetch a few, then pick the newest that actually carries entries.
   const snaps = (await db
     .collection<Snapshot>("exposure_snapshots")
-    .find({ "watchlist_global.0": { $exists: true } } as never, {
+    .find({ watchlist_global: { $exists: true } } as never, {
       projection: { watchlist_global: 1, global_swept_at: 1, swept_at: 1 },
     })
     .sort({ global_swept_at: -1, swept_at: -1 })
-    .limit(2)
+    .limit(6)
     .toArray()) as Snapshot[];
 
-  const latest = snaps[0];
+  const usable = snaps.filter((s) => entries(s.watchlist_global).some((e) => typeof e.count === "number"));
+  const latest = usable[0];
   if (!latest) return { rows: [], measuredAt: null, previousAt: null };
 
   const prev = new Map<string, number>();
-  for (const e of entries(snaps[1]?.watchlist_global)) {
+  for (const e of entries(usable[1]?.watchlist_global)) {
     if (e.name && typeof e.count === "number") prev.set(e.name, e.count);
   }
 
@@ -73,7 +78,7 @@ async function computeCensus(): Promise<ExposureCensus> {
   return {
     rows,
     measuredAt: iso(latest.global_swept_at ?? latest.swept_at),
-    previousAt: iso(snaps[1]?.global_swept_at ?? snaps[1]?.swept_at),
+    previousAt: iso(usable[1]?.global_swept_at ?? usable[1]?.swept_at),
   };
 }
 
