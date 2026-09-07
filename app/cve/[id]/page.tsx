@@ -15,6 +15,7 @@ import { getActorsPageData } from "@/lib/threatactors";
 import { epssPct } from "@/lib/storysignal";
 import { formatStoryDate, jsonLdSafe } from "@/lib/format";
 import { absoluteUrl } from "@/lib/site";
+import { unstable_cache } from "next/cache";
 
 // ---------------------------------------------------------------------------
 // /cve/CVE-YYYY-NNNN — one page per CVE, which is how an analyst actually
@@ -36,7 +37,13 @@ function norm(id: string): string | null {
   return CVE_RE.test(u) ? u : null;
 }
 
-async function load(id: string) {
+// One cached read per CVE per hour. Without this the three keyless upstream
+// fetches (NVD, KEV, EPSS) made Next render the route on every request
+// (private, no-store) — ~1.4 s a hit and a needless NVD call each time.
+const load = (id: string) => loadCached(id);
+const loadCached = unstable_cache(loadUncached, ["cve-hub-v1"], { revalidate: 3600 });
+
+async function loadUncached(id: string) {
   const [nvd, kev, epss, stories, wire, roster] = await Promise.all([
     nvdLookup(id).catch(() => null),
     kevMeta().catch(() => new Map()),
