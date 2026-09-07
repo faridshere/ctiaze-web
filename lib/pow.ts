@@ -32,9 +32,10 @@ export type Challenge = { c: string; t: number; s: string; d: number };
 // (and the last 80 bits of an IPv6) are dropped, so a phone that changes
 // address inside its carrier's block still submits successfully, while a token
 // stays useless to an unrelated network.
-function callerTag(ip: string): string {
-  const v4 = /^(\d{1,3}\.\d{1,3}\.\d{1,3})\.\d{1,3}$/.exec(ip);
-  const net = v4 ? v4[1] : ip.split(":").slice(0, 3).join(":");
+function callerTag(ip: string | null | undefined): string {
+  const raw = (ip ?? "").trim() || "unknown";
+  const v4 = /^(\d{1,3}\.\d{1,3}\.\d{1,3})\.\d{1,3}$/.exec(raw);
+  const net = v4 ? v4[1] : raw.split(":").slice(0, 3).join(":");
   return createHmac("sha256", SECRET).update(`net.${net}`).digest("hex").slice(0, 12);
 }
 
@@ -42,7 +43,7 @@ function sign(c: string, t: number, tag: string): string {
   return createHmac("sha256", SECRET).update(`${c}.${t}.${tag}`).digest("hex").slice(0, 24);
 }
 
-export function issueChallenge(ip: string): Challenge {
+export function issueChallenge(ip: string | null | undefined): Challenge {
   const c = randomBytes(12).toString("hex");
   const t = Date.now();
   return { c, t, s: sign(c, t, callerTag(ip)), d: POW_DIFFICULTY };
@@ -76,7 +77,7 @@ function seenBefore(key: string): boolean {
 }
 
 // header format: `${c}.${t}.${s}.${nonce}`
-export function verifyPow(header: string | null | undefined, ip: string): boolean {
+export function verifyPow(header: string | null | undefined, ip: string | null | undefined): boolean {
   if (!header) return false;
   const parts = header.split(".");
   if (parts.length !== 4) return false;
