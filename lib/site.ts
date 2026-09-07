@@ -20,7 +20,10 @@ export const SAME_AS: string[] = [
 
 export const LINKS = {
   telegram: "https://t.me/skopnix",
-  email: "mailto:hello@skopnix.com",
+  // No mailbox is published: skopnix.com has no MX record, so mail to it cannot
+  // be delivered at all. Pointing people at an address that silently swallows
+  // their message is worse than giving them the channel that works.
+
   rss: "/rss.xml",
   jsonFeed: "/feed.json",
   llms: "/llms.txt",

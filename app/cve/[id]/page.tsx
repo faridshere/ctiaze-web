@@ -261,9 +261,7 @@ export default async function CvePage({ params }: { params: Promise<Params> }) {
               <li key={r}><a className="break-all text-ink-secondary hover:text-brand" href={r} target="_blank" rel="noopener noreferrer">{r.replace(/^https?:\/\//, "")} ↗</a></li>
             ))}
           </ul>
-          <p className="mt-6 max-w-[42rem] text-[13px] leading-relaxed text-ink-muted">
-            As data: <code className="text-ink-secondary">{absoluteUrl(`/api/v1/items?cve=${id}`)}</code>
-          </p>
+
         </section>
 
         <div className="mt-[var(--sp-section)]">

@@ -12,8 +12,10 @@ const PAGES = [
   { href: "/about", label: "About" },
   { href: "/privacy", label: "Privacy" },
 ];
+// The API is deliberately absent: it is what early access opens, so the site
+// does not hand out its documentation in the footer first. The feeds stay —
+// a wire without RSS is not a wire.
 const FEEDS = [
-  { href: "/api-docs", label: "API" },
   { href: LINKS.rss, label: "RSS" },
   { href: LINKS.jsonFeed, label: "JSON feed" },
   { href: LINKS.llms, label: "llms.txt" },
@@ -66,9 +68,6 @@ export function SiteFooter() {
         <div className="flex flex-wrap gap-2 md:flex-col md:items-end">
           <Button href={LINKS.telegram} variant="pill" size="sm" glyph="↗">
             Telegram
-          </Button>
-          <Button href={LINKS.email} variant="pill" size="sm" glyph="↗">
-            Email
           </Button>
         </div>
       </div>

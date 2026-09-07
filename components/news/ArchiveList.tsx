@@ -1,3 +1,4 @@
+import { LocalTime } from "@/components/site/LocalTime";
 import Link from "next/link";
 
 // One archive row — enough to scan a slug, its title and its priority flags
@@ -60,9 +61,12 @@ export function ArchiveList({ rows }: { rows: ArchiveRow[] }) {
                 href={`/news/${r.slug}`}
                 className="group grid grid-cols-[3.25rem_1fr_auto] items-baseline gap-4 border-b border-hairline py-3.5 transition-colors hover:bg-surface-hover sm:grid-cols-[3.75rem_1fr_auto]"
               >
-                <time dateTime={r.at} className="whitespace-nowrap font-mono text-[11px] tabular-nums text-ink-muted">
-                  {utcTime(r.at)}
-                </time>
+                <LocalTime
+                  iso={r.at}
+                  shape="time"
+                  className="whitespace-nowrap font-mono text-[11px] tabular-nums text-ink-muted"
+                  fallback={utcTime(r.at)}
+                />
                 <span className="text-[15px] leading-snug text-ink-primary transition-colors group-hover:text-brand sm:text-[16px]">
                   {r.title}
                 </span>

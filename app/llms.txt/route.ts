@@ -30,24 +30,16 @@ export async function GET() {
   origin, targeted sectors and observed MITRE ATT&CK techniques.
 - [Home](${SITE_URL}): the landing page and latest wire.
 
-## API (no key required)
-- [/api/v1/items](${SITE_URL}/api/v1/items): the wire as JSON. 60 req/min per IP, CORS open.
-  Filters: ?kev=1 (on CISA KEV), ?cve=CVE-2026-81578, ?category=ransomware,
-  ?since=2026-09-01 (ISO 8601), ?limit=1..200.
-- [Field documentation](${SITE_URL}/api-docs).
-
 ## Feeds
 - [feed.json](${SITE_URL}/feed.json): JSON Feed 1.1, last 100 stories. JSON Feed keys
   (id, url, title, content_text, date_published, tags) plus a _skopnix object
-  carrying category, severity, kev, cve_ids and source_url. For the full field set
-  use /api/v1/items.
+  carrying category, severity, kev, cve_ids and source_url.
 - [RSS](${SITE_URL}/rss.xml): RSS 2.0, English by default. Filters: ?kev=1,
   ?cat=ransomware, ?region=1, ?lang=az.
 
-## Item fields (/api/v1/items)
-id, url, source_url, title_en, title_az, summary_en, summary_az, truncated,
-category, severity, cvss, epss, kev, cve_ids, region_relevant, published_at,
-exposure {product, worldwide, measured_at}, also_reported_by.
+## Item fields (the feed.json _skopnix object)
+category, severity, cvss, epss, kev, cve_ids, source_url. A fuller API — every
+field, filters, and the adversary endpoints — opens with early access.
 
 ## How to read the signals
 - kev is an OBSERVATION — CISA has confirmed exploitation in the wild.

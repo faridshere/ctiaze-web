@@ -36,14 +36,14 @@ const SECTIONS: { h: string; p: string[] }[] = [
   {
     h: "Who can see it",
     p: [
-      "One person: the author of this site. Data sits in a MongoDB Atlas database and the site runs on Vercel; both can technically access what they host, as any hosting provider can.",
+      "One person: the author of this site. It is held by third-party hosting and database providers acting on our behalf, which can technically access what they host, as any provider can. They are not permitted to use it for anything of their own.",
       "We will not hand data to anyone else except where the law actually requires it.",
     ],
   },
   {
     h: "Deleting it",
     p: [
-      "Email hello@skopnix.com and say so. Your address is removed from the signup list. No account to close, no form, no retention argument.",
+      "Message us on Telegram and say so. Your address is removed from the signup list. No account to close, no form, no retention argument.",
     ],
   },
   {
@@ -80,8 +80,8 @@ export default function PrivacyPage() {
           </div>
           <p className="mt-8 font-mono text-[12px] text-ink-muted">
             Questions:{" "}
-            <a href={LINKS.email} className="text-brand hover:underline">
-              hello@skopnix.com
+            <a href={LINKS.telegram} className="text-brand hover:underline" target="_blank" rel="noopener noreferrer">
+              t.me/skopnix ↗
             </a>
           </p>
         </section>

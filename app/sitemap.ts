@@ -19,7 +19,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     // These were missing entirely: the sitemap carried 434 story URLs and nothing
     // else, so /about, /actors and every actor dossier were invisible to search.
     { url: `${SITE_URL}/about`, lastModified: newest, changeFrequency: "monthly" as const, priority: 0.6 },
-    { url: `${SITE_URL}/api-docs`, lastModified: newest, changeFrequency: "monthly" as const, priority: 0.6 },
     { url: `${SITE_URL}/privacy`, lastModified: newest, changeFrequency: "yearly" as const, priority: 0.3 },
     { url: `${SITE_URL}/news`, lastModified: newest, changeFrequency: "daily" as const, priority: 0.8 },
     { url: `${SITE_URL}/actors`, lastModified: newest, changeFrequency: "weekly" as const, priority: 0.7 },

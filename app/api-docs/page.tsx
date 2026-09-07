@@ -14,6 +14,10 @@ export const metadata: Metadata = {
   title: "API",
   description: INTRO,
   alternates: { canonical: absoluteUrl("/api-docs") },
+  // Not advertised until early access opens: out of the sitemap, out of the
+  // footer, and out of search. The page still resolves for anyone holding the
+  // link, so nothing that already points here breaks.
+  robots: { index: false, follow: false },
 };
 
 const EXAMPLES: { label: string; cmd: string; note: string }[] = [

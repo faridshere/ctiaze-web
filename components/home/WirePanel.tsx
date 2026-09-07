@@ -1,3 +1,4 @@
+import { LocalTime } from "@/components/site/LocalTime";
 import Link from "next/link";
 import type { WireRow } from "@/lib/home-data";
 import { GlyphChip } from "@/components/GlyphChip";
@@ -52,9 +53,12 @@ export function WirePanel({ rows, total }: { rows: WireRow[]; total: number }) {
                   KEV
                 </span>
               )}
-              <time dateTime={r.at} className="shrink-0 font-mono text-[11px] tabular-nums text-ink-muted">
-                {hhmm(r.at)}
-              </time>
+              <LocalTime
+                iso={r.at}
+                shape="time"
+                className="shrink-0 font-mono text-[11px] tabular-nums text-ink-muted"
+                fallback={hhmm(r.at)}
+              />
             </Link>
           </li>
         ))}

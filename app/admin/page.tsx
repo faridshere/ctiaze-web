@@ -87,8 +87,7 @@ export default async function AdminPage() {
         <AdminLogin />
         {!adminConfigured() && (
           <p className="mx-auto mt-6 max-w-sm rounded-md border border-accent-warning/40 bg-accent-warning/[0.06] px-4 py-3 text-[13px] leading-relaxed text-ink-secondary">
-            No <code className="font-mono">ADMIN_TOKEN</code> is set in the environment, so nothing can sign in yet.
-            Add one in Vercel → Settings → Environment Variables (any long random string), then redeploy.
+            Not configured yet, so nothing can sign in.
           </p>
         )}
       </main>

@@ -1,3 +1,4 @@
+import { LocalTime } from "@/components/site/LocalTime";
 import Link from "next/link";
 import { Kicker } from "@/components/site/Kicker";
 import { Panel } from "@/components/site/Panel";
@@ -32,9 +33,12 @@ export function ActorWire({ mentions }: { mentions: WireMention[] }) {
                     KEV
                   </span>
                 )}
-                <time dateTime={m.at} className="shrink-0 font-mono text-[11px] tabular-nums text-ink-muted">
-                  {m.at.slice(0, 10)}
-                </time>
+<LocalTime
+                  iso={m.at}
+                  shape="date"
+                  className="shrink-0 font-mono text-[11px] tabular-nums text-ink-muted"
+                  fallback={m.at.slice(0, 10)}
+                />
               </Link>
             </li>
           ))}
