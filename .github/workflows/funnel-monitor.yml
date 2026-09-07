@@ -9,6 +9,13 @@ on:
     - cron: "41 5,17 * * *" # off the :00 mark; GitHub throttles busy slots hardest
   workflow_dispatch: {}
 
+
+# Least privilege. This repo is PUBLIC, so a fork PR can run this workflow;
+# it only ever needs to read the checkout. Declared after a 2026-09-07
+# pentest found no workflow in either repo scoped its token at all.
+permissions:
+  contents: read
+
 jobs:
   probe:
     runs-on: ubuntu-latest
