@@ -75,7 +75,8 @@ const nextConfig: NextConfig = {
     // Shelved product sections plus their legacy AZ-era aliases. ":path*"
     // matches the bare section and any depth beneath it.
     const shelved = [
-      "cve", "vendor", "sectors", "attacks", "glossary", "scan-me",
+      // (/cve came back on 2026-09-07 as the per-CVE hub — no longer shelved)
+      "vendor", "sectors", "attacks", "glossary", "scan-me",
       "ioc", "exposure", "situation", "stacknix", "developers", "pricing",
       "methodology", "radar", "hucum", "sektor", "lugat", "veziyyet",
     ].map((seg) => ({ source: `/${seg}/:path*`, destination: "/", permanent: false }));

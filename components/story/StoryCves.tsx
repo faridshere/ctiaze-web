@@ -1,7 +1,9 @@
+import Link from "next/link";
 import type { CveBadge } from "@/lib/cveintel";
 
-// The CVE detail list. /cve is shelved under app/_disabled, so each id links
-// straight out to NVD rather than to the site's own (currently dark) registry.
+// The CVE detail list. Each id opens the site's own hub for that CVE (every
+// dispatch, KEV, EPSS, CVSS, exposure, the actors that use it); NVD stays one
+// click further.
 export function StoryCves({ cveIds, badges }: { cveIds: string[]; badges: Map<string, CveBadge> }) {
   if (cveIds.length === 0) return null;
   return (
@@ -15,13 +17,19 @@ export function StoryCves({ cveIds, badges }: { cveIds: string[]; badges: Map<st
           const epssPct = b?.epss != null ? b.epss * 100 : null;
           return (
             <li key={cve} className="flex flex-wrap items-center gap-x-3 gap-y-1">
+              <Link
+                href={`/cve/${cve.toUpperCase()}`}
+                className="font-mono text-[length:var(--t-meta)] text-ink-primary transition-colors hover:text-brand"
+              >
+                {cve.toUpperCase()}
+              </Link>
               <a
                 href={`https://nvd.nist.gov/vuln/detail/${cve}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="font-mono text-[length:var(--t-meta)] text-ink-primary transition-colors hover:text-brand"
+                className="font-mono text-[length:var(--t-micro)] text-ink-muted transition-colors hover:text-brand"
               >
-                {cve} ↗
+                nvd ↗
               </a>
               {b?.kev && (
                 <span className="rounded-[var(--radius-chip)] bg-accent-critical px-1 py-px font-mono text-[length:var(--t-micro)] font-semibold uppercase text-surface">

@@ -36,6 +36,31 @@ export const getStories = cache(async (limit = 60): Promise<Story[]> => {
   return docs.map(toStory);
 });
 
+// The same newest-first read, but starting strictly before a timestamp. Lets an
+// API client page backwards through the archive instead of being stuck with
+// whatever the newest window happened to hold.
+export async function getStoriesBefore(before: Date, limit = 60): Promise<Story[]> {
+  const col = await items();
+  const docs = await col
+    .find({ ...PUBLISHED_FILTER, published_at: { $lt: before } })
+    .sort({ published_at: -1 })
+    .limit(limit)
+    .toArray();
+  return docs.map(toStory);
+}
+
+// Every published dispatch that names a CVE, newest first — the spine of the
+// /cve hub. Reads the indexed array field directly rather than scanning a window.
+export async function getStoriesForCve(cve: string, limit = 40): Promise<Story[]> {
+  const col = await items();
+  const docs = await col
+    .find({ ...PUBLISHED_FILTER, cve_ids: cve.toUpperCase() })
+    .sort({ published_at: -1 })
+    .limit(limit)
+    .toArray();
+  return docs.map(toStory);
+}
+
 // Paginated full archive (every published dispatch, newest first — including the
 // ctiaze.tech-era backlog, which lives in the same collection). Not cache()-
 // wrapped because the page varies; callers cache per-page with unstable_cache.

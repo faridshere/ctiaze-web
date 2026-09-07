@@ -23,6 +23,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${SITE_URL}/privacy`, lastModified: newest, changeFrequency: "yearly" as const, priority: 0.3 },
     { url: `${SITE_URL}/news`, lastModified: newest, changeFrequency: "daily" as const, priority: 0.8 },
     { url: `${SITE_URL}/actors`, lastModified: newest, changeFrequency: "weekly" as const, priority: 0.7 },
+    // One hub per CVE the wire has named recently — the pages analysts search for.
+    ...[...new Set(stories.flatMap((s) => s.cveIds.map((c) => c.toUpperCase())))].slice(0, 400).map((cve) => ({
+      url: `${SITE_URL}/cve/${cve}`,
+      lastModified: newest,
+      changeFrequency: "daily" as const,
+      priority: 0.6,
+    })),
     ...actorIds.map((id) => ({
       url: `${SITE_URL}/actors/${id}`,
       lastModified: newest,

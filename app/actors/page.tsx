@@ -26,6 +26,13 @@ export const metadata: Metadata = {
   alternates: { canonical: absoluteUrl("/actors") },
 };
 
+const esc = (s: string) => s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]!);
+function rosterHtml(rows: { id: string; name: string }[]): string {
+  return rows
+    .map((a) => `<li class="min-w-0"><a href="/actors/${encodeURIComponent(a.id)}" class="roster-link" title="${esc(a.name)}">${esc(a.name)}</a></li>`)
+    .join("");
+}
+
 export default async function ActorsPage() {
   const data = await getActorsPageData();
 
@@ -131,15 +138,13 @@ export default async function ActorsPage() {
                   <span className="font-normal normal-case tracking-normal text-ink-muted">{groups.get(L)!.length}</span>
                   <span aria-hidden className="text-ink-muted transition-transform group-open:rotate-90">→</span>
                 </summary>
-                <ul className="grid grid-cols-2 gap-x-4 gap-y-1.5 pb-5 sm:grid-cols-3 lg:grid-cols-4">
-                  {groups.get(L)!.map((a) => (
-                    <li key={a.id} className="min-w-0">
-                      <a href={`/actors/${a.id}`} className="roster-link" title={a.name}>
-                        {a.name}
-                      </a>
-                    </li>
-                  ))}
-                </ul>
+                {/* Pre-rendered as one string: as React elements the roster was
+                    serialised twice (HTML and the RSC payload) and /actors weighed
+                    1 MB. Names are escaped; ids are slugs the engine minted. */}
+                <ul
+                  className="grid grid-cols-2 gap-x-4 gap-y-1.5 pb-5 sm:grid-cols-3 lg:grid-cols-4"
+                  dangerouslySetInnerHTML={{ __html: rosterHtml(groups.get(L)!) }}
+                />
               </details>
             ))}
           </section>

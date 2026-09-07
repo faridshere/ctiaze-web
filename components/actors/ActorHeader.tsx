@@ -40,8 +40,10 @@ function isoDay(d: string | Date | null | undefined): string | null {
 // sigil when we don't.
 export function ActorHeader({ actor, mentions }: { actor: ThreatActor; mentions: WireMention[] }) {
   const origin = originLabel(actor);
-  // 50 is the engine's fill value when MISP states nothing; presenting it as
-  // "source-stated" put a fake number on APT28's masthead. Only a real value shows.
+  // MISP galaxy states a literal "50" on ~150 actors (APT1, APT28 …) — its
+  // unassessed midpoint, not an assessment. Rendering it as "source-stated
+  // confidence" put a meaningless number on APT28's masthead, so only values
+  // the source actually chose (25, 75, 100 …) are shown. Missing is already null.
   const confidence = actor.attribution_confidence != null && actor.attribution_confidence !== 50 ? actor.attribution_confidence : null;
   const live = mentions.length > 0 && RENDER_EPOCH - new Date(mentions[0].at).getTime() <= NINETY_DAYS_MS;
 

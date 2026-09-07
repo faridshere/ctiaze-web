@@ -32,6 +32,21 @@ const EXAMPLES: { label: string; cmd: string; note: string }[] = [
     cmd: `curl "${SITE_URL}/api/v1/items?category=ransomware&since=2026-09-01&limit=100"`,
     note: "since takes an ISO 8601 date. A malformed one is a 400, not a silent empty list.",
   },
+  {
+    label: "Page backwards through the archive",
+    cmd: `curl "${SITE_URL}/api/v1/items?before=2026-08-15T00:00:00Z&limit=100"`,
+    note: "Everything strictly older than `before`. Each response carries next_before — feed it back to keep walking.",
+  },
+  {
+    label: "The adversary roster",
+    cmd: `curl "${SITE_URL}/api/v1/actors?q=blizzard&type=nation-state"`,
+    note: "Every dossier as a lean row: id, aliases, origin, and how often our own wire named it in 90 days.",
+  },
+  {
+    label: "One dossier, as data",
+    cmd: `curl "${SITE_URL}/api/v1/actors/turla"`,
+    note: "Techniques, tools, targets, the dispatches that named it, and — once the engine has computed them — the CVEs it uses and recent reports. Alias ids 308 to the canonical actor.",
+  },
 ];
 
 const FIELDS: { name: string; type: string; note: string }[] = [
@@ -47,6 +62,9 @@ const FIELDS: { name: string; type: string; note: string }[] = [
   { name: "epss", type: "number | null", note: "0-1 probability of exploitation in the next 30 days. A FORECAST." },
   { name: "kev", type: "boolean", note: "On CISA KEV. An OBSERVATION of exploitation, and it outranks epss whenever the two disagree." },
   { name: "cve_ids", type: "string[]", note: "CVEs named in the source. Empty is common — most reporting carries none." },
+  { name: "cves", type: "{id, kev}[]", note: "The same CVEs with a per-CVE KEV flag from the catalogue we hold. Use this, not the item-level kev, to decide which CVE is exploited." },
+  { name: "kev_cves", type: "string[]", note: "Exactly which of cve_ids are on KEV. A roundup of 400 CVEs is kev:true because of the one or two listed here." },
+  { name: "roundup", type: "boolean", note: "true when the item names 20+ CVEs (Patch Tuesday lists). Treat its signals as a digest, not a verdict on any single CVE." },
   { name: "region_relevant", type: "boolean", note: "Flagged as Caspian/regional relevance." },
   { name: "published_at", type: "string", note: "ISO 8601, UTC." },
   { name: "exposure", type: "object | null", note: "{product, worldwide, measured_at} — a Shodan scan count, not an inventory, dated to the day it was measured." },
