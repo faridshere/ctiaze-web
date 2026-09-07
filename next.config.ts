@@ -95,6 +95,12 @@ const nextConfig: NextConfig = {
         destination: `/actors/${canonical}`,
         permanent: true,
       })),
+      // Short, typeable vanity paths for whatever the current LinkedIn dossier is.
+      // Nobody types a 30-character URL off a phone screenshot; "skopnix.com/turtle"
+      // is 18 characters and survives a crop. Point these at the real dossier and
+      // retire them when the campaign moves on.
+      { source: "/turtle", destination: "/actors/sea-turtle", permanent: false },
+      { source: "/seaturtle", destination: "/actors/sea-turtle", permanent: false },
       // the old APT atlas lives inside the adversaries section now
       { source: "/apt", destination: "/actors", permanent: true },
       { source: "/apt/:path*", destination: "/actors", permanent: true },
