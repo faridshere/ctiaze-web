@@ -352,12 +352,16 @@ html.motion-ok .spark-bar {
 }
 html.motion-ok [data-sc]:not([data-in]) .spark-bar { transform: scaleY(0); }
 
-/* Wire rows arrive one after another, like a feed catching up. */
+/* Wire rows arrive one after another, like a feed catching up.
+   The stagger is CAPPED: with 12 rows the old formula put the last one at
+   1.12 s, so a visitor (and a design reviewer, and a screenshot) saw a panel
+   that announced "12 adversaries" above ~700 px of nothing. The effect is
+   worth ~0.4 s total, not more. */
 html.motion-ok .wire-row {
   opacity: 0;
   transform: translateY(6px);
-  animation: wire-in 0.5s var(--ease-out) forwards;
-  animation-delay: calc(0.35s + var(--i, 0) * 0.07s);
+  animation: wire-in 0.4s var(--ease-out) forwards;
+  animation-delay: calc(0.1s + min(var(--i, 0), 6) * 0.045s);
 }
 @keyframes wire-in { to { opacity: 1; transform: none; } }
 
