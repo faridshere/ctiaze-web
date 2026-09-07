@@ -8,7 +8,7 @@ import { Kicker } from "@/components/site/Kicker";
 import { Panel } from "@/components/site/Panel";
 import { CtaBand } from "@/components/site/CtaBand";
 import { GlyphChip } from "@/components/GlyphChip";
-import { getStoriesForCve } from "@/lib/stories";
+import { getStories, getStoriesForCve } from "@/lib/stories";
 import { kevMeta, epssDetailed, nvdLookup } from "@/lib/cveintel";
 import { getWireMentions } from "@/lib/actor-wire";
 import { getActorsPageData } from "@/lib/threatactors";
@@ -26,11 +26,22 @@ import { unstable_cache } from "next/cache";
 // our wire that named the CVE, and the adversaries those dispatches named.
 // A reviewer called this the one feature that turns a wire into a tool.
 // ---------------------------------------------------------------------------
+const CVE_RE = /^CVE-\d{4}-\d{4,7}$/;
+
 export const revalidate = 3600;
 export const maxDuration = 60;
+// Without generateStaticParams Next renders a dynamic segment per request
+// (private, no-store) even with `revalidate` set — verified on the sibling
+// routes, which are ISR only because they declare it. Pre-build the CVEs the
+// newest dispatches name; every other id renders once on demand, then caches.
+export const dynamicParams = true;
+export async function generateStaticParams(): Promise<Params[]> {
+  const stories = await getStories(60).catch(() => []);
+  const ids = [...new Set(stories.flatMap((s) => s.cveIds.map((c) => c.toUpperCase())))].filter((c) => CVE_RE.test(c));
+  return ids.slice(0, 40).map((id) => ({ id }));
+}
 
 type Params = { id: string };
-const CVE_RE = /^CVE-\d{4}-\d{4,7}$/;
 
 function norm(id: string): string | null {
   const u = decodeURIComponent(id).trim().toUpperCase();
