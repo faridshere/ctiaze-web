@@ -440,3 +440,18 @@ html.motion-ok .map-target {
 @media (prefers-reduced-motion: no-preference) {
   html { scroll-behavior: smooth; }
 }
+
+/* Roster rows on /actors: 1,300 anchors. One short class instead of a 90-char
+   utility string per row took the page from 1 MB to a fraction of it. */
+.roster-link {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  padding: 0.125rem 0;
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  color: var(--ink-secondary);
+  transition: color 150ms;
+}
+.roster-link:hover { color: var(--brand); }

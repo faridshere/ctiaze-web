@@ -11,7 +11,7 @@ export function GlyphChip({ category, className = "" }: { category: string; clas
       style={{ color: catColor(cat), borderColor: catColor(cat) }}
       className={`inline-block rounded-[var(--radius-chip)] border px-1 font-mono text-[length:var(--t-micro)] font-semibold uppercase leading-[1.5] tracking-[0.06em] ${className}`}
     >
-      {meta.glyph}
+      {meta.glyphEn}
     </span>
   );
 }

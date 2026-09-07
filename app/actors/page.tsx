@@ -134,11 +134,7 @@ export default async function ActorsPage() {
                 <ul className="grid grid-cols-2 gap-x-4 gap-y-1.5 pb-5 sm:grid-cols-3 lg:grid-cols-4">
                   {groups.get(L)!.map((a) => (
                     <li key={a.id} className="min-w-0">
-                      <a
-                        href={`/actors/${a.id}`}
-                        className="block truncate py-0.5 text-sm text-ink-secondary transition-colors hover:text-brand"
-                        title={a.name}
-                      >
+                      <a href={`/actors/${a.id}`} className="roster-link" title={a.name}>
                         {a.name}
                       </a>
                     </li>

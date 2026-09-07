@@ -31,17 +31,20 @@ export const CATEGORY_ORDER: Category[] = [
   "other",
 ];
 
-export const CATEGORY_META: Record<Category, { glyph: string; name: string; nameEn: string; token: string }> = {
-  vuln: { glyph: "ZF", name: "zəiflik", nameEn: "vulnerability", token: "--cat-vuln" },
-  exploit: { glyph: "EK", name: "eksploit", nameEn: "exploit", token: "--cat-exploit" },
-  malware: { glyph: "ZP", name: "zərərli proqram", nameEn: "malware", token: "--cat-malware" },
-  ransomware: { glyph: "FP", name: "fidyə proqramı", nameEn: "ransomware", token: "--cat-ransomware" },
-  apt: { glyph: "APT", name: "APT / dövlət", nameEn: "APT / state", token: "--cat-apt" },
-  breach: { glyph: "SZ", name: "sızma", nameEn: "breach", token: "--cat-breach" },
-  research: { glyph: "TQ", name: "tədqiqat", nameEn: "research", token: "--cat-research" },
-  "supply-chain": { glyph: "TZ", name: "təchizat zənciri", nameEn: "supply chain", token: "--cat-supply-chain" },
-  policy: { glyph: "SI", name: "siyasət", nameEn: "policy", token: "--cat-policy" },
-  other: { glyph: "DG", name: "digər", nameEn: "other", token: "--cat-other" },
+// `glyph` is the Azerbaijani code (kept for the AZ surfaces and the Telegram
+// channel); `glyphEn` is what the English site shows — an outside analyst saw
+// "ZF · EK · TZ" on English pages and rightly read it as noise.
+export const CATEGORY_META: Record<Category, { glyph: string; glyphEn: string; name: string; nameEn: string; token: string }> = {
+  vuln: { glyph: "ZF", glyphEn: "VULN", name: "zəiflik", nameEn: "vulnerability", token: "--cat-vuln" },
+  exploit: { glyph: "EK", glyphEn: "EXPL", name: "eksploit", nameEn: "exploit", token: "--cat-exploit" },
+  malware: { glyph: "ZP", glyphEn: "MALW", name: "zərərli proqram", nameEn: "malware", token: "--cat-malware" },
+  ransomware: { glyph: "FP", glyphEn: "RANS", name: "fidyə proqramı", nameEn: "ransomware", token: "--cat-ransomware" },
+  apt: { glyph: "APT", glyphEn: "APT", name: "APT / dövlət", nameEn: "APT / state", token: "--cat-apt" },
+  breach: { glyph: "SZ", glyphEn: "BRCH", name: "sızma", nameEn: "breach", token: "--cat-breach" },
+  research: { glyph: "TQ", glyphEn: "RSCH", name: "tədqiqat", nameEn: "research", token: "--cat-research" },
+  "supply-chain": { glyph: "TZ", glyphEn: "SUPL", name: "təchizat zənciri", nameEn: "supply chain", token: "--cat-supply-chain" },
+  policy: { glyph: "SI", glyphEn: "POLI", name: "siyasət", nameEn: "policy", token: "--cat-policy" },
+  other: { glyph: "DG", glyphEn: "MISC", name: "digər", nameEn: "other", token: "--cat-other" },
 };
 
 export function normalizeCategory(raw: string | undefined | null): Category {

@@ -27,7 +27,7 @@ import {
 } from "@/lib/actor-intel";
 import { getWireMentions, type WireMentions } from "@/lib/actor-wire";
 import { getActorReports, type AptReport } from "@/lib/aptnotes";
-import { jsonLdSafe } from "@/lib/format";
+import { paragraphs, jsonLdSafe } from "@/lib/format";
 import { absoluteUrl, SITE_NAME, SITE_URL } from "@/lib/site";
 
 export const revalidate = 86400;
@@ -187,8 +187,8 @@ export default async function ActorPage({ params }: { params: Promise<{ slug: st
             <Panel limb className="p-6 sm:p-8">
               <Kicker>Analyst brief</Kicker>
               <div className="mt-4 max-w-[64ch] space-y-4 text-[15px] leading-relaxed text-ink-secondary">
-                {primaryText.split(/\n\s*\n/).map((p, i) => (
-                  <p key={i}>{p.trim()}</p>
+                {paragraphs(primaryText).map((p, i) => (
+                  <p key={i}>{p}</p>
                 ))}
               </div>
               {intel && (
@@ -204,8 +204,8 @@ export default async function ActorPage({ params }: { params: Promise<{ slug: st
           <section className="mx-auto mt-10 w-full max-w-[80rem] px-[var(--sp-gutter)]">
             <Kicker>What the sources state</Kicker>
             <div className="mt-4 max-w-[64ch] space-y-4 text-[15px] leading-relaxed text-ink-secondary">
-              {description.split(/\n\s*\n/).map((p, i) => (
-                <p key={i}>{p.trim()}</p>
+              {paragraphs(description).map((p, i) => (
+                <p key={i}>{p}</p>
               ))}
             </div>
           </section>
@@ -233,7 +233,7 @@ export default async function ActorPage({ params }: { params: Promise<{ slug: st
           <CtaBand
             source="actor:inline"
             heading={`Track ${a.name} on the wire.`}
-            blurb="Free early access when the API and MCP server open — every dispatch that names them, as it lands. One email when it's ready."
+            blurb="Early access opens the actor API and MCP server first — and an alert every time this adversary lands on the wire. One email when it's ready."
           />
         </div>
       </main>

@@ -1,5 +1,6 @@
 // Mirrors the shape of a published document in ctiaze-engine's MongoDB "items"
 // collection (see ctiaze-engine/cti/store.py + publish.py). Read-only here.
+import { stripEmoji } from "./format";
 import { slugify } from "./slug";
 
 export type StoryDoc = {
@@ -81,13 +82,13 @@ export function toStory(doc: StoryDoc): Story {
   return {
     id: doc._id,
     slug: slugify(doc._id, doc.title || doc.az_title || "news"),
-    titleAz: doc.az_title || doc.title,
+    titleAz: stripEmoji(doc.az_title || doc.title),
     bodyAz: doc.az_body || "",
     related: (doc.related ?? [])
       .filter((r) => r?.slug)
       .slice(0, 5)
       .map((r) => ({ slug: r.slug, titleAz: r.az_title || r.title || "", titleEn: r.title || r.az_title || "" })),
-    titleEn: doc.title,
+    titleEn: stripEmoji(doc.title),
     summaryEn: doc.summary || "",
     sourceUrl: doc.url,
     category: doc.ai_category || "other",

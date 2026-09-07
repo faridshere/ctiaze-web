@@ -1,3 +1,4 @@
+import { tacticCount as countTactics } from "@/lib/attack";
 import Link from "next/link";
 import { Kicker } from "@/components/site/Kicker";
 import { AttackRose } from "@/components/actors/AttackRose";
@@ -30,12 +31,6 @@ function isoDay(d: string | Date | null | undefined): string | null {
 
 // The 14 kill-chain tactics the rose actually draws — used only to caption its
 // coverage honestly ("N techniques across K tactics"), never to invent a count.
-const TACTICS = new Set([
-  "reconnaissance", "resource-development", "initial-access", "execution", "persistence",
-  "privilege-escalation", "defense-evasion", "credential-access", "discovery",
-  "lateral-movement", "collection", "command-and-control", "exfiltration", "impact",
-]);
-const normTactic = (s?: string | null) => (s ?? "").toLowerCase().replace(/[_\s]+/g, "-").trim();
 
 // The dossier's masthead: a way back, the assessed-origin/confidence kicker
 // (each piece rendered only when the source actually states it), the name,
@@ -45,7 +40,9 @@ const normTactic = (s?: string | null) => (s ?? "").toLowerCase().replace(/[_\s]
 // sigil when we don't.
 export function ActorHeader({ actor, mentions }: { actor: ThreatActor; mentions: WireMention[] }) {
   const origin = originLabel(actor);
-  const confidence = actor.attribution_confidence ?? null;
+  // 50 is the engine's fill value when MISP states nothing; presenting it as
+  // "source-stated" put a fake number on APT28's masthead. Only a real value shows.
+  const confidence = actor.attribution_confidence != null && actor.attribution_confidence !== 50 ? actor.attribution_confidence : null;
   const live = mentions.length > 0 && RENDER_EPOCH - new Date(mentions[0].at).getTime() <= NINETY_DAYS_MS;
 
   const kickerParts = [
@@ -58,7 +55,7 @@ export function ActorHeader({ actor, mentions }: { actor: ThreatActor; mentions:
   const sources = actor.sources && actor.sources.length ? actor.sources : actor.source ? [actor.source] : [];
   const refreshed = isoDay(actor.last_refreshed);
   const techniques = actor.techniques ?? [];
-  const tacticCount = new Set(techniques.map((t) => normTactic(t.tactic)).filter((t) => TACTICS.has(t))).size;
+  const tacticCount = countTactics(techniques);
 
   const metaItems: React.ReactNode[] = [];
   if (actor.state_sponsor) metaItems.push(<span key="sponsor">state sponsor · {actor.state_sponsor}</span>);

@@ -50,8 +50,8 @@ export function urgencyHeader(s: Story, locale: Locale): Urgency | null {
     return { text: en ? "Active exploitation (KEV)" : "Aktiv istismar (KEV)", tone: "critical" };
   if (s.epss !== null && s.epss >= EPSS_RED)
     return {
-      text: en ? `Very high exploit likelihood (EPSS ${Math.round(s.epss * 100)}%)`
-               : `İstismar ehtimalı çox yüksək (EPSS ${Math.round(s.epss * 100)}%)`,
+      text: en ? `Very high exploit likelihood (EPSS ${epssPct(s.epss)})`
+               : `İstismar ehtimalı çox yüksək (EPSS ${epssPct(s.epss)})`,
       tone: "critical",
     };
   if (s.sevRank >= 3) {
@@ -71,9 +71,16 @@ export function urgencyHeader(s: Story, locale: Locale): Urgency | null {
 // non-specialist as "2% risk" on a vulnerability that is being exploited right
 // now — the opposite of the truth. When KEV is set it is the stronger, observed
 // signal, so the prediction is suppressed rather than shown alongside it.
+// 0.996 rendered as "100%" claims a certainty FIRST never published; show a
+// decimal once rounding would hide the difference from 1.
+export function epssPct(e: number): string {
+  const pct = e * 100;
+  return pct >= 99.5 ? `${pct.toFixed(1)}%` : `${Math.round(pct)}%`;
+}
+
 export function epssBadge(s: Story): string | null {
   if (s.kev) return null;
-  return s.epss !== null && s.epss >= EPSS_HIGH ? `EPSS ${Math.round(s.epss * 100)}%` : null;
+  return s.epss !== null && s.epss >= EPSS_HIGH ? `EPSS ${epssPct(s.epss)}` : null;
 }
 
 // Plain-language gloss for the signals, so a reader who does not work in vuln
@@ -82,7 +89,7 @@ export function signalExplainer(s: Story): string | null {
   if (s.kev)
     return "CISA KEV means this flaw has been seen exploited in real attacks — not predicted, observed. Treat it as urgent regardless of its score.";
   if (s.epss !== null && s.epss >= EPSS_HIGH)
-    return `EPSS estimates the chance this flaw is exploited somewhere in the next 30 days (${Math.round(s.epss * 100)}%). It is a forecast, not a report of an attack.`;
+    return `EPSS estimates the chance this flaw is exploited somewhere in the next 30 days (${epssPct(s.epss)}). It is a forecast, not a report of an attack.`;
   return null;
 }
 

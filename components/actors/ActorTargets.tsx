@@ -32,8 +32,8 @@ export function ActorTargets({
     <section className="mx-auto mt-[var(--sp-section)] w-full max-w-[80rem] px-[var(--sp-gutter)]">
       <div className="grid gap-8 md:grid-cols-2 md:items-start">
         <div>
-          <Panel tone="void" className="aspect-[2/1] w-full">
-            <DotMap origin={origin} targets={placed} className="h-full w-full" />
+          <Panel tone="void" className="aspect-[2/1] w-full overflow-hidden">
+            <DotMap origin={origin} targets={placed} className="h-full w-full max-w-full" />
           </Panel>
           <p className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 font-mono text-[11px] uppercase tracking-[0.14em] text-ink-muted">
             <span className="inline-flex items-center gap-1.5">

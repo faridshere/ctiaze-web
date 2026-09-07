@@ -1,0 +1,6 @@
+Contact: mailto:hello@skopnix.com
+Contact: https://skopnix.com/about
+Expires: 2027-09-07T00:00:00.000Z
+Preferred-Languages: en, az
+Canonical: https://skopnix.com/.well-known/security.txt
+Policy: https://skopnix.com/about

@@ -105,6 +105,28 @@ const BOILERPLATE: RegExp[] = [
 
 /** Strip feed boilerplate. "[...]" marks where the publisher cut the text, so we
  *  cut there too and let completeSentences() end it honestly. */
+// Outlets decorate headlines with 🎥 ⚠️ 🔥; on a wire they read as noise and an
+// analyst flagged them. Pictographs and their joiners go; letters in any script stay.
+export function stripEmoji(text: string): string {
+  return text
+    .replace(/[\p{Extended_Pictographic}\u{FE0F}\u{200D}]/gu, "")
+    .replace(/\s{2,}/g, " ")
+    .trim();
+}
+
+// MISP descriptions arrive as one block with no blank lines. Split them into
+// short paragraphs at sentence boundaries (~3 sentences each) when the author
+// gave us none; text that already has paragraph breaks is left alone.
+export function paragraphs(text: string, per = 3): string[] {
+  const given = text.split(/\n\s*\n/).map((p) => p.trim()).filter(Boolean);
+  if (given.length > 1) return given;
+  const sentences = (given[0] ?? "").match(/[^.!?]+[.!?]+(?=\s|$)|[^.!?]+$/g)?.map((s) => s.trim()).filter(Boolean) ?? [];
+  if (sentences.length <= per + 1) return given;
+  const out: string[] = [];
+  for (let i = 0; i < sentences.length; i += per) out.push(sentences.slice(i, i + per).join(" "));
+  return out;
+}
+
 export function stripBoilerplate(text: string): string {
   let out = (text || "").trim();
   for (const rx of BOILERPLATE) out = out.replace(rx, "");

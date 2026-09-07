@@ -33,7 +33,7 @@ export const metadata: Metadata = {
     template: `%s — ${SITE_NAME}`,
   },
   description:
-    "Global cyber-threat intelligence, read straight off the wire: ~60 sources, AI-scored and grounded to the original report, with sensor-backed coverage of the Caucasus and Central Asia — refreshed around the clock.",
+    "Global cyber-threat intelligence, read straight off the wire: ~60 sources, AI-scored and grounded to the original report, every exploited CVE tied to the adversaries that use it, with a weekly internet-exposure census of the Caucasus and Central Asia — refreshed around the clock.",
   openGraph: { type: "website", siteName: SITE_NAME, locale: "en_US" },
   twitter: { card: "summary_large_image" },
   alternates: {

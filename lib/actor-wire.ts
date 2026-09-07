@@ -3,6 +3,7 @@ import { getDb } from "./db";
 import { PUBLISHED_FILTER } from "./stories";
 import { toStory, type StoryDoc } from "./types";
 import { buildMatcher, matchKeys } from "./actor-match";
+import { canonicalActorId, isAliasActorId } from "./actor-aliases";
 
 export { buildMatcher, matchKeys } from "./actor-match";
 
@@ -34,8 +35,23 @@ async function computeWireMentions(): Promise<WireMentions> {
       .limit(STORIES)
       .toArray(),
   ]);
+  // Alias dossiers (UNC2452 → APT29 …) 308 to their canonical page, so they
+  // must not become their own row here either: their names join the canonical
+  // actor's match keys and the alias id itself is dropped.
+  const extraKeys = new Map<string, string[]>();
+  for (const a of actors) {
+    const id = String(a._id);
+    if (!isAliasActorId(id)) continue;
+    const canon = canonicalActorId(id);
+    extraKeys.set(canon, [...(extraKeys.get(canon) ?? []), String(a.name ?? ""), ...((a.aliases as string[]) ?? [])]);
+  }
   const matchers = actors
-    .map((a) => ({ id: String(a._id), name: String(a.name ?? ""), type: String(a.type ?? "unknown"), re: buildMatcher(matchKeys(String(a.name ?? ""), (a.aliases as string[]) ?? [])) }))
+    .filter((a) => !isAliasActorId(String(a._id)))
+    .map((a) => {
+      const id = String(a._id);
+      const aliases = [...((a.aliases as string[]) ?? []), ...(extraKeys.get(id) ?? [])];
+      return { id, name: String(a.name ?? ""), type: String(a.type ?? "unknown"), re: buildMatcher(matchKeys(String(a.name ?? ""), aliases)) };
+    })
     .filter((m): m is typeof m & { re: RegExp } => m.re !== null);
 
   const byActor: Record<string, WireMention[]> = {};
@@ -62,4 +78,4 @@ async function computeWireMentions(): Promise<WireMentions> {
   return { byActor, recent, generatedAt: new Date().toISOString() };
 }
 
-export const getWireMentions = unstable_cache(computeWireMentions, ["actor-wire-v3"], { revalidate: 3600 });
+export const getWireMentions = unstable_cache(computeWireMentions, ["actor-wire-v4"], { revalidate: 3600 });

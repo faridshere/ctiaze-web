@@ -31,7 +31,7 @@ function Orbital() {
 export function CtaBand({
   source,
   heading = "Want the keys?",
-  blurb = "Free early access when the API and MCP server open — more tools, deeper data, your own login. One email when it's ready. Nothing else, ever.",
+  blurb = "Early access opens three things first: the actor API and MCP server, alerts when an adversary you follow lands on the wire, and STIX export. One email when it's ready. Nothing else, ever.",
   id = "access",
 }: {
   source: string;

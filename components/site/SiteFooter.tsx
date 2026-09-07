@@ -49,12 +49,12 @@ export function SiteFooter() {
             </span>
           </div>
           <p className="mt-4 max-w-xs text-[14px] leading-relaxed text-ink-secondary">{SITE_TAGLINE}</p>
-          {/* Global first: the standalone regional line read as "this is a
-              Caucasus site". The sensor coverage is real and stays as the
-              differentiator it is, but it qualifies the global claim rather
-              than replacing it. */}
+          {/* Global first. The regional differentiator is stated as what it
+              actually is on this site today — a weekly Shodan exposure census
+              that rides on CVE items — not as "sensors", which nothing here
+              shows and which an outside reviewer rightly called unsupported. */}
           <p className="mt-3 font-mono text-[11px] uppercase tracking-[0.14em] text-ink-muted">
-            worldwide coverage · sensor-backed in the Caucasus
+            worldwide coverage · exposure census: caucasus &amp; central asia
           </p>
           {/* A name in the footer, on every page — not buried on /about. */}
           <p className="mt-2 text-[12px] leading-relaxed text-ink-muted">

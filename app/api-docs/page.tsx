@@ -41,7 +41,7 @@ const FIELDS: { name: string; type: string; note: string }[] = [
   { name: "title_en / title_az", type: "string", note: "English and Azerbaijani headline." },
   { name: "summary_en / summary_az", type: "string", note: "Body text, trimmed to whole sentences." },
   { name: "truncated", type: "boolean", note: "true when the source feed published a cut description and we ended it at the last complete sentence. Fetch source_url for the whole thing." },
-  { name: "category", type: "string", note: "exploit, ransomware, breach, vulnerability, other." },
+  { name: "category", type: "string", note: "One of: exploit, vuln, apt, malware, ransomware, breach, supply-chain, research, policy. Assigned by the relevance model; treat as a hint, not a taxonomy." },
   { name: "severity", type: "string | null", note: "critical / high / medium / low. null means no CVE severity data — not 'low'." },
   { name: "cvss", type: "number | null", note: "As stated by the cited source. null when none was published." },
   { name: "epss", type: "number | null", note: "0-1 probability of exploitation in the next 30 days. A FORECAST." },
@@ -51,6 +51,8 @@ const FIELDS: { name: string; type: string; note: string }[] = [
   { name: "published_at", type: "string", note: "ISO 8601, UTC." },
   { name: "exposure", type: "object | null", note: "{product, worldwide, measured_at} — a Shodan scan count, not an inventory, dated to the day it was measured." },
   { name: "also_reported_by", type: "string[]", note: "Other outlets that ran the same story." },
+  { name: "cluster_id", type: "string | null", note: "Stories about the same event within 72h share one id. null when the item stands alone." },
+  { name: "is_duplicate", type: "boolean", note: "true on the later members of a cluster; the first-seen member is false. Filter on false to see one item per event." },
 ];
 
 export default function ApiDocsPage() {

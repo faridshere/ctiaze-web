@@ -204,7 +204,7 @@ export function SpektrStrip({
                   style={{ color: catColor(cat), borderColor: catColor(cat) }}
                   className="rounded-[var(--radius-chip)] border px-1 font-semibold"
                 >
-                  {CATEGORY_META[cat].glyph}
+                  {CATEGORY_META[cat].glyphEn}
                 </span>
                 <span className="tabular-nums text-ink-secondary">{count}</span>
               </button>

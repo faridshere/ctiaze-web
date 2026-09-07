@@ -17,12 +17,15 @@ export type SimilarEntry = {
 // reason to click when we have one (shared techniques or shared malware/tools),
 // an honest "semantic match only" when the similarity is purely vector-space.
 export function ActorSimilar({ items }: { items: SimilarEntry[] }) {
-  if (items.length === 0) return null;
+  // A "semantic match only" below this line is embedding noise dressed as a
+  // finding; practitioners called it out. Shared techniques or tools always show.
+  const shown = items.filter((it) => it.sharedTechniques + it.sharedTools > 0 || it.score >= 0.8);
+  if (shown.length === 0) return null;
   return (
     <section className="mx-auto mt-[var(--sp-section)] w-full max-w-[80rem] px-[var(--sp-gutter)]">
       <Kicker>Similar adversaries</Kicker>
       <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-        {items.map((it) => {
+        {shown.map((it) => {
           const shared = it.sharedTechniques + it.sharedTools;
           return (
             <Link key={it.id} href={`/actors/${it.id}`} className="block">

@@ -21,7 +21,7 @@ export const revalidate = 3600;
 
 export const metadata: Metadata = {
   title: { absolute: `${SITE_NAME} — see it, nix it` },
-  description: `${SITE_TAGLINE} Drop your email for free early access.`,
+  description: `${SITE_TAGLINE} Every exploited CVE, the adversaries behind it, and a free JSON API — refreshed around the clock.`,
   alternates: { canonical: SITE_URL },
   openGraph: {
     title: `${SITE_NAME} — see it, nix it`,
@@ -98,7 +98,7 @@ export default async function LandingPage() {
           <AuroraField />
           {/* the globe dissolves into the page ground under the wire panel */}
           <div aria-hidden className="pointer-events-none absolute inset-x-0 bottom-0 h-72 bg-gradient-to-b from-transparent to-surface" />
-          <div className="relative z-10 mx-auto flex min-h-[calc(100svh-3.5rem)] w-full max-w-[46rem] flex-col items-center justify-center px-6 pb-40 pt-20 text-center sm:pb-48">
+          <div className="relative z-10 mx-auto flex min-h-[calc(100svh-3.5rem)] w-full max-w-[46rem] flex-col items-center justify-center px-6 pb-28 pt-20 text-center sm:pb-36">
             <Kicker live className="fade-up">
               {data.week.dispatches > 0
                 ? `${data.week.dispatches.toLocaleString("en-US")} dispatches this week`
@@ -109,7 +109,7 @@ export default async function LandingPage() {
               <span className="hl"><span>Nix it.</span></span>
             </h1>
             <p data-sc className="mt-6 max-w-[30rem] text-[length:var(--t-body)] leading-relaxed text-ink-secondary">
-              {SITE_TAGLINE} Free early access to the API and MCP server when they open.
+              {SITE_TAGLINE} Exploited CVEs, adversary dossiers and a free JSON API, around the clock.
             </p>
             <div data-sc="2" className="mt-9 w-full max-w-md text-left">
               <Waitlist source="skopnix-landing" />

@@ -1,5 +1,7 @@
 "use client";
 
+import { normTactic } from "@/lib/attack";
+
 import { useMemo, useState } from "react";
 import type { Ttp } from "@/lib/threatactors";
 import type { TechniqueNote, TtpProfile } from "@/lib/actor-intel";
@@ -26,12 +28,8 @@ const ORDER: { key: string; label: string }[] = [
   { key: "exfiltration", label: "Exfil" },
   { key: "impact", label: "Impact" },
 ];
-// The engine's newer tactic names fold into the classic fourteen.
-const FOLD: Record<string, string> = { stealth: "defense-evasion", "defense-impairment": "defense-evasion" };
-const norm = (s: string | null | undefined) => {
-  const k = (s ?? "").toLowerCase().replace(/[_\s]+/g, "-").trim();
-  return FOLD[k] ?? k;
-};
+// The engine's newer tactic names fold into the classic fourteen (lib/attack).
+const norm = normTactic;
 
 function techUrl(id: string): string {
   const [base, sub] = id.split(".");

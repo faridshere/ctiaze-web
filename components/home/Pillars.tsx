@@ -70,12 +70,12 @@ export function Pillars({ data }: { data: HomeData }) {
         <div className="relative flex items-center justify-between">
           <Index n="03" />
           <span className="rounded-[var(--radius-chip)] border border-brand/40 px-1.5 py-px font-mono text-[10px] uppercase tracking-[0.14em] text-brand">
-            coming
+            feed live
           </span>
         </div>
         <Title>The API + MCP</Title>
         <Line>
-          The same wire as JSON for your tools and your agents. The public feed is already live; keys for the full API open with early access.
+          The same wire as JSON for your tools and your agents. The items API and feeds are live today, no key. Early access adds the actor endpoints, the MCP server and alerts.
         </Line>
         <div className="relative mt-auto pt-8">
           <pre className="overflow-x-auto rounded-[var(--radius-btn)] border border-hairline bg-void/70 px-4 py-3 font-mono text-[11.5px] leading-relaxed text-ink-secondary">
