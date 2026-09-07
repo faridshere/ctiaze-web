@@ -37,7 +37,40 @@ export type ThreatActor = {
   related_actors?: { name: string; _id: string }[];
   recent_activity: ActorRecentItem[];
   last_refreshed?: Date | string;
+  // --- written by the engine's tracking pass, absent until it has run for an
+  // actor. Every one is optional on purpose: a dossier must render completely
+  // from the roster alone, and "we have not computed this yet" must look
+  // different from "this actor did nothing", which is why the components below
+  // render nothing rather than a row of zeroes.
+  /** Rolling 30-day counts recomputed daily from actor_events. */
+  activity_30d?: ActorActivity | null;
+  /** CVEs our own dispatches named alongside this actor. */
+  cves?: ActorCve[] | null;
+  /** Newest-first log of what the tracker saw change. */
+  changes?: ActorChange[] | null;
+  changed_at?: Date | string | null;
+  /** Primary-source report links (APTnotes), newest first. */
+  reports?: { title: string; source?: string | null; date?: string | null; url: string }[] | null;
 };
+
+export type ActorActivity = {
+  stories: number;
+  victims: number;
+  cves_new: number;
+  top_countries?: string[];
+  top_sectors?: string[];
+  last_seen?: string | null;
+  computed_at?: string | null;
+};
+
+export type ActorCve = { cve: string; kev?: boolean; epss?: number | null; item?: string | null; date?: string | null };
+
+export type ActorChange = { at: string; kind: string; detail: string };
+
+/** True when the tracker has something to show — not merely that it ran. */
+export function hasActivity(x: ActorActivity | null | undefined): x is ActorActivity {
+  return !!x && (x.stories > 0 || x.victims > 0 || x.cves_new > 0);
+}
 
 /** The lean row every index surface renders — JSON-safe, no multi-KB fields. */
 export type ActorRow = {

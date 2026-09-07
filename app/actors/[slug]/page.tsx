@@ -12,6 +12,9 @@ import { ActorArsenal } from "@/components/actors/ActorArsenal";
 import { ActorVictims } from "@/components/actors/ActorVictims";
 import { ActorWire } from "@/components/actors/ActorWire";
 import { ActorReports } from "@/components/actors/ActorReports";
+import { ActorPulse } from "@/components/actors/ActorPulse";
+import { ActorCves } from "@/components/actors/ActorCves";
+import { ActorExports } from "@/components/actors/ActorExports";
 import { ActorSimilar, type SimilarEntry } from "@/components/actors/ActorSimilar";
 import { ActorRefs } from "@/components/actors/ActorRefs";
 import { getActorByIdCached, splitTargets, type ThreatActor, type Ttp } from "@/lib/threatactors";
@@ -124,6 +127,11 @@ export async function generateMetadata({
   };
 }
 
+// Fixed when this lambda/build warmed rather than read per component: an
+// hourly-cached page that computed Date.now() twice could print two different
+// "ago" values in the same render (the pattern OnTheWire already uses).
+const RENDER_EPOCH = Date.now();
+
 export default async function ActorPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
   const a = await getActorByIdCached(slug);
@@ -182,6 +190,8 @@ export default async function ActorPage({ params }: { params: Promise<{ slug: st
       <main id="main">
         <ActorHeader actor={a} mentions={mentions} />
 
+        <ActorPulse activity={a.activity_30d} changes={a.changes} renderedAt={RENDER_EPOCH} />
+
         {primaryText && (
           <section className="mx-auto mt-[var(--sp-section)] w-full max-w-[80rem] px-[var(--sp-gutter)]">
             <Panel limb className="p-6 sm:p-8">
@@ -223,10 +233,12 @@ export default async function ActorPage({ params }: { params: Promise<{ slug: st
         )}
 
         <ActorArsenal malware={a.malware ?? []} tools={a.tools ?? []} usage={softwareUsage} />
+        <ActorCves cves={a.cves ?? []} actorName={a.name} />
         <ActorVictims actor={a} />
         <ActorWire mentions={mentions} />
         <ActorReports reports={reports} />
         <ActorSimilar items={similarItems} />
+        <ActorExports id={a._id} techniqueCount={techniques.length} />
         <ActorRefs refs={a.refs ?? []} />
 
         <div className="mt-[var(--sp-section)]">

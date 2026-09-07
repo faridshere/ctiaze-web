@@ -7,9 +7,11 @@ import { CtaBand } from "@/components/site/CtaBand";
 import { Waitlist } from "@/components/Waitlist";
 import { WirePanel } from "@/components/home/WirePanel";
 import { Pillars } from "@/components/home/Pillars";
+import { ExposureCensus } from "@/components/home/ExposureCensus";
 import { StatGrid } from "@/components/home/StatGrid";
 import { RelativeTime } from "@/components/home/RelativeTime";
 import { jsonLdSafe } from "@/lib/format";
+import { getExposureCensus, EMPTY_CENSUS } from "@/lib/exposure";
 import { getHomeData, EMPTY_HOME_DATA } from "@/lib/home-data";
 import { SAME_AS, SITE_NAME, SITE_TAGLINE, SITE_URL } from "@/lib/site";
 
@@ -40,6 +42,10 @@ function utcHHMM(iso: string): string {
 export default async function LandingPage() {
   // Never let the data layer take the landing page down: no data → quiet page.
   const data = await getHomeData().catch(() => EMPTY_HOME_DATA);
+  // The census the footer has been claiming since this morning. Its own
+  // failure is silence: an unreadable snapshot renders no panel rather than
+  // an empty one.
+  const census = await getExposureCensus().catch(() => EMPTY_CENSUS);
   // Two graphs, on purpose. Organization is the entity ("what is skopnix?") and
   // WebSite carries the name a search engine prints under the result. `logo` must
   // be a raster Google can index — it pointed at icon.svg, and an SVG is not a
@@ -139,6 +145,15 @@ export default async function LandingPage() {
             <Pillars data={data} />
           </div>
         </section>
+
+        {/* ---- the census: the one number here we measured ourselves ---- */}
+        {census.rows.length > 0 && (
+          <section className="mx-auto w-full max-w-[80rem] px-[var(--sp-gutter)] pt-[var(--sp-section)]">
+            <div data-sc>
+              <ExposureCensus rows={census.rows} measuredAt={census.measuredAt} previousAt={census.previousAt} />
+            </div>
+          </section>
+        )}
 
         {/* ---- the numbers ---- */}
         <section className="mx-auto w-full max-w-[80rem] px-[var(--sp-gutter)] pt-[var(--sp-section)]">
