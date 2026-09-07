@@ -11,6 +11,11 @@ export const SITE_TAGLINE = "The world's cyber threats, read straight off the wi
 // Google's AI Overview was doing (it offered "Skopx" and "Scopix" instead).
 export const SAME_AS: string[] = [
   "https://t.me/skopnix",
+  // The author's profile. sameAs is what lets a search engine tie the name to a
+  // real, findable entity rather than guessing it is a misspelling of something
+  // else — which is precisely what Google's AI Overview was doing.
+  "https://www.linkedin.com/in/farid-isgandarli/",
+  "https://github.com/faridshere",
 ];
 
 export const LINKS = {
