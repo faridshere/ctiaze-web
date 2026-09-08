@@ -13,10 +13,12 @@ export const revalidate = 3600;
 // anywhere on the site that said what skopnix actually IS, only what it does.
 const DEFINITION =
   "skopnix is a cyber threat intelligence (CTI) service. It watches international " +
-  "security reporting, vulnerability feeds and exploitation data around the clock, " +
-  "checks every item against the original source, and publishes it as a free, " +
-  "continuously updated global threat wire.";
+  "security reporting and exploitation data around the clock, checks every item " +
+  "against its original source, and publishes it as a free, continuously updated " +
+  "global threat wire.";
 
+// Metadata / social description only — the page itself leads with DEFINITION
+// and nothing else. Two sentences was the brief.
 const ABOUT_SENTENCE =
   "skopnix reads the world's cyber threats and files them where you can actually read them. Quietly, continuously — no noise, nothing invented.";
 
@@ -110,9 +112,6 @@ export default function AboutPage() {
         <PageHead narrow kicker="About" title="skopnix">
           <p className="mt-6 max-w-[36rem] text-[length:var(--t-body)] leading-relaxed text-ink-primary">
             {DEFINITION}
-          </p>
-          <p className="mt-4 max-w-[36rem] text-[length:var(--t-body)] leading-relaxed text-ink-secondary">
-            {ABOUT_SENTENCE}
           </p>
           <ul className="mt-10 grid divide-y divide-hairline border-y border-hairline font-mono text-[12px] uppercase tracking-[0.12em] text-ink-secondary md:grid-cols-3 md:divide-x md:divide-y-0">
             {FACTS.map((f) => (

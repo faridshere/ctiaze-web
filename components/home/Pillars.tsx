@@ -73,9 +73,9 @@ export function Pillars({ data }: { data: HomeData }) {
             feed live
           </span>
         </div>
-        <Title>The API + MCP</Title>
+        <Title>The feed</Title>
         <Line>
-          The same wire as JSON for your tools and your agents. The items API and feeds are live today, no key. Early access adds the actor endpoints, the MCP server and alerts.
+          The same wire as JSON and RSS, live today, no key — point a reader, a SIEM or an agent at it. A developer API and an MCP server are being built; early access gets them first.
         </Line>
         <div className="relative mt-auto pt-8">
           <pre className="overflow-x-auto rounded-[var(--radius-btn)] border border-hairline bg-void/70 px-4 py-3 font-mono text-[11.5px] leading-relaxed text-ink-secondary">
