@@ -30,7 +30,7 @@ export const getStories = cache(async (limit = 60): Promise<Story[]> => {
   const col = await items();
   const docs = await col
     .find(PUBLISHED_FILTER)
-    .sort({ published_at: -1 })
+    .sort({ effective_at: -1 })
     .limit(limit)
     .toArray();
   return docs.map(toStory);
@@ -38,12 +38,13 @@ export const getStories = cache(async (limit = 60): Promise<Story[]> => {
 
 // The same newest-first read, but starting strictly before a timestamp. Lets an
 // API client page backwards through the archive instead of being stuck with
-// whatever the newest window happened to hold.
+// whatever the newest window happened to hold. Pages on the same field it sorts
+// by — cursoring on published_at while sorting on effective_at would skip rows.
 export async function getStoriesBefore(before: Date, limit = 60): Promise<Story[]> {
   const col = await items();
   const docs = await col
-    .find({ ...PUBLISHED_FILTER, published_at: { $lt: before } })
-    .sort({ published_at: -1 })
+    .find({ ...PUBLISHED_FILTER, effective_at: { $lt: before } })
+    .sort({ effective_at: -1 })
     .limit(limit)
     .toArray();
   return docs.map(toStory);
@@ -55,7 +56,7 @@ export async function getStoriesForCve(cve: string, limit = 40): Promise<Story[]
   const col = await items();
   const docs = await col
     .find({ ...PUBLISHED_FILTER, cve_ids: cve.toUpperCase() })
-    .sort({ published_at: -1 })
+    .sort({ effective_at: -1 })
     .limit(limit)
     .toArray();
   return docs.map(toStory);
@@ -68,7 +69,7 @@ export async function getArchivePage(skip: number, limit: number): Promise<Story
   const col = await items();
   const docs = await col
     .find(PUBLISHED_FILTER)
-    .sort({ published_at: -1 })
+    .sort({ effective_at: -1 })
     .skip(Math.max(0, skip))
     .limit(limit)
     .toArray();
@@ -187,7 +188,7 @@ export async function getSearchIndex(limit = 200): Promise<SearchEntry[]> {
   const col = await items();
   const docs = await col
     .find(PUBLISHED_FILTER)
-    .sort({ published_at: -1 })
+    .sort({ effective_at: -1 })
     .limit(limit)
     .project<Pick<StoryDoc, "_id" | "az_title" | "title" | "ai_category" | "cve_ids">>({
       _id: 1,

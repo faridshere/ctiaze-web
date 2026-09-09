@@ -68,4 +68,29 @@ export function LocalTime({
   );
 }
 
+// The zone the times on this page are actually in — for captions that used to
+// hard-code "UTC" while <LocalTime> rendered the reader's zone right above them.
+//
+// Rendered as an offset ("UTC+4") rather than the IANA name ("Asia/Baku"): it is
+// shorter, reads as a time zone to anyone anywhere, and — the reason it matters
+// here — it degrades to exactly "UTC" at offset 0 and on the server, so the
+// caption never changes shape between the two renders.
+function utcOffsetLabel(): string {
+  const mins = -new Date().getTimezoneOffset();
+  if (mins === 0) return "UTC";
+  const sign = mins > 0 ? "+" : "−"; // U+2212, not a hyphen — this is a minus
+  const h = Math.floor(Math.abs(mins) / 60);
+  const m = Math.abs(mins) % 60;
+  return `UTC${sign}${h}${m ? `:${String(m).padStart(2, "0")}` : ""}`;
+}
+
+export function ZoneLabel({ className = "" }: { className?: string }) {
+  const hydrated = useSyncExternalStore(subscribe, onClient, onServer);
+  return (
+    <span className={className} title={hydrated ? zoneName() : undefined} suppressHydrationWarning>
+      {hydrated ? utcOffsetLabel() : "UTC"}
+    </span>
+  );
+}
+
 export { zoneName };

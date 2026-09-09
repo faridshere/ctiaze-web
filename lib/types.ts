@@ -17,7 +17,16 @@ export type StoryDoc = {
   az_title?: string;
   az_body?: string;
   summary?: string;
+  // TWO different events, and the site must not confuse them:
+  //   published_at — when our Telegram bot posted. A fact about the pipeline.
+  //   effective_at — when the news happened (the outlet's own publication date,
+  //                  falling back to published_at). A fact about the story.
+  // The site showed published_at, so a run of six dispatches — paced 3s apart by
+  // the engine — rendered as six identical timestamps. Displaying and sorting on
+  // effective_at is what makes the wire read like a wire. See
+  // ctiaze-engine/cti/store.py::effective_at.
   published_at?: Date | string;
+  effective_at?: Date | string;
   alt_sources?: { source?: string; url?: string; title?: string }[];
   // Pipeline-stamped triage signals the Telegram post shows but the site dropped.
   cvss?: number;
@@ -45,7 +54,11 @@ export type Story = {
   severity: string | null;
   region: boolean;
   cveIds: string[];
-  publishedAt: string; // ISO
+  /** When the news happened — what every surface displays and sorts by. ISO. */
+  publishedAt: string;
+  /** When we dispatched it to Telegram. Kept for the activity counters, which
+   *  legitimately measure our own publishing rate rather than the news. ISO. */
+  dispatchedAt: string;
   altSources: string[]; // URLs of other outlets that ran the same story (deduped)
   cvss: number | null;
   epss: number | null;
@@ -69,9 +82,14 @@ const RANK_SEVERITY: Record<number, Story["severity"]> = {
 };
 
 export function toStory(doc: StoryDoc): Story {
-  const publishedAt = doc.published_at
+  const dispatchedAt = doc.published_at
     ? new Date(doc.published_at).toISOString()
     : new Date().toISOString();
+  // Fall back to the dispatch time for any document the backfill hasn't reached
+  // (scripts/backfill_effective_at.py) — never render "now" for a real story.
+  const publishedAt = doc.effective_at
+    ? new Date(doc.effective_at).toISOString()
+    : dispatchedAt;
   // "Also reported by" — other outlets that ran the same story, deduped by URL and
   // never the primary source, so a reader can choose where to read it.
   const altSources: string[] = [];
@@ -102,6 +120,7 @@ export function toStory(doc: StoryDoc): Story {
     region: Boolean(doc.ai_region),
     cveIds: doc.cve_ids ?? [],
     publishedAt,
+    dispatchedAt,
     altSources: altSources.slice(0, 6),
     cvss: typeof doc.cvss === "number" && doc.cvss > 0 ? doc.cvss : null,
     epss: typeof doc.epss === "number" && doc.epss > 0 ? doc.epss : null,

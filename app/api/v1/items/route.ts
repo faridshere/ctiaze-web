@@ -51,7 +51,15 @@ type ApiItem = {
   cves: { id: string; kev: boolean }[];
   roundup: boolean;
   region_relevant: boolean;
+  // When the story was published BY ITS SOURCE — the outlet's own date, falling
+  // back to our dispatch time only when the source gave us none. This used to be
+  // our Telegram post time, which made every item in a publish batch share one
+  // timestamp and told a consumer nothing about when the news actually broke.
+  // Sorting, `since` and `before` all run on this field.
   published_at: string;
+  // When WE put it on the wire. Kept as its own field so the change above is
+  // additive for anyone who was really measuring our dispatch latency.
+  dispatched_at: string;
   exposure: { product: string; worldwide: number | null; measured_at: string | null } | null;
   also_reported_by: string[];
   // Same real-world event, different outlets. Dedup on this and cite the
@@ -89,6 +97,7 @@ function toApiItem(s: Story, cluster: { id: string; isDupe: boolean }, kev: Set<
     roundup: cves.length >= ROUNDUP_AT,
     region_relevant: s.region,
     published_at: s.publishedAt,
+    dispatched_at: s.dispatchedAt,
     exposure: s.azExposure
       ? {
           product: s.azExposure.product,

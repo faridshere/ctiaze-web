@@ -1,9 +1,12 @@
+"use client";
+
+import { useSyncExternalStore } from "react";
 import { LocalTime } from "@/components/site/LocalTime";
 import Link from "next/link";
 
 // One archive row — enough to scan a slug, its title and its priority flags
-// without opening it. `at` is always an ISO-8601 UTC timestamp (Mongo's
-// published_at), so date math below never depends on the runtime's local clock.
+// without opening it. `at` is an ISO-8601 UTC instant (Mongo's effective_at:
+// when the SOURCE published the story, not when we dispatched it).
 export type ArchiveRow = {
   slug: string;
   title: string;
@@ -15,19 +18,34 @@ export type ArchiveRow = {
 const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
-// The day-divider key and label are both derived from the ISO string's own UTC
-// calendar date (never the machine's local timezone), so the grouping a visitor
-// sees is identical to what was rendered at build/ISR time on Vercel.
-function utcDayKey(iso: string): string {
-  return iso.slice(0, 10);
+// The divider and the row time have to agree, or the ledger stops being a
+// ledger. They didn't: the dividers were pinned to UTC while <LocalTime> renders
+// each row in the READER's zone, so 9 of the 60 rows on page 1 showed a time
+// belonging to the next day underneath the previous day's heading — "02:23"
+// filed under "TUE 08 SEP 2026", sitting above rows reading 23:17. Read from
+// Baku the archive was simply not in chronological order.
+//
+// So the grouping follows the same zone the times do. The server has no reader
+// zone to use, so it groups in UTC (matching the fallback string <LocalTime>
+// renders at that point) and the client regroups once mounted — a post-mount
+// re-render, not a hydration mismatch: the first client render is identical to
+// the server's. Same useSyncExternalStore trick LocalTime uses.
+const subscribe = () => () => {};
+const onClient = () => true;
+const onServer = () => false;
+
+function dayKey(iso: string, local: boolean): string {
+  if (!local) return iso.slice(0, 10);
+  const d = new Date(iso);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
-function utcDayLabel(iso: string): string {
+function dayLabel(iso: string, local: boolean): string {
   const d = new Date(iso);
-  const weekday = WEEKDAYS[d.getUTCDay()];
-  const day = String(d.getUTCDate()).padStart(2, "0");
-  const month = MONTHS[d.getUTCMonth()];
-  return `${weekday} ${day} ${month} ${d.getUTCFullYear()}`;
+  const [wd, day, mon, year] = local
+    ? [d.getDay(), d.getDate(), d.getMonth(), d.getFullYear()]
+    : [d.getUTCDay(), d.getUTCDate(), d.getUTCMonth(), d.getUTCFullYear()];
+  return `${WEEKDAYS[wd]} ${String(day).padStart(2, "0")} ${MONTHS[mon]} ${year}`;
 }
 
 function utcTime(iso: string): string {
@@ -41,7 +59,8 @@ export function ArchiveList({ rows }: { rows: ArchiveRow[] }) {
   // Precomputed once, then read by index — reassigning a "last seen day" variable
   // inside the .map callback trips the purity lint (mutation escaping render), so
   // "is this the first row of a new day" is derived purely from position instead.
-  const dayKeys = rows.map((r) => utcDayKey(r.at));
+  const local = useSyncExternalStore(subscribe, onClient, onServer);
+  const dayKeys = rows.map((r) => dayKey(r.at, local));
   return (
     <div className="mx-auto mt-10 w-full max-w-[80rem] px-[var(--sp-gutter)]">
       <ol>
@@ -52,7 +71,7 @@ export function ArchiveList({ rows }: { rows: ArchiveRow[] }) {
               {isNewDay && (
                 <div className={`sticky top-14 z-10 flex items-center gap-3 bg-surface/95 py-2.5 backdrop-blur-sm ${i === 0 ? "" : "mt-8"}`}>
                   <span className="whitespace-nowrap font-mono text-[10px] uppercase tracking-[0.18em] text-ink-muted">
-                    {utcDayLabel(r.at)}
+                    {dayLabel(r.at, local)}
                   </span>
                   <span aria-hidden className="limb-line h-px flex-1" />
                 </div>

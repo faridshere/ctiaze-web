@@ -30,8 +30,8 @@ async function computeWireMentions(): Promise<WireMentions> {
     db.collection("threat_actors").find({}, { projection: { name: 1, aliases: 1, type: 1 } }).toArray(),
     db
       .collection<StoryDoc>("items")
-      .find(PUBLISHED_FILTER, { projection: { _id: 1, title: 1, az_title: 1, summary: 1, published_at: 1, kev: 1 } })
-      .sort({ published_at: -1 })
+      .find(PUBLISHED_FILTER, { projection: { _id: 1, title: 1, az_title: 1, summary: 1, published_at: 1, effective_at: 1, kev: 1 } })
+      .sort({ effective_at: -1 })
       .limit(STORIES)
       .toArray(),
   ]);

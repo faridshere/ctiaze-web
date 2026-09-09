@@ -1,4 +1,4 @@
-import { LocalTime } from "@/components/site/LocalTime";
+import { LocalTime, ZoneLabel } from "@/components/site/LocalTime";
 import Link from "next/link";
 import type { WireRow } from "@/lib/home-data";
 import { GlyphChip } from "@/components/GlyphChip";
@@ -65,7 +65,7 @@ export function WirePanel({ rows, total }: { rows: WireRow[]; total: number }) {
       </ol>
       <div className="flex items-center justify-between gap-4 border-t border-hairline px-5 py-3 sm:px-6">
         <span className="font-mono text-[11px] uppercase tracking-[0.14em] text-ink-muted">
-          grounded to source · UTC
+          grounded to source · <ZoneLabel />
         </span>
         <Button href="/news" variant="ghost" size="sm" glyph="→">
           Open the archive

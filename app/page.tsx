@@ -10,6 +10,7 @@ import { Pillars } from "@/components/home/Pillars";
 import { ExposureCensus } from "@/components/home/ExposureCensus";
 import { StatGrid } from "@/components/home/StatGrid";
 import { RelativeTime } from "@/components/home/RelativeTime";
+import { LocalTime, ZoneLabel } from "@/components/site/LocalTime";
 import { jsonLdSafe } from "@/lib/format";
 import { getExposureCensus, EMPTY_CENSUS } from "@/lib/exposure";
 import { getHomeData, EMPTY_HOME_DATA } from "@/lib/home-data";
@@ -33,10 +34,13 @@ export const metadata: Metadata = {
   },
 };
 
+// The server's own string for "as of". <LocalTime> re-formats it into the
+// reader's zone after hydration and <ZoneLabel> names that zone, so this line
+// no longer asserts UTC next to a wire rendered in local time.
 function utcHHMM(iso: string): string {
   const d = new Date(iso);
   const p = (n: number) => String(n).padStart(2, "0");
-  return `${p(d.getUTCHours())}:${p(d.getUTCMinutes())} UTC`;
+  return `${p(d.getUTCHours())}:${p(d.getUTCMinutes())}`;
 }
 
 export default async function LandingPage() {
@@ -122,7 +126,9 @@ export default async function LandingPage() {
             </div>
             {data.latestAt && (
               <p data-sc="3" className="mt-8 font-mono text-[11px] uppercase tracking-[0.16em] text-ink-muted">
-                last dispatch <RelativeTime iso={data.latestAt} /> · as of {utcHHMM(data.generatedAt)}
+                last dispatch <RelativeTime iso={data.latestAt} /> · as of{" "}
+                <LocalTime iso={data.generatedAt} shape="time" fallback={utcHHMM(data.generatedAt)} />{" "}
+                <ZoneLabel />
               </p>
             )}
           </div>

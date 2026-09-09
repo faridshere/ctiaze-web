@@ -2,6 +2,7 @@ import { unstable_cache } from "next/cache";
 import { getDb } from "./db";
 import { PUBLISHED_FILTER } from "./stories";
 import { toStory, type StoryDoc } from "./types";
+import { selectWire } from "./wire-select";
 
 // Everything the landing page shows, as ONE JSON-safe blob behind Next's data
 // cache. The page is hourly ISR, so this runs at most once an hour and the
@@ -28,6 +29,15 @@ export type HomeData = {
 
 const DAY = 86_400_000;
 const WIRE_ROWS = 7;
+// How many of those rows one source may hold. GitHub's advisory feed publishes
+// in bursts — 20 GHSA entries inside four minutes on the evening of 08 Sep — and
+// since the wire is ordered by when the news happened, a burst like that took
+// five of the seven rows above the fold, pushing a Chrome zero-day and a KEV
+// addition down the page. Nothing is dropped or hidden: an item that loses its
+// slot is one scroll away in /news, which stays a complete ledger.
+const WIRE_MAX_PER_SOURCE = 2;
+// Read deeper than we display so the cap has alternatives to promote.
+const WIRE_CANDIDATES = 40;
 const DAILY_DAYS = 14;
 
 function dayKey(d: Date): string {
@@ -40,11 +50,17 @@ async function computeHomeData(): Promise<HomeData> {
   const now = new Date();
   const since7 = new Date(now.getTime() - 7 * DAY);
   const since14 = new Date(now.getTime() - DAILY_DAYS * DAY);
+  // Deliberate split. The WIRE sorts and shows `effective_at` — when the news
+  // happened. The activity counters below ("N dispatches this week", the 14-day
+  // sparkline) stay on `published_at`, because they measure OUR publishing rate,
+  // not the news: a story that broke three weeks ago and went out today is one
+  // dispatch this week, and counting it by its source date would quietly under-
+  // report the channel's own output.
   const weekFilter = { ...PUBLISHED_FILTER, published_at: { $gte: since7 } };
 
-  const [docs, total, dispatches, kev, cves, sources, dailyRaw] = await Promise.all([
-    col.find(PUBLISHED_FILTER).sort({ published_at: -1 }).limit(WIRE_ROWS)
-      .project<StoryDoc>({ _id: 1, title: 1, az_title: 1, url: 1, source: 1, ai_category: 1, severity: 1, kev: 1, published_at: 1 })
+  const [docs, total, dispatches, kev, cves, sources, dailyRaw, newestDispatch] = await Promise.all([
+    col.find(PUBLISHED_FILTER).sort({ effective_at: -1 }).limit(WIRE_CANDIDATES)
+      .project<StoryDoc>({ _id: 1, title: 1, az_title: 1, url: 1, source: 1, ai_category: 1, severity: 1, kev: 1, published_at: 1, effective_at: 1 })
       .toArray(),
     col.countDocuments(PUBLISHED_FILTER),
     col.countDocuments(weekFilter),
@@ -57,6 +73,14 @@ async function computeHomeData(): Promise<HomeData> {
         { $group: { _id: { $dateToString: { format: "%Y-%m-%d", date: "$published_at" } }, n: { $sum: 1 } } },
       ])
       .toArray(),
+    // "last dispatch N ago" is a claim about the CHANNEL, so it reads the newest
+    // published_at directly. It used to be wire[0].at, which was the same thing
+    // only while the wire was also sorted by published_at — now that the wire is
+    // ordered by when the news happened, its top row is no longer the most
+    // recently dispatched story.
+    col.find(PUBLISHED_FILTER).sort({ published_at: -1 }).limit(1)
+      .project<StoryDoc>({ _id: 1, published_at: 1 })
+      .toArray(),
   ]);
 
   const byDay = new Map(dailyRaw.map((r) => [r._id, r.n]));
@@ -65,7 +89,12 @@ async function computeHomeData(): Promise<HomeData> {
     return { day, n: byDay.get(day) ?? 0 };
   });
 
-  const wire = docs.map(toStory).map((s) => ({
+  // Newest-first, then thinned so no single source owns the panel (lib/wire-select).
+  const wire: WireRow[] = selectWire(
+    docs.map((doc) => ({ ...toStory(doc), source: doc.source })),
+    WIRE_ROWS,
+    WIRE_MAX_PER_SOURCE
+  ).map((s) => ({
     slug: s.slug,
     title: s.titleEn || s.titleAz,
     category: s.category,
@@ -79,12 +108,14 @@ async function computeHomeData(): Promise<HomeData> {
     week: { dispatches, kev, cves, sources: sources.length },
     daily,
     total,
-    latestAt: wire[0]?.at ?? null,
+    latestAt: newestDispatch[0]?.published_at
+      ? new Date(newestDispatch[0].published_at).toISOString()
+      : null,
     generatedAt: now.toISOString(),
   };
 }
 
-export const getHomeData = unstable_cache(computeHomeData, ["home-data-v5"], { revalidate: 3600 });
+export const getHomeData = unstable_cache(computeHomeData, ["home-data-v7"], { revalidate: 3600 });
 
 // The landing page must render even if Mongo is unreachable — an empty wire is
 // a quiet page, a thrown error is a dead landing page.
