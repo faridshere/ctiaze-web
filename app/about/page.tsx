@@ -56,23 +56,12 @@ export const metadata: Metadata = {
 // Three claims a reader can actually verify: the source count and the pipeline
 // shape are documented in RUNBOOK.md, the outbound channel is the real
 // @skopnix Telegram feed — nothing here is rounded up or invented for effect.
-// Every reviewer — a product owner, a CTI analyst, a sysadmin and a non-technical
-// operations director — independently named the missing byline as the site's
-// biggest trust problem. An anonymous automated feed asking for your email reads
-// as a content farm; a named engineer with a real track record reads as a source.
-// Employer deliberately not named here — that is Farid's call to add, not mine.
-const AUTHOR = {
-  name: "Farid Isgandarli",
-  role: "SOC analyst and detection engineer",
-  city: "Baku, Azerbaijan",
-  blurb:
-    "I work detection engineering in a SOC by day — writing the rules that catch this "
-    + "kind of thing on real networks — and I run skopnix on my own time. I started it "
-    + "because the reporting I needed was scattered across sixty sites and none of it "
-    + "told me whether the thing was actually being exploited. Everything here links "
-    + "back to the original report, because you should check my work.",
-};
-
+//
+// The named byline was removed on 2026-09-14 at the owner's request. It had been
+// added on 09-07 because five reviewers independently called the anonymity the
+// site's biggest trust problem; that tradeoff is now deliberate, and the
+// accountability claim below is written so it stands WITHOUT a personal name —
+// "the method is published" is a checkable promise, "trust me" is not.
 const FACTS = [
   "66 sources watched",
   "grounded to the original source",
@@ -122,23 +111,32 @@ export default function AboutPage() {
             ))}
           </ul>
         </PageHead>
-        {/* Who is behind it. Not a footnote — the trust signal the whole site was
-            missing. */}
+        {/* Who is behind it — stated as a method rather than a person, since the
+            byline came out on 2026-09-14. The trust signal a reader can act on is
+            that every claim is checkable, not who is making it. */}
         <section className="mx-auto mt-[var(--sp-section)] w-full max-w-[46rem] px-5">
           <h2 className="font-mono text-[11px] uppercase tracking-[0.14em] text-ink-muted">
             <span aria-hidden className="mr-2 inline-block size-1.5 rounded-full bg-brand align-middle" />
-            Who writes this
+            How this is written
           </h2>
           <div className="mt-6 rounded-[var(--radius-panel)] border border-hairline bg-surface-raised/40 px-5 py-5">
-            <div className="font-display text-[19px] font-semibold text-ink-primary">{AUTHOR.name}</div>
-            <div className="mt-0.5 font-mono text-[12px] uppercase tracking-[0.1em] text-ink-muted">
-              {AUTHOR.role} · {AUTHOR.city}
+            <div className="font-display text-[19px] font-semibold text-ink-primary">
+              Independent, and built by practitioners
             </div>
-            <p className="mt-3 max-w-[40rem] text-[14px] leading-relaxed text-ink-secondary">{AUTHOR.blurb}</p>
+            <div className="mt-0.5 font-mono text-[12px] uppercase tracking-[0.1em] text-ink-muted">
+              detection engineering · Caucasus &amp; Central Asia
+            </div>
+            <p className="mt-3 max-w-[40rem] text-[14px] leading-relaxed text-ink-secondary">
+              skopnix exists because the reporting a defender needs was scattered across sixty sites,
+              and almost none of it said whether the thing was actually being exploited. Everything
+              here links back to the original report, because you should check the work rather than
+              take it on trust.
+            </p>
             <p className="mt-4 text-[13px] leading-relaxed text-ink-muted">
               The pipeline is automated and no human reviews each item before it publishes — that is the point, it is
               how the wire stays minutes behind the source instead of days. What is not automated is the
-              accountability: my name is on it.
+              standard: an actor is only tied to a CVE when a named vendor or CERT report says so, and the source
+              is printed next to the claim so you can check it yourself.
             </p>
           </div>
         </section>

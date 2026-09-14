@@ -148,6 +148,18 @@ export function Waitlist({ source = "site" }: { source?: string }) {
             placeholder="you@company.com"
             autoComplete="email"
             spellCheck={false}
+            // This is a one-field mailing-list signup, NOT a login. Bitwarden,
+            // 1Password and LastPass all heuristically treat "an input next to a
+            // submit button" as a credential field and pop their vault over it —
+            // Bitwarden was rendering "No items to show / New login" on top of
+            // the form, which reads as a broken sign-in and costs signups on the
+            // one interaction the whole page exists for. These four attributes
+            // are the opt-outs each vendor documents; they are inert everywhere
+            // else, so there is no cost to carrying all of them.
+            data-bwignore=""
+            data-1p-ignore=""
+            data-lpignore="true"
+            data-form-type="other"
             className="h-12 w-full rounded-[var(--radius-btn)] border border-hairline bg-surface px-4 font-mono text-sm text-ink-primary placeholder:text-ink-muted focus:border-brand focus:outline-none"
           />
         </label>

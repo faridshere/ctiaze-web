@@ -58,10 +58,6 @@ export function SiteFooter() {
           <p className="mt-3 font-mono text-[11px] uppercase tracking-[0.14em] text-ink-muted">
             worldwide coverage · exposure census: caucasus &amp; central asia
           </p>
-          {/* A name in the footer, on every page — not buried on /about. */}
-          <p className="mt-2 text-[12px] leading-relaxed text-ink-muted">
-            Built and maintained by Farid Isgandarli, detection engineer, Baku.
-          </p>
         </div>
         <DotList items={PAGES} label="Pages" />
         <DotList items={FEEDS} label="Machine feeds" />

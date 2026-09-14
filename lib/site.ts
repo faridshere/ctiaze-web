@@ -11,11 +11,16 @@ export const SITE_TAGLINE = "The world's cyber threats, read straight off the wi
 // Google's AI Overview was doing (it offered "Skopx" and "Scopix" instead).
 export const SAME_AS: string[] = [
   "https://t.me/skopnix",
-  // The author's profile. sameAs is what lets a search engine tie the name to a
-  // real, findable entity rather than guessing it is a misspelling of something
-  // else — which is precisely what Google's AI Overview was doing.
-  "https://www.linkedin.com/in/farid-isgandarli/",
-  "https://github.com/faridshere",
+  // Personal profiles removed 2026-09-14 at the owner's request — a LinkedIn URL
+  // containing a personal name is still that name, published in structured data
+  // for every crawler to read.
+  //
+  // ⚠ This weakens entity resolution, which is why they were here: sameAs is what
+  // stops a search engine guessing that "skopnix" is a misspelling of something
+  // else, and Google's AI Overview WAS doing exactly that (it offered "Skopx" and
+  // "Scopix") until 09-07. Telegram alone is a thin signal. The fix that costs no
+  // privacy is a brand-owned profile — github.com/skopnix, an X or LinkedIn
+  // company page — added here once one exists.
 ];
 
 export const LINKS = {
