@@ -14,8 +14,8 @@ Two env vars unlock it:
                       so it needs no new database credential)
 
 Already generated and stored in the login keychain:
-  skopnix-admin-token       64-hex admin password
-  skopnix-mongo-write-pw    32-char database password
+  skopnix-admin-token       the /admin login token
+  skopnix-mongo-write-pw    the write user's database password
   skopnix-mongo-write-uri   the assembled MONGO_URI_WRITE value
 
 ---
