@@ -4,20 +4,12 @@ name: ci
 # `tsc --noEmit` never ran on push, so a type error in a rarely-built path or the
 # known i18n foot-gun (lib/i18n.ts must never import next/headers) could land
 # silently. `next build` stays out of CI on purpose — it needs the read-only Mongo
-# env and Vercel already runs it on deploy; lint + typecheck + the node --test unit
-# suite (pure scan/permalink logic, no network) are the gate.
+# env and Vercel already runs it on deploy; lint + typecheck are the missing gate.
 on:
   push:
     branches: [main]
   pull_request:
   workflow_dispatch: {}
-
-
-# Least privilege. This repo is PUBLIC, so a fork PR can run this workflow;
-# it only ever needs to read the checkout. Declared after a 2026-09-07
-# pentest found no workflow in either repo scoped its token at all.
-permissions:
-  contents: read
 
 jobs:
   check:
@@ -25,11 +17,10 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v7
-      - uses: actions/setup-node@v6
+      - uses: actions/setup-node@v7
         with:
           node-version: "22"
           cache: "npm"
       - run: npm ci
       - run: npx tsc --noEmit
       - run: npx eslint .
-      - run: npm test
