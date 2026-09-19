@@ -45,9 +45,12 @@ type Params = { id: string };
 
 function norm(id: string): string | null {
   // No decodeURIComponent here: Next hands this param already decoded, so a
-  // second pass threw URIError on any path containing a bare '%' (/cve/%25 →
-  // 500 + the "temporary error" screen instead of a 404, which makes crawlers
-  // back off and retry rather than drop the URL).
+  // second pass threw URIError on any path containing a bare '%'.
+  // Measured after the fix: /cve/notacve now 404s as it should, but /cve/%25
+  // still answers 500 — and so do /actors/%25 and /news/%25, which this file
+  // does not touch. That remaining 500 comes from Next decoding the route
+  // param above the page component, so it is one fix for every dynamic route
+  // and not this one; left alone deliberately rather than claimed as fixed.
   const u = id.trim().toUpperCase();
   return CVE_RE.test(u) ? u : null;
 }
