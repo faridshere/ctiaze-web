@@ -1,3 +1,5 @@
+> **Product scope (16 Sep 2026):** read `docs/SKOPNIX-PLAN-2026-09-16.md` before any product, pricing, copy or pipeline-scope work. Its section 13 guardrails apply to Claude Code, Cursor and Codex alike.
+
 <!-- BEGIN:nextjs-agent-rules -->
 
 # This is NOT the Next.js you know

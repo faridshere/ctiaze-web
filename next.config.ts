@@ -130,7 +130,11 @@ const nextConfig: NextConfig = {
     const hosts = ["ctiaze.tech", "www.ctiaze.tech"];
     return {
       beforeFiles: hosts.map((value) => ({
-        source: "/((?!_next/|api/|coming-soon).*)",
+        // The second lookahead skips anything with a file extension. Without
+        // it this rewrite also swallowed /textures/*.jpg, /icon-192.png,
+        // /manifest.webmanifest and /.well-known/*, which were served as the
+        // HTML page — so the placeholder's globe silently never loaded.
+        source: "/((?!_next/|api/|coming-soon)(?!.*\\.[a-zA-Z0-9]{2,12}$).*)",
         has: [{ type: "host" as const, value }],
         destination: "/coming-soon",
       })),

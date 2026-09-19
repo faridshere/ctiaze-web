@@ -44,7 +44,11 @@ export async function generateStaticParams(): Promise<Params[]> {
 type Params = { id: string };
 
 function norm(id: string): string | null {
-  const u = decodeURIComponent(id).trim().toUpperCase();
+  // No decodeURIComponent here: Next hands this param already decoded, so a
+  // second pass threw URIError on any path containing a bare '%' (/cve/%25 →
+  // 500 + the "temporary error" screen instead of a 404, which makes crawlers
+  // back off and retry rather than drop the URL).
+  const u = id.trim().toUpperCase();
   return CVE_RE.test(u) ? u : null;
 }
 

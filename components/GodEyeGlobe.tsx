@@ -53,7 +53,13 @@ export function GodEyeGlobe() {
     const buf = (data: number[], el?: boolean) => { const b = GL.createBuffer()!; GL.bindBuffer(el ? GL.ELEMENT_ARRAY_BUFFER : GL.ARRAY_BUFFER, b); GL.bufferData(el ? GL.ELEMENT_ARRAY_BUFFER : GL.ARRAY_BUFFER, el ? new Uint16Array(data) : new Float32Array(data), GL.STATIC_DRAW); return b; };
     const vboP = buf(geo.pos), vboN = buf(geo.nor), vboU = buf(geo.uv), ibo = buf(geo.idx, true), ptBuf = GL.createBuffer();
     let texDay: WebGLTexture | null = null, texNight: WebGLTexture | null = null, ready = false;
-    const loadTex = (url: string) => new Promise<WebGLTexture>((res) => { const img = new Image(); img.onload = () => { const t = GL.createTexture()!; GL.bindTexture(GL.TEXTURE_2D, t); GL.texParameteri(GL.TEXTURE_2D, GL.TEXTURE_WRAP_S, GL.REPEAT); GL.texParameteri(GL.TEXTURE_2D, GL.TEXTURE_WRAP_T, GL.CLAMP_TO_EDGE); GL.texParameteri(GL.TEXTURE_2D, GL.TEXTURE_MIN_FILTER, GL.LINEAR_MIPMAP_LINEAR); GL.texParameteri(GL.TEXTURE_2D, GL.TEXTURE_MAG_FILTER, GL.LINEAR); GL.texImage2D(GL.TEXTURE_2D, 0, GL.RGBA, GL.RGBA, GL.UNSIGNED_BYTE, img); GL.generateMipmap(GL.TEXTURE_2D); res(t); }; img.src = url; });
+    const loadTex = (url: string) => new Promise<WebGLTexture>((res, rej) => { const img = new Image(); img.onload = () => { const t = GL.createTexture()!; GL.bindTexture(GL.TEXTURE_2D, t); GL.texParameteri(GL.TEXTURE_2D, GL.TEXTURE_WRAP_S, GL.REPEAT); GL.texParameteri(GL.TEXTURE_2D, GL.TEXTURE_WRAP_T, GL.CLAMP_TO_EDGE); GL.texParameteri(GL.TEXTURE_2D, GL.TEXTURE_MIN_FILTER, GL.LINEAR_MIPMAP_LINEAR); GL.texParameteri(GL.TEXTURE_2D, GL.TEXTURE_MAG_FILTER, GL.LINEAR); GL.texImage2D(GL.TEXTURE_2D, 0, GL.RGBA, GL.RGBA, GL.UNSIGNED_BYTE, img); GL.generateMipmap(GL.TEXTURE_2D); res(t); };
+      // A texture that never loads used to hang this promise forever with no
+      // console trace: `ready` stayed false and the globe silently drew
+      // nothing. That is what a misrouted asset looks like from the outside —
+      // a black hero, no error. Reject instead, and say which URL.
+      img.onerror = () => rej(new Error(`texture failed to load: ${url}`));
+      img.src = url; });
 
     const LAT0 = 41, LON0 = 56, DLAT = 10, DLON = 34;
     const wvec = (lat: number, lon: number) => { const la = lat * D2R, lo = lon * D2R, cl = Math.cos(la); return [cl * Math.cos(lo), Math.sin(la), cl * Math.sin(lo)]; };
@@ -193,7 +199,7 @@ export function GodEyeGlobe() {
       document.addEventListener("visibilitychange", onVis);
       if ("IntersectionObserver" in window) { io = new IntersectionObserver((es) => es.forEach((e) => (e.isIntersecting ? start() : stop())), { threshold: 0.03 }); io.observe(wrapEl); }
       else start();
-    });
+    }).catch((e) => console.error("[globe]", e instanceof Error ? e.message : e));
 
     return () => { stop(); ro.disconnect(); io?.disconnect(); document.removeEventListener("visibilitychange", onVis); if (fine) { glc.removeEventListener("pointerdown", onDown); glc.removeEventListener("pointermove", onMove); window.removeEventListener("pointerup", onUp); } };
   }, []);

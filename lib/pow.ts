@@ -22,6 +22,20 @@ import { createHmac, randomBytes, createHash } from "crypto";
 // Bumping the version string invalidates every outstanding challenge.
 // ---------------------------------------------------------------------------
 const SECRET = process.env.POW_SECRET || "skopnix.pow.v2";
+
+// Say so, once per process, when the fallback is live. This repo is PUBLIC, so
+// an unset POW_SECRET means anyone can reproduce the signing key and mint valid
+// challenges offline for any network — the exact forgery the 2026-09-07 pentest
+// reported. It was verified unset in production on 2026-09-19 because nothing
+// anywhere said it existed: it is absent from the RUNBOOK env table and from
+// every deploy checklist. Warn rather than throw, so a missing variable degrades
+// the gate instead of taking the site down.
+if (!process.env.POW_SECRET && process.env.NODE_ENV === "production") {
+  console.error(
+    "POW_SECRET is not set — the proof-of-work gate is running on the public " +
+      "fallback key and can be forged offline. Set it in the host's environment.",
+  );
+}
 export const POW_DIFFICULTY = 18; // leading zero BITS the solution hash must have
 const TTL_MS = 120_000; // a solved challenge is accepted for ~2 minutes
 const SKEW_MS = 5_000; // tolerate a little clock skew into the future

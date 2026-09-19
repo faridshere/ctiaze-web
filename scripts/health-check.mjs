@@ -68,7 +68,13 @@ async function main() {
   });
   await check("wire strip has data (Mongo read works)", async () => {
     const { body } = await get("/");
-    return { ok: /on the wire/i.test(body), detail: "" };
+    // Count the rows the panel actually rendered, NOT the phrase "on the wire":
+    // that phrase appears six times in static copy on this page, so the old
+    // check passed with an empty panel — i.e. it reported a healthy site while
+    // the database read was failing, which is exactly the state an Atlas move
+    // can leave behind. `wire-row` is emitted only by components/home/WirePanel.
+    const rows = (body.match(/class="wire-row/g) || []).length;
+    return { ok: rows > 0, detail: `${rows} wire rows` };
   });
 
   // ── ctiaze.tech (real domain — the host-scoped rules can't be exercised

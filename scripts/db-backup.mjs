@@ -10,8 +10,14 @@
 //   node scripts/db-backup.mjs verify  <outDir>
 //   node scripts/db-backup.mjs restore <outDir>      # needs RESTORE_URI
 //
-// backup/verify read MONGO_URI_READONLY; restore writes to RESTORE_URI so a
-// restore can never be aimed at the source cluster by accident.
+// backup reads MONGO_URI_READONLY; restore writes to RESTORE_URI so a restore
+// can never be aimed at the source cluster by accident. verify checks whichever
+// cluster you point it at: RESTORE_URI when set, else MONGO_URI_READONLY. That
+// last rule is load-bearing — verify used to always read MONGO_URI_READONLY,
+// i.e. the SOURCE, so the documented migration recipe ("restore, then verify
+// against the NEW cluster") compared the dump with the cluster it came from and
+// printed ALL COLLECTIONS MATCH even when the restore had dropped collections.
+// Every run now prints the host it actually talked to.
 import fs from "node:fs";
 import path from "node:path";
 import zlib from "node:zlib";
@@ -20,7 +26,10 @@ import { pipeline } from "node:stream/promises";
 import { MongoClient } from "mongodb";
 import { EJSON } from "bson";
 
-const DB_NAME = "ctiaze";
+// Keep the database named `ctiaze` on any new cluster: the engine, the ops
+// batches and the website all hardcode it. MONGO_DB is the escape hatch, and it
+// has to be set in all three places at once.
+const DB_NAME = process.env.MONGO_DB || "ctiaze";
 const [, , cmd, outDir] = process.argv;
 
 function loadEnv(file) {
@@ -34,8 +43,17 @@ function loadEnv(file) {
 }
 loadEnv(path.join(import.meta.dirname, "..", ".env.local"));
 
+// Host only — never print a URI, it carries the password.
+function hostOf(u) {
+  try { return new URL(u).host; } catch { return "(unparseable URI)"; }
+}
+
 const isRestore = cmd === "restore";
-const uri = isRestore ? process.env.RESTORE_URI : process.env.MONGO_URI_READONLY;
+// verify follows RESTORE_URI when it is set, so the same shell that ran the
+// restore verifies the cluster it restored INTO.
+const useRestoreUri = isRestore || (cmd === "verify" && !!process.env.RESTORE_URI);
+const uri = useRestoreUri ? process.env.RESTORE_URI : process.env.MONGO_URI_READONLY;
+const uriSource = useRestoreUri ? "RESTORE_URI" : "MONGO_URI_READONLY";
 if (!cmd || !outDir) {
   console.error("usage: node scripts/db-backup.mjs <backup|verify|restore> <dir>");
   process.exit(1);
@@ -91,6 +109,7 @@ async function backup() {
 // have not read back is not a backup.
 async function verify() {
   const manifest = JSON.parse(fs.readFileSync(path.join(outDir, "_manifest.json"), "utf8"));
+  console.log(`  verifying against ${hostOf(uri)} (${uriSource}), db ${DB_NAME}\n`);
   let bad = 0;
   for (const entry of manifest.collections) {
     const file = path.join(outDir, `${entry.name}.jsonl.gz`);
@@ -105,11 +124,33 @@ async function verify() {
       }
     }
     const live = await db.collection(entry.name).countDocuments();
-    const ok = lines === entry.count && lines === live && !firstErr;
+    // Three outcomes, not two. A dump of a LIVE cluster races its own traffic:
+    // `visits` and `items` grow while the dump is being written, so live > file
+    // is normal there and used to be reported as a failure, which trained the
+    // reader to ignore the one line that matters. live < file is the real
+    // alarm — the dump holds documents the cluster no longer has. After a
+    // restore (RESTORE_URI set) nothing should be writing, so exact equality is
+    // required and any drift counts as a failure.
+    const fileOk = lines === entry.count && !firstErr;
+    const grew = live > lines;
+    const ok = fileOk && (lines === live || (grew && !useRestoreUri));
     if (!ok) bad++;
-    console.log(`  ${ok ? "✓" : "✗"} ${entry.name.padEnd(22)} file=${String(lines).padStart(7)} live=${String(live).padStart(7)}${firstErr ? "  parse: " + firstErr : ""}`);
+    const note = firstErr
+      ? `  parse: ${firstErr}`
+      : !fileOk
+        ? `  file has ${lines} lines, manifest says ${entry.count}`
+        : grew && !useRestoreUri
+          ? `  +${live - lines} written since the dump`
+          : live < lines
+            ? `  ${lines - live} MISSING from the cluster`
+            : "";
+    console.log(`  ${ok ? "✓" : "✗"} ${entry.name.padEnd(22)} file=${String(lines).padStart(7)} live=${String(live).padStart(7)}${note}`);
   }
-  console.log(bad === 0 ? "\n  ALL COLLECTIONS MATCH ✓" : `\n  ${bad} MISMATCH(ES) ✗`);
+  console.log(
+    bad === 0
+      ? `\n  ALL COLLECTIONS MATCH ✓  (${hostOf(uri)}, ${uriSource})`
+      : `\n  ${bad} MISMATCH(ES) ✗  (${hostOf(uri)}, ${uriSource})`,
+  );
   if (bad) process.exitCode = 1;
 }
 
@@ -137,7 +178,10 @@ async function restore() {
     }
     console.log(`  ${entry.name.padEnd(22)} ${String(n).padStart(7)} docs restored${entry.indexes?.length ? ` + ${entry.indexes.length} index(es)` : ""}`);
   }
-  console.log("\n  restore complete — now run `verify` against the NEW cluster");
+  console.log(
+    "\n  restore complete — now run `verify` with the SAME RESTORE_URI still set,\n" +
+    "  so it checks the cluster you just restored into and not the source.",
+  );
 }
 
 try {

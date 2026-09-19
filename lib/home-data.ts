@@ -60,7 +60,10 @@ async function computeHomeData(): Promise<HomeData> {
 
   const [docs, total, dispatches, kev, cves, sources, dailyRaw, newestDispatch] = await Promise.all([
     col.find(PUBLISHED_FILTER).sort({ effective_at: -1 }).limit(WIRE_CANDIDATES)
-      .project<StoryDoc>({ _id: 1, title: 1, az_title: 1, url: 1, source: 1, ai_category: 1, severity: 1, kev: 1, published_at: 1, effective_at: 1 })
+      // sev_rank, not severity: the pipeline only ever writes the rank (see
+      // lib/types.ts), so projecting `severity` returned nothing and every
+      // non-KEV row got the muted dot however critical it was.
+      .project<StoryDoc>({ _id: 1, title: 1, az_title: 1, url: 1, source: 1, ai_category: 1, sev_rank: 1, kev: 1, published_at: 1, effective_at: 1 })
       .toArray(),
     col.countDocuments(PUBLISHED_FILTER),
     col.countDocuments(weekFilter),
@@ -115,7 +118,7 @@ async function computeHomeData(): Promise<HomeData> {
   };
 }
 
-export const getHomeData = unstable_cache(computeHomeData, ["home-data-v7"], { revalidate: 3600 });
+export const getHomeData = unstable_cache(computeHomeData, ["home-data-v8"], { revalidate: 3600 });
 
 // The landing page must render even if Mongo is unreachable — an empty wire is
 // a quiet page, a thrown error is a dead landing page.

@@ -23,9 +23,9 @@ export default function PrivacyPage() {
       <main id="main">
         <PageHead narrow kicker="Privacy" title="What we collect">
           <p className="mt-6 max-w-[38rem] text-[length:var(--t-body)] leading-relaxed text-ink-primary">
-            If you give us an email address we store it to tell you once when early access opens, and a visit records
-            the page and the country it came from for 30 days before deleting itself — nothing is sold, shared or
-            tracked across other sites.
+            If you give us an email address we store it — with the IP address and rough location (country and city)
+            it came from — to tell you once when early access opens. A visit records the page, the same IP address and
+            rough location, and deletes itself after 30 days. Nothing is sold, shared or tracked across other sites.
           </p>
           <p className="mt-4 max-w-[38rem] text-[length:var(--t-body)] leading-relaxed text-ink-secondary">
             Nothing here touches your infrastructure; ask on Telegram and your address is deleted, no form and no

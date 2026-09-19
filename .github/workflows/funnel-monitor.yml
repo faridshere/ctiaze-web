@@ -36,7 +36,10 @@ jobs:
           say "── skopnix.com"
           body=$(get https://skopnix.com/ || true)
           echo "$body" | grep -q 'See it'          && r=ok || r=no; check "landing renders" $r
-          echo "$body" | grep -q 'on the wire'     && r=ok || r=no; check "wire strip has data (Mongo read works)" $r
+          # 'wire-row' is markup only WirePanel emits; the phrase "on the wire"
+          # also appears in static copy, so grepping for it passed even when the
+          # Mongo read failed and the panel rendered nothing.
+          echo "$body" | grep -q 'class="wire-row'  && r=ok || r=no; check "wire strip has data (Mongo read works)" $r
 
           say "── ctiaze.tech"
           get https://ctiaze.tech/ | grep -q 'Something is coming' && r=ok || r=no
