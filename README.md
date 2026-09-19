@@ -1,5 +1,10 @@
 # skopnix.com
 
+> **New here?** Read  first — repo map, day-one
+> setup, how two people share this codebase, and the order of the Atlas and
+> GitHub moves.
+
+
 The web surface for skopnix — a cyber-threat-intelligence wire. Next.js 16 (App
 Router) + React 19 + Tailwind v4, reading a MongoDB Atlas archive that
 `ctiaze-engine` (a separate repo) fills 24/7. See `RUNBOOK.md` for the full
