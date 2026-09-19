@@ -45,3 +45,6 @@ al.txt
 rl_groups.json
 thaicert.html
 *.tmp.json
+
+# the committed template is the one env file that is NOT secret
+!.env.example

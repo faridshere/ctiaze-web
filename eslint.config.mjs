@@ -12,6 +12,9 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Vendored third-party design skill (.agents/skills/impeccable) — not our
+    // code, and it drowned the lint output in ~140 warnings.
+    ".agents/**",
   ]),
 ]);
 
