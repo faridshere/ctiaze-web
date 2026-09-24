@@ -76,17 +76,116 @@ export async function withinSharedDailyBudget(
   }
 }
 
-export function clientIp(req: Request): string {
-  // x-real-ip is set by Vercel's edge to the TRUE connecting IP and is overwritten
-  // on every request, so the client cannot spoof it — prefer it. Only fall back to
-  // X-Forwarded-For's RIGHTMOST hop (the one the trusted proxy appended), never the
-  // leftmost: the leftmost is attacker-controlled, so a rotating header would mint a
-  // fresh rate-limit bucket per request and silently defeat every cap.
-  const real = req.headers.get("x-real-ip");
-  if (real && real.trim()) return real.trim();
+// ---------------------------------------------------------------------------
+// Who is calling, and from where. Every rate limit above, the proof-of-work
+// caller binding (lib/pow.ts) and the ip/country/city stored with visits and
+// signups key on these two helpers, so they must read ONLY headers that the
+// proxy in front of the app sets and overwrites. Which headers those are
+// depends on the host, so it is configured, not guessed (2026-09-24, for the
+// move off Vercel to a Cloudflare Tunnel):
+//
+//   TRUSTED_PROXY=vercel      (default) Vercel's edge: x-real-ip, else the
+//                             rightmost X-Forwarded-For hop; x-vercel-ip-* geo.
+//   TRUSTED_PROXY=cloudflare  Cloudflare: CF-Connecting-IP and CF-IPCountry
+//                             ONLY. Everything else is client-supplied there.
+//   TRUSTED_PROXY=xff:<n>     n trusted proxies that each append one hop: the
+//                             client is the n-th X-Forwarded-For hop from the
+//                             right. No trusted geo.
+//   TRUSTED_PROXY=none        trust nothing: every caller is "unknown".
+//
+// The default keeps today's behaviour, so merging this is a no-op on Vercel.
+// Off Vercel the default is spoofable (x-real-ip is just a request header
+// there), so every self-hosted deployment must pin the mode explicitly.
+// ---------------------------------------------------------------------------
+export type TrustedProxy =
+  | { kind: "vercel" }
+  | { kind: "cloudflare" }
+  | { kind: "xff"; hops: number }
+  | { kind: "none" };
+
+export type ClientGeo = { country: string | null; city: string | null };
+
+// Unset or blank means the default; anything unrecognised returns null so the
+// caller can fail safe instead of silently trusting a header it should not.
+export function parseTrustedProxy(raw: string | undefined): TrustedProxy | null {
+  const value = (raw ?? "").trim().toLowerCase();
+  if (value === "" || value === "vercel") return { kind: "vercel" };
+  if (value === "cloudflare") return { kind: "cloudflare" };
+  if (value === "none") return { kind: "none" };
+  const xff = /^xff:([1-9]\d?)$/.exec(value);
+  return xff ? { kind: "xff", hops: Number(xff[1]) } : null;
+}
+
+// A typo must not quietly fall back to trusting client headers: an unknown
+// value collapses every caller into one "unknown" bucket (strict limits for
+// all, never an open door) and says so once, when the module loads.
+function trustedProxyFromEnv(): TrustedProxy {
+  const mode = parseTrustedProxy(process.env.TRUSTED_PROXY);
+  if (mode) return mode;
+  console.error(
+    "TRUSTED_PROXY is not one of vercel | cloudflare | xff:<n> | none — " +
+      "trusting no proxy headers, so every caller shares one rate-limit bucket.",
+  );
+  return { kind: "none" };
+}
+
+const TRUSTED_PROXY = trustedProxyFromEnv();
+
+function header(req: Request, name: string): string | null {
+  const value = req.headers.get(name)?.trim();
+  return value ? value : null;
+}
+
+// The n-th hop from the RIGHT, never the leftmost: the leftmost is whatever the
+// client typed, so a rotating value would mint a fresh rate-limit bucket per
+// request and silently defeat every cap. Fewer hops than trusted proxies means
+// the request did not come through them, so it is "unknown", not a guess.
+function forwardedHop(req: Request, fromRight: number): string | null {
   const hops = (req.headers.get("x-forwarded-for") || "")
     .split(",")
     .map((s) => s.trim())
     .filter(Boolean);
-  return hops[hops.length - 1] || "unknown";
+  return hops[hops.length - fromRight] ?? null;
+}
+
+// Cloudflare sends "XX" when it has no country for the address (stored as
+// null, like a missing header) and "T1" for Tor exits, which is kept: for a
+// threat-intel site, Tor traffic is worth seeing on the dashboard. Anything
+// else that is not a two-letter code is dropped rather than stored raw.
+function cloudflareCountry(raw: string | null): string | null {
+  const code = (raw ?? "").toUpperCase();
+  if (code === "T1") return code;
+  return /^[A-Z]{2}$/.test(code) && code !== "XX" ? code : null;
+}
+
+export function clientIp(req: Request, mode: TrustedProxy = TRUSTED_PROXY): string {
+  switch (mode.kind) {
+    case "vercel":
+      // Vercel's edge overwrites x-real-ip with the true connecting IP on every
+      // request; the rightmost X-Forwarded-For hop is its own append.
+      return header(req, "x-real-ip") ?? forwardedHop(req, 1) ?? "unknown";
+    case "cloudflare":
+      return header(req, "cf-connecting-ip") ?? "unknown";
+    case "xff":
+      return forwardedHop(req, mode.hops) ?? "unknown";
+    case "none":
+      return "unknown";
+  }
+}
+
+export function clientGeo(req: Request, mode: TrustedProxy = TRUSTED_PROXY): ClientGeo {
+  switch (mode.kind) {
+    case "vercel":
+      return {
+        country: req.headers.get("x-vercel-ip-country") || null,
+        city: req.headers.get("x-vercel-ip-city") || null,
+      };
+    case "cloudflare":
+      // City needs a Cloudflare managed transform that is not enabled, so a
+      // cf-ipcity header cannot be told apart from one the client typed.
+      return { country: cloudflareCountry(header(req, "cf-ipcountry")), city: null };
+    case "xff":
+    case "none":
+      return { country: null, city: null };
+  }
 }
