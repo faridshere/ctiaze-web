@@ -29,6 +29,7 @@ The whole business right now: **turn Telegram readers and old links into emails.
 | `MONGO_URI_READONLY` | Vercel | stories, wire strip, sitemaps go empty | (and the adversaries section: roster, actor_pack, graph, ttp_profiles, mitre_techniques)
 | `MONGO_URI_WRITE` | Vercel | **emails + visits silently not stored** (form says "not open yet") |
 | `ADMIN_TOKEN` | Vercel | /admin locked for everyone (fails closed — by design) |
+| `TRUSTED_PROXY` | self-hosted only (unset on Vercel = `vercel`) | wrong value off Vercel: rate limits and stored IPs trust a header the client typed; unknown value: every caller shares one bucket |
 | `MONGO_URI` | GitHub secret, ctiaze-engine | pipeline can't store/publish |
 | `TELEGRAM_*` | GitHub secrets, ctiaze-engine | posts don't go out (chat id is numeric — survives renames) |
 
