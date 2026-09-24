@@ -6,9 +6,10 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 
 // lib/isr-cache-handler.mjs is Next's own file-system ISR cache with one
-// change: a 404 page is kept in memory, never written to disk (2026-09-24,
-// self-hosting). These tests drive the real handler against a temp dist dir,
-// the way Next's IncrementalCache constructs it.
+// change: a 404 or redirect page and an unstable_cache null are kept in
+// memory, never written to disk, unless they replace an entry already there
+// (2026-09-24, self-hosting). These tests drive the real handler against a
+// temp dist dir, the way Next's IncrementalCache constructs it.
 
 const { default: Handler } = await import("../lib/isr-cache-handler.mjs");
 const { nodeFs } = createRequire(import.meta.url)("next/dist/server/lib/node-fs-methods");
@@ -26,9 +27,19 @@ function sandbox() {
   return { cache, filesUnder, cleanup: () => rmSync(dist, { recursive: true, force: true }) };
 }
 
-function page(status: number) {
-  return { kind: "APP_PAGE", html: "<html></html>", rscData: Buffer.from("rsc"), headers: {}, status, postponed: undefined, segmentData: undefined };
+function page(status: number, html = "<html></html>") {
+  return { kind: "APP_PAGE", html, rscData: Buffer.from("rsc"), headers: {}, status, postponed: undefined, segmentData: undefined };
 }
+
+// An unstable_cache entry as Next writes it: the loader's result, JSON-encoded.
+function cached(result: unknown) {
+  return { kind: "FETCH", data: { headers: {}, body: JSON.stringify(result), status: 200 }, revalidate: 3600 };
+}
+const DATA_CTX = { fetchCache: true, tags: [] };
+
+// The LRU letting an entry go, as it does under crawler traffic.
+const evict = (key: string) => (Handler as unknown as { memoryCache: { remove(key: string): void } }).memoryCache.remove(key);
+const junk = () => Math.random().toString().slice(2, 9);
 
 test("a 404 page is served from memory and never written to disk", async () => {
   const s = sandbox();
@@ -43,6 +54,44 @@ test("a 404 page is served from memory and never written to disk", async () => {
   }
 });
 
+test("a redirect page and a null unstable_cache result stay in memory too", async () => {
+  const s = sandbox();
+  try {
+    // /news/<id><any tail> redirects to the canonical slug: one entry per tail.
+    const key = `/news/cve-2024-340-junk${junk()}`;
+    await s.cache.set(key, page(308), {});
+    // getActorByIdCached("<junk>") resolves to null.
+    const dataKey = `fetch-${junk()}`;
+    await s.cache.set(dataKey, cached(null), DATA_CTX);
+    assert.deepEqual(s.filesUnder("server"), [], "no page file");
+    assert.deepEqual(s.filesUnder("cache"), [], "no fetch-cache file");
+    assert.equal((await s.cache.get(dataKey, { kind: "FETCH", tags: [] }))?.value?.data?.body, "null", "the miss is still cached, in memory");
+  } finally {
+    s.cleanup();
+  }
+});
+
+// A story taken down after it rendered: a 404 kept only in memory would let
+// the old page come back from disk the moment the LRU evicted the 404.
+test("a 404 replaces a page already on disk, so eviction cannot bring the old page back", async () => {
+  const s = sandbox();
+  try {
+    const key = `/news/taken-down-${junk()}`;
+    await s.cache.set(key, page(200, "<p>old story</p>"), {});
+    await s.cache.set(key, page(404, "<p>not found</p>"), {});
+    evict(key);
+    assert.equal((await s.cache.get(key, { kind: "APP_PAGE" }))?.value?.status, 404);
+
+    const dataKey = `fetch-${junk()}`;
+    await s.cache.set(dataKey, cached({ id: "removed-actor" }), DATA_CTX);
+    await s.cache.set(dataKey, cached(null), DATA_CTX);
+    evict(dataKey);
+    assert.equal((await s.cache.get(dataKey, { kind: "FETCH", tags: [] }))?.value?.data?.body, "null");
+  } finally {
+    s.cleanup();
+  }
+});
+
 test("a real page and a data-cache entry are still written to disk", async () => {
   const s = sandbox();
   try {
@@ -52,7 +101,7 @@ test("a real page and a data-cache entry are still written to disk", async () =>
     assert.ok(written.some((f) => f.endsWith(".html")) && written.some((f) => f.endsWith(".meta")), written.join(", "));
 
     // unstable_cache data lands in .next/cache/fetch-cache, the persistent volume.
-    await s.cache.set(`fetch-${Math.random()}`, { kind: "FETCH", data: { headers: {}, body: "{}", status: 200 }, revalidate: 3600 }, { fetchCache: true, tags: [] });
+    await s.cache.set(`fetch-${junk()}`, cached({}), DATA_CTX);
     assert.equal(s.filesUnder("cache/fetch-cache").length, 1);
   } finally {
     s.cleanup();
