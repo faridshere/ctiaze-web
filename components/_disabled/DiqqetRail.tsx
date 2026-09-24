@@ -72,7 +72,7 @@ function RailList({ caption, tone, stories, locale }: { caption: string; tone: s
           const title = locale === "en" ? s.titleEn : s.titleAz;
           return (
             <li key={s.id}>
-              <StoryLink slug={s.slug} title={title} className="group flex gap-2.5">
+              <StoryLink slug={s.slug} className="group flex gap-2.5">
                 <span className="shrink-0 pt-0.5 font-mono text-[length:var(--t-micro)] tabular-nums text-ink-muted">
                   {time}
                 </span>

@@ -44,7 +44,7 @@ export function LedgerRow({ story, display = false }: { story: Story; display?: 
 
       {/* main */}
       <div className="min-w-0">
-        <StoryLink slug={story.slug} title={title} className="group block">
+        <StoryLink slug={story.slug} className="group block">
           <h2
             className={`font-headline font-semibold text-ink-primary transition-colors group-hover:text-brand ${
               display
