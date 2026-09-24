@@ -38,6 +38,11 @@ const SECURITY_HEADERS = [
 
 const nextConfig: NextConfig = {
   poweredByHeader: false,
+  // Self-hosted in a container from 2026-09-24: .next/standalone holds a
+  // minimal server.js plus only the traced node_modules, so the runtime image
+  // needs no npm install and carries no dev dependencies. Vercel packages its
+  // own functions and is not expected to use this folder (the rollback path).
+  output: "standalone",
   async headers() {
     return [
       { source: "/:path*", headers: SECURITY_HEADERS },
