@@ -1,6 +1,5 @@
 import type { Metadata, Viewport } from "next";
 import { Schibsted_Grotesk, JetBrains_Mono } from "next/font/google";
-import { Analytics } from "@vercel/analytics/next";
 import { MotionRoot } from "@/components/MotionRoot";
 import { HitBeacon } from "@/components/HitBeacon";
 import { SITE_NAME, SITE_URL, LINKS } from "@/lib/site";
@@ -64,7 +63,6 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
         <MotionRoot />
         <HitBeacon />
         {children}
-        <Analytics />
       </body>
     </html>
   );

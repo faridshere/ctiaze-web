@@ -5,15 +5,16 @@ import type { NextConfig } from "next";
 // for scripts/styles because Next injects un-nonced inline bootstrap + styles;
 // XSS risk is low (content is from the trusted pipeline, results are structured
 // data React-escapes), and the policy still locks down connect/img/frame/base/
-// form. Vercel Analytics is self-hosted (/_vercel/insights/script.js → 'self')
-// and beacons to vitals.vercel-insights.com (connect-src).
+// form. connect-src is 'self' only: first-party analytics is HitBeacon posting
+// to /api/hit (Vercel Analytics was removed on 2026-09-24 for the move off
+// Vercel, where /_vercel/insights does not exist).
 const CSP = [
   "default-src 'self'",
   "script-src 'self' 'unsafe-inline'",
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' data:",
   "font-src 'self' data:",
-  "connect-src 'self' https://vitals.vercel-insights.com https://va.vercel-scripts.com",
+  "connect-src 'self'",
   "frame-ancestors 'none'",
   "base-uri 'self'",
   "form-action 'self'",
