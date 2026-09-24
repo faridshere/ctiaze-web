@@ -5,16 +5,10 @@
 // No API key needed for any of them. NVD is rate-limited (~5 req/30s keyless),
 // which is fine for one-CVE-at-a-time interactive lookups.
 
-// Every upstream call in this file goes through j(), and none waits longer than
-// this. Off Vercel (2026-09-24) the routes' maxDuration = 60 is ignored, so a
-// hung NVD/EPSS/KEV host would hold a cold /cve or /actors render open until
-// the edge gives up; capping here makes it fall back to the null path instead.
-export const UPSTREAM_TIMEOUT_CAP_MS = 10_000;
-
 async function j<T>(url: string, ms: number): Promise<T | null> {
   try {
     const r = await fetch(url, {
-      signal: AbortSignal.timeout(Math.min(ms, UPSTREAM_TIMEOUT_CAP_MS)),
+      signal: AbortSignal.timeout(ms),
       headers: { accept: "application/json", "User-Agent": "skopnix.com CVE lookup (+https://skopnix.com)" },
     });
     if (!r.ok) return null;

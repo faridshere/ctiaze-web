@@ -1,7 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
-  UPSTREAM_TIMEOUT_CAP_MS,
   kevMeta,
   epssFor,
   epssMap,
@@ -35,6 +34,12 @@ async function recordUpstreamCalls(run: () => Promise<unknown>, respond: () => P
 
 const emptyJson = async () => new Response("{}", { status: 200, headers: { "content-type": "application/json" } });
 
+// Off Vercel (2026-09-24) the routes' maxDuration = 60 is ignored, so these
+// per-request timeouts are the only bound on a cold /cve or /actors render
+// when NVD, EPSS or KEV hangs. The call sites pass 7-9 s; this fails the day
+// one is raised past 10 s.
+const MAX_UPSTREAM_TIMEOUT_MS = 10_000;
+
 test("every cveintel upstream request carries a timeout of at most 10 s", async () => {
   const { timeouts, requests } = await recordUpstreamCalls(async () => {
     await kevMeta();
@@ -47,8 +52,7 @@ test("every cveintel upstream request carries a timeout of at most 10 s", async 
   assert.equal(requests.length, 5, "one request per exported fetcher");
   assert.equal(timeouts.length, requests.length, "each request built exactly one timeout signal");
   for (const r of requests) assert.ok(r.signal, `${r.url} was sent without an abort signal`);
-  for (const ms of timeouts) assert.ok(ms > 0 && ms <= UPSTREAM_TIMEOUT_CAP_MS, `timeout ${ms} ms exceeds the cap`);
-  assert.equal(UPSTREAM_TIMEOUT_CAP_MS, 10_000);
+  for (const ms of timeouts) assert.ok(ms > 0 && ms <= MAX_UPSTREAM_TIMEOUT_MS, `timeout ${ms} ms exceeds ${MAX_UPSTREAM_TIMEOUT_MS} ms`);
 });
 
 test("a failed or timed-out upstream degrades to the empty result, never a throw", async () => {
