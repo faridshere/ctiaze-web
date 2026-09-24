@@ -1,5 +1,5 @@
 import { Suspense } from "react";
-import { notFound } from "next/navigation";
+import { notFound, permanentRedirect } from "next/navigation";
 import type { Metadata } from "next";
 import { SiteHeader } from "@/components/site/SiteHeader";
 import { SiteFooter } from "@/components/site/SiteFooter";
@@ -60,16 +60,17 @@ export default async function StoryPage({ params }: { params: Promise<Params> })
   const story = await getStoryBySlug(slug);
   if (!story) notFound();
 
-  // NOTE: a stale title tail (every link shared before permalinks switched from
-  // Azerbaijani to English) still resolves here, because only the first 12 chars
-  // of a slug address the story. That means two URLs can serve one article, which
-  // `alternates.canonical` in generateMetadata above already resolves for search
-  // engines — it points at story.slug regardless of how the page was reached.
-  // Do NOT try to upgrade that to a 301 from inside this component: app/loading.tsx
-  // puts the route behind Suspense, so Next commits 200 and starts streaming before
-  // this function runs, and permanentRedirect() degrades to a soft client-side hop
-  // (verified 2026-09-07). A real 308 would need middleware, which this project
-  // deliberately avoids for its per-request cost.
+  // Only the first 12 chars of a slug address the story, so every link shared
+  // before permalinks switched from Azerbaijani to English still resolves, and
+  // so does any made-up tail. Each of those URLs rendered as its own 200 page,
+  // and on the self-hosted box every one became ISR files on disk (2026-09-24,
+  // review: 20 junk tails wrote 140 files). One 308 to the canonical slug keeps
+  // the old links working; lib/isr-cache-handler.mjs keeps redirect renders in
+  // memory, so only canonical pages reach the disk. This used to degrade to a
+  // soft client-side hop because app/loading.tsx put the route behind Suspense
+  // (verified 2026-09-07); that file is gone, and a route of this shape on
+  // next 16.3.6 now answers 308 with a Location header (checked 2026-09-24).
+  if (slug !== story.slug) permanentRedirect(`/news/${story.slug}`);
 
   const [recent, badges] = await Promise.all([
     getStories(60).catch(() => []),
