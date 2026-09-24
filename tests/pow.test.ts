@@ -1,7 +1,12 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
-import { issueChallenge, verifyPow, type Challenge } from "../lib/pow.ts";
+import { register } from "node:module";
+import type { Challenge } from "../lib/pow.ts";
+
+// lib/pow.ts imports ./ratelimit without an extension (bundler resolution).
+register("./ts-ext-loader.mjs", import.meta.url);
+const { issueChallenge, verifyPow } = await import("../lib/pow.ts");
 
 // Minimal reimplementation of the client's solver (lib/pow-client.ts) using
 // Node's crypto instead of the browser-safe hand-rolled SHA-256 the client
@@ -102,6 +107,25 @@ test("the same network still verifies when the last octet changes", () => {
   const chal = issueChallenge("198.51.100.7");
   const nonce = solve(chal.c, chal.d);
   assert.equal(verifyPow(header(chal, nonce), "198.51.100.212"), true);
+});
+
+test("an IPv6 caller is bound to its /48, however the address is written", () => {
+  // The old split(":") took "2001:db8::1" as the network "2001:db8:", so the
+  // same /48 written with and without "::" were two networks, and any
+  // "2001:db8::..." address matched any other.
+  const chal = issueChallenge("2001:db8:0:1::5");
+  const nonce = solve(chal.c, chal.d);
+  assert.equal(verifyPow(header(chal, nonce), "2001:0db8:0000:ffff::9"), true, "same /48, different spelling");
+  const other = issueChallenge("2001:db8::1");
+  assert.equal(verifyPow(header(other, solve(other.c, other.d)), "2001:db8:1::1"), false, "the next /48 is another network");
+});
+
+test("an IPv4-mapped caller is bound to its IPv4 /24, not one shared ::ffff network", () => {
+  const chal = issueChallenge("::ffff:198.51.100.7");
+  const nonce = solve(chal.c, chal.d);
+  assert.equal(verifyPow(header(chal, nonce), "198.51.100.9"), true);
+  const other = issueChallenge("::ffff:198.51.100.7");
+  assert.equal(verifyPow(header(other, solve(other.c, other.d)), "::ffff:203.0.113.7"), false);
 });
 
 test("a blank or unknown ip does not throw", () => {

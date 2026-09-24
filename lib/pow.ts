@@ -1,4 +1,5 @@
 import { createHmac, randomBytes, createHash } from "crypto";
+import { networkPrefix } from "./ratelimit";
 
 // ---------------------------------------------------------------------------
 // Invisible proof-of-work gate for the abuse-prone endpoints (/api/scan,
@@ -42,14 +43,14 @@ const SKEW_MS = 5_000; // tolerate a little clock skew into the future
 
 export type Challenge = { c: string; t: number; s: string; d: number };
 
-// Who a challenge was minted for. Coarse on purpose: the last octet of an IPv4
-// (and the last 80 bits of an IPv6) are dropped, so a phone that changes
+// Who a challenge was minted for: the caller's network, not the address. Coarse
+// on purpose, a /24 for IPv4 and a /48 for IPv6, so a phone that changes
 // address inside its carrier's block still submits successfully, while a token
-// stays useless to an unrelated network.
+// stays useless to an unrelated network. networkPrefix() is the limiter's own
+// address parser (2026-09-24): the old split(":") read "2001:db8::1" as
+// "2001:db8:" and put every IPv4-mapped caller in one "::ffff" network.
 function callerTag(ip: string | null | undefined): string {
-  const raw = (ip ?? "").trim() || "unknown";
-  const v4 = /^(\d{1,3}\.\d{1,3}\.\d{1,3})\.\d{1,3}$/.exec(raw);
-  const net = v4 ? v4[1] : raw.split(":").slice(0, 3).join(":");
+  const net = networkPrefix((ip ?? "").trim() || "unknown", 24, 48);
   return createHmac("sha256", SECRET).update(`net.${net}`).digest("hex").slice(0, 12);
 }
 
