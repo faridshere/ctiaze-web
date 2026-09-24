@@ -55,29 +55,38 @@ function norm(id: string): string | null {
   return CVE_RE.test(u) ? u : null;
 }
 
-// One cached read per CVE per hour. Without this the three keyless upstream
-// fetches (NVD, KEV, EPSS) made Next render the route on every request
-// (private, no-store) — ~1.4 s a hit and a needless NVD call each time.
-const load = (id: string) => loadCached(id);
-const loadCached = unstable_cache(loadUncached, ["cve-hub-v1"], { revalidate: 3600 });
+// GATE FIRST. A pentest walked made-up-but-well-formed ids (CVE-2013-125701)
+// and each one cost ~3 s of NVD + EPSS + Mongo + roster work before the
+// notFound() below — an unbounded key space, unauthenticated, uncached, one
+// function invocation each, and one keyless NVD call each (NVD allows ~5 per
+// 30 s per IP, so a trickle of junk would have 403'd our real lookups).
+// KEV and our own archive are both already in memory/indexed and cheap, so
+// an id nothing has ever heard of is rejected before the expensive fan-out.
+// The gate sits OUTSIDE the data cache (2026-09-24, self-hosting): inside
+// unstable_cache every made-up id wrote its own fetch-cache file into the
+// persistent skopnix-cache volume, which nothing prunes.
+async function isKnownCve(id: string): Promise<boolean> {
+  const [kev, stories] = await Promise.all([
+    kevMeta().catch(() => new Map()),
+    getStoriesForCve(id, 1).catch(() => []),
+  ]);
+  return kev.has(id) || stories.length > 0;
+}
+
+// One cached read per known CVE per hour; null when nothing we hold knows the
+// id. Without the cache the three keyless upstream fetches (NVD, KEV, EPSS)
+// made Next render the route on every request (private, no-store) — ~1.4 s a
+// hit and a needless NVD call each time. v2: the cached value no longer
+// carries an `unknown` flag, so no v1 entry may be read back as a real page.
+const load = async (id: string) => ((await isKnownCve(id)) ? loadCached(id) : null);
+const loadCached = unstable_cache(loadUncached, ["cve-hub-v2"], { revalidate: 3600 });
 
 async function loadUncached(id: string) {
-  // GATE FIRST. A pentest walked made-up-but-well-formed ids (CVE-2013-125701)
-  // and each one cost ~3 s of NVD + EPSS + Mongo + roster work before the
-  // notFound() below — an unbounded key space, unauthenticated, uncached, one
-  // function invocation each, and one keyless NVD call each (NVD allows ~5 per
-  // 30 s per IP, so a trickle of junk would have 403'd our real lookups).
-  // KEV and our own archive are both already in memory/indexed and cheap, so
-  // an id nothing has ever heard of is rejected before the expensive fan-out.
   const [kev, stories] = await Promise.all([
     kevMeta().catch(() => new Map()),
     getStoriesForCve(id, 40).catch(() => []),
   ]);
   const kevRow = kev.get(id) ?? null;
-  if (!kevRow && stories.length === 0) {
-    return { nvd: null, kevRow: null, epssRow: null, stories: [], actors: [], exposure: null, unknown: true };
-  }
-
   const [nvd, epss, wire, roster] = await Promise.all([
     nvdLookup(id).catch(() => null),
     epssDetailed([id]).catch(() => new Map()),
@@ -98,7 +107,7 @@ async function loadUncached(id: string) {
     actors.sort((a, b) => b.hits - a.hits || a.name.localeCompare(b.name));
   }
   const exposure = stories.map((s) => s.azExposure).find((e) => e && e.globalCount != null) ?? null;
-  return { nvd, kevRow, epssRow, stories, actors, exposure, unknown: false };
+  return { nvd, kevRow, epssRow, stories, actors, exposure };
 }
 
 export async function generateMetadata({ params }: { params: Promise<Params> }): Promise<Metadata> {
@@ -106,7 +115,7 @@ export async function generateMetadata({ params }: { params: Promise<Params> }):
   const id = norm(raw);
   if (!id) return { title: "CVE not found" };
   const d = await load(id);
-  if (d.unknown) return { title: "CVE not found", robots: { index: false } };
+  if (!d) return { title: "CVE not found", robots: { index: false } };
   const bits: string[] = [];
   if (d.kevRow) bits.push(`on CISA KEV${d.kevRow.dateAdded ? ` since ${d.kevRow.dateAdded}` : ""}`);
   if (d.epssRow) bits.push(`EPSS ${epssPct(d.epssRow.score)}`);
@@ -127,8 +136,8 @@ export default async function CvePage({ params }: { params: Promise<Params> }) {
   if (!id) notFound();
   const d = await load(id);
   // Nothing we hold knows this id — neither KEV nor our own archive. Rejected
-  // before any upstream call was made (see loadUncached).
-  if (d.unknown) notFound();
+  // before any upstream call was made (see isKnownCve).
+  if (!d) notFound();
 
   const kicker = d.kevRow ? "actively exploited · CISA KEV" : "vulnerability";
   const severity = d.nvd?.severity?.toUpperCase() ?? null;

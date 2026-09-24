@@ -1,3 +1,4 @@
+import { join } from "node:path";
 import { ACTOR_ALIAS_CANONICAL } from "./lib/actor-aliases";
 import type { NextConfig } from "next";
 
@@ -43,6 +44,12 @@ const nextConfig: NextConfig = {
   // needs no npm install and carries no dev dependencies. Vercel packages its
   // own functions and is not expected to use this folder (the rollback path).
   output: "standalone",
+  // Self-hosted only (2026-09-24): keeps notFound() renders out of the on-disk
+  // ISR cache, so made-up ids cannot fill the host's disk (see the file). On
+  // Vercel a custom handler would replace Vercel's own data cache, so the
+  // rollback path keeps the default. Absolute, as Next requires; next build
+  // and next start always run from the project root.
+  cacheHandler: process.env.VERCEL ? undefined : join(process.cwd(), "lib", "isr-cache-handler.mjs"),
   async headers() {
     return [
       { source: "/:path*", headers: SECURITY_HEADERS },
