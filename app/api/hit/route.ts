@@ -1,4 +1,4 @@
-import { rateLimit, clientIp } from "@/lib/ratelimit";
+import { rateLimit, clientIp, clientGeo } from "@/lib/ratelimit";
 import { writeDb } from "@/lib/db-write";
 import { jsonOk, readJsonBody, RATE } from "@/lib/api";
 
@@ -14,8 +14,9 @@ const TTL_DAYS = 30;
 let ttlEnsured = false;
 
 export async function POST(req: Request) {
+  const ip = clientIp(req);
   // 30/min is generous for a human and cheap for us.
-  if (!rateLimit(`hit:${clientIp(req)}`, RATE.hit.limit, RATE.hit.windowMs)) {
+  if (!rateLimit(`hit:${ip}`, RATE.hit.limit, RATE.hit.windowMs)) {
     return jsonOk({ ok: true }); // silently drop; never error a beacon
   }
   const db = writeDb();
@@ -42,9 +43,8 @@ export async function POST(req: Request) {
     }
     await col.insertOne({
       at: new Date(),
-      ip: clientIp(req),
-      country: req.headers.get("x-vercel-ip-country") || null,
-      city: req.headers.get("x-vercel-ip-city") || null,
+      ip,
+      ...clientGeo(req),
       host: req.headers.get("host") || null,
       path,
       ref: ref || null,

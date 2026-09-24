@@ -1,4 +1,4 @@
-import { rateLimit, clientIp } from "@/lib/ratelimit";
+import { rateLimit, clientIp, clientGeo } from "@/lib/ratelimit";
 import { verifyPow } from "@/lib/pow";
 import { writeDb } from "@/lib/db-write";
 import { jsonError, jsonOk, readJsonBody, RATE } from "@/lib/api";
@@ -10,10 +10,11 @@ export const revalidate = 0;
 // script can't stuff the list, plus a tight per-IP limit. Stored deduped by
 // email in the `signups` collection.
 export async function POST(req: Request) {
-  if (!rateLimit(`waitlist:${clientIp(req)}`, RATE.waitlist.limit, RATE.waitlist.windowMs)) {
+  const ip = clientIp(req);
+  if (!rateLimit(`waitlist:${ip}`, RATE.waitlist.limit, RATE.waitlist.windowMs)) {
     return jsonError(429, "Too many requests — wait a minute");
   }
-  if (!verifyPow(req.headers.get("x-pow"), clientIp(req))) {
+  if (!verifyPow(req.headers.get("x-pow"), ip)) {
     return jsonError(403, "Couldn't verify the request — refresh and try again.");
   }
 
@@ -30,7 +31,7 @@ export async function POST(req: Request) {
 
   try {
     const col = (await db).collection("signups");
-    const ua_hash = uaHash(req.headers.get("user-agent") || "", clientIp(req));
+    const ua_hash = uaHash(req.headers.get("user-agent") || "", ip);
     await col.updateOne(
       { email },
       {
@@ -40,9 +41,8 @@ export async function POST(req: Request) {
           ua_hash,
           updated_at: new Date(),
           // kept so the dashboard can show where a signup came from
-          ip: clientIp(req),
-          country: req.headers.get("x-vercel-ip-country") || null,
-          city: req.headers.get("x-vercel-ip-city") || null,
+          ip,
+          ...clientGeo(req),
           ua: (req.headers.get("user-agent") || "").slice(0, 200),
         },
       },
