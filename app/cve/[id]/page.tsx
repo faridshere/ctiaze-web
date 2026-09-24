@@ -55,38 +55,31 @@ function norm(id: string): string | null {
   return CVE_RE.test(u) ? u : null;
 }
 
-// GATE FIRST. A pentest walked made-up-but-well-formed ids (CVE-2013-125701)
-// and each one cost ~3 s of NVD + EPSS + Mongo + roster work before the
-// notFound() below — an unbounded key space, unauthenticated, uncached, one
-// function invocation each, and one keyless NVD call each (NVD allows ~5 per
-// 30 s per IP, so a trickle of junk would have 403'd our real lookups).
-// KEV and our own archive are both already in memory/indexed and cheap, so
-// an id nothing has ever heard of is rejected before the expensive fan-out.
-// The gate sits OUTSIDE the data cache (2026-09-24, self-hosting): inside
-// unstable_cache every made-up id wrote its own fetch-cache file into the
-// persistent skopnix-cache volume, which nothing prunes.
-async function isKnownCve(id: string): Promise<boolean> {
-  const [kev, stories] = await Promise.all([
-    kevMeta().catch(() => new Map()),
-    getStoriesForCve(id, 1).catch(() => []),
-  ]);
-  return kev.has(id) || stories.length > 0;
-}
-
-// One cached read per known CVE per hour; null when nothing we hold knows the
-// id. Without the cache the three keyless upstream fetches (NVD, KEV, EPSS)
-// made Next render the route on every request (private, no-store) — ~1.4 s a
-// hit and a needless NVD call each time. v2: the cached value no longer
-// carries an `unknown` flag, so no v1 entry may be read back as a real page.
-const load = async (id: string) => ((await isKnownCve(id)) ? loadCached(id) : null);
+// One cached read per CVE per hour; null when nothing we hold knows the id.
+// Without the cache the three keyless upstream fetches (NVD, KEV, EPSS) made
+// Next render the route on every request (private, no-store) — ~1.4 s a hit
+// and a needless NVD call each time. v2 (2026-09-24): an unknown id caches
+// null instead of an `unknown` flag, so no v1 entry may be read back as a real
+// page. Off Vercel a null stays in memory only (lib/isr-cache-handler.mjs), so
+// made-up ids never reach the persistent cache volume.
+const load = (id: string) => loadCached(id);
 const loadCached = unstable_cache(loadUncached, ["cve-hub-v2"], { revalidate: 3600 });
 
 async function loadUncached(id: string) {
+  // GATE FIRST. A pentest walked made-up-but-well-formed ids (CVE-2013-125701)
+  // and each one cost ~3 s of NVD + EPSS + Mongo + roster work before the
+  // notFound() below — an unbounded key space, unauthenticated, uncached, one
+  // function invocation each, and one keyless NVD call each (NVD allows ~5 per
+  // 30 s per IP, so a trickle of junk would have 403'd our real lookups).
+  // KEV and our own archive are both already in memory/indexed and cheap, so
+  // an id nothing has ever heard of is rejected before the expensive fan-out.
   const [kev, stories] = await Promise.all([
     kevMeta().catch(() => new Map()),
     getStoriesForCve(id, 40).catch(() => []),
   ]);
   const kevRow = kev.get(id) ?? null;
+  if (!kevRow && stories.length === 0) return null;
+
   const [nvd, epss, wire, roster] = await Promise.all([
     nvdLookup(id).catch(() => null),
     epssDetailed([id]).catch(() => new Map()),
@@ -136,7 +129,7 @@ export default async function CvePage({ params }: { params: Promise<Params> }) {
   if (!id) notFound();
   const d = await load(id);
   // Nothing we hold knows this id — neither KEV nor our own archive. Rejected
-  // before any upstream call was made (see isKnownCve).
+  // before any upstream call was made (see loadUncached).
   if (!d) notFound();
 
   const kicker = d.kevRow ? "actively exploited · CISA KEV" : "vulnerability";
