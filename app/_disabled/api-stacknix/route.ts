@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { rateLimit, clientIp } from "@/lib/ratelimit";
+import { rateLimit, clientBucket } from "@/lib/ratelimit";
 import { parseStack, assessStack, gate } from "@/lib/_disabled/stacknix";
 
 // stacknix — the paid stack-exposure endpoint. POST a stack, get a version-
@@ -42,8 +42,7 @@ export async function POST(req: Request) {
 
   // Keyless callers: 3 scans / day / IP (best-effort per instance). Paid keys skip.
   if (!unlocked) {
-    const ip = clientIp(req);
-    if (!rateLimit(`stacknix:${ip}`, 3, 86_400_000)) {
+    if (!rateLimit(`stacknix:${clientBucket(req)}`, 3, 86_400_000)) {
       return NextResponse.json(
         { error: "rate_limited", message: "3 free scans used today. Builder removes the cap.", retryAfterHours: 24 },
         { status: 429 },

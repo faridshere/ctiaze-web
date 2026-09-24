@@ -1,7 +1,7 @@
 import { getActorByIdCached, splitTargets, type ThreatActor } from "@/lib/threatactors";
 import { getWireMentions } from "@/lib/actor-wire";
 import { canonicalActorId } from "@/lib/actor-aliases";
-import { rateLimit, clientIp } from "@/lib/ratelimit";
+import { rateLimit, clientBucket } from "@/lib/ratelimit";
 import { jsonError } from "@/lib/api";
 import { absoluteUrl, storyUrl } from "@/lib/site";
 import { etagFor, notModified } from "@/lib/etag";
@@ -29,7 +29,7 @@ type Enriched = ThreatActor & {
 };
 
 export async function GET(req: Request, ctx: { params: Promise<{ id: string }> }) {
-  if (!rateLimit(`apiv1actor:${clientIp(req)}`, 120, 60_000)) {
+  if (!rateLimit(`apiv1actor:${clientBucket(req)}`, 120, 60_000)) {
     return jsonError(429, "Too many requests — 120/min per IP.");
   }
   const { id: raw } = await ctx.params;

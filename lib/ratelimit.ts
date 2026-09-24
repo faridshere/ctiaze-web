@@ -1,8 +1,9 @@
-// Lightweight best-effort rate limiter. In-memory fixed-window per (key, IP) —
-// per serverless instance, so it's a bursty-abuse dampener, not a hard global
-// cap (that would need a shared store like Vercel KV). Its job here is to blunt
-// cost-abuse of the keyed Blockchair endpoint and the Shodan lookup, and to cap
-// revalidation spam, at zero infra cost.
+// Lightweight best-effort rate limiter. In-memory fixed-window per (key, caller)
+// — callers are keyed by clientBucket() below — per serverless instance, so
+// it's a bursty-abuse dampener, not a hard global cap (that would need a
+// shared store like Vercel KV). Its job here is to blunt cost-abuse of the
+// keyed Blockchair endpoint and the Shodan lookup, and to cap revalidation
+// spam, at zero infra cost.
 type Bucket = { count: number; reset: number };
 const store = new Map<string, Bucket>();
 
@@ -77,12 +78,13 @@ export async function withinSharedDailyBudget(
 }
 
 // ---------------------------------------------------------------------------
-// Who is calling, and from where. Every rate limit above, the proof-of-work
-// caller binding (lib/pow.ts) and the ip/country/city stored with visits and
-// signups key on these two helpers, so they must read ONLY headers that the
-// proxy in front of the app sets and overwrites. Which headers those are
-// depends on the host, so it is configured, not guessed (2026-09-24, for the
-// move off Vercel to a Cloudflare Tunnel):
+// Who is calling, and from where. Every rate limit above (through
+// clientBucket), the proof-of-work caller binding (lib/pow.ts) and the
+// ip/country/city stored with visits and signups key on these two helpers, so
+// they must read ONLY headers that the proxy in front of the app sets and
+// overwrites. Which headers those are depends on the host, so it is
+// configured, not guessed (2026-09-24, for the move off Vercel to a
+// Cloudflare Tunnel):
 //
 //   TRUSTED_PROXY=vercel      (default) Vercel's edge: x-real-ip, else the
 //                             rightmost X-Forwarded-For hop; x-vercel-ip-* geo.
@@ -188,4 +190,47 @@ export function clientGeo(req: Request, mode: TrustedProxy = TRUSTED_PROXY): Cli
     case "none":
       return { country: null, city: null };
   }
+}
+
+// ---------------------------------------------------------------------------
+// The rate-limit identity of a caller (2026-09-24). An IPv4 address is one
+// subscriber, but an IPv6 subscriber is handed at least a /64 (2^64
+// addresses) and can source every request from a new one: keyed on the full
+// address, each request minted a fresh bucket and walked past every per-IP
+// cap. Behind Cloudflare, which gives proxied hostnames AAAA records by
+// default, every IPv6 visitor arrives that way. So the limiter keys IPv6 on
+// its /64. Only the limiter key is coarsened: stored ips and the PoW binding
+// keep clientIp().
+// ---------------------------------------------------------------------------
+const HEXTET = /^[0-9a-f]{1,4}$/;
+const IPV4_MAPPED = /^::ffff:(\d{1,3}(?:\.\d{1,3}){3})$/;
+
+// The eight 16-bit groups of a plain-hex IPv6 address, "::" expanded, or null
+// for anything else (IPv4, "unknown", a zone id, a dotted tail).
+function ipv6Hextets(ip: string): number[] | null {
+  const halves = ip.split("::");
+  if (halves.length > 2) return null;
+  const groups = (half: string) => (half ? half.split(":") : []);
+  const head = groups(halves[0]);
+  const tail = halves.length === 2 ? groups(halves[1]) : [];
+  const missing = 8 - head.length - tail.length;
+  if (halves.length === 2 ? missing < 1 : missing !== 0) return null;
+  const all = [...head, ...Array<string>(missing).fill("0"), ...tail];
+  return all.every((g) => HEXTET.test(g)) ? all.map((g) => parseInt(g, 16)) : null;
+}
+
+// IPv4 as is; an IPv4-mapped IPv6 address as its IPv4 (its /64 would hold
+// every IPv4 client); any other IPv6 address as its /64, e.g. "2001:db8:1:2::/64".
+export function ipBucket(ip: string): string {
+  const value = ip.toLowerCase();
+  const mapped = IPV4_MAPPED.exec(value);
+  if (mapped) return mapped[1];
+  const hextets = ipv6Hextets(value);
+  if (!hextets) return ip;
+  return `${hextets.slice(0, 4).map((h) => h.toString(16)).join(":")}::/64`;
+}
+
+// What every per-IP rateLimit() key is built from.
+export function clientBucket(req: Request, mode: TrustedProxy = TRUSTED_PROXY): string {
+  return ipBucket(clientIp(req, mode));
 }

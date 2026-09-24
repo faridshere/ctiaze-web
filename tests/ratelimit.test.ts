@@ -1,6 +1,8 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { rateLimit, clientIp, clientGeo, parseTrustedProxy, type TrustedProxy } from "../lib/ratelimit.ts";
+import { readdirSync, readFileSync } from "node:fs";
+import { join } from "node:path";
+import { rateLimit, clientIp, clientGeo, clientBucket, ipBucket, parseTrustedProxy, type TrustedProxy } from "../lib/ratelimit.ts";
 
 test("rateLimit allows exactly N requests in a window, then denies", () => {
   const key = `test-window:${Math.random()}`;
@@ -172,4 +174,47 @@ test("none: every caller is 'unknown' with no geo, whatever it sends", () => {
   const r = req({ ...SPOOFED, "cf-connecting-ip": "5.6.7.8", "cf-ipcountry": "AZ" });
   assert.equal(clientIp(r, NONE), "unknown");
   assert.deepEqual(clientGeo(r, NONE), { country: null, city: null });
+});
+
+// --- the rate-limit key: IPv6 by /64 -------------------------------------------
+
+test("ipBucket keeps IPv4 and 'unknown' as they are", () => {
+  assert.equal(ipBucket("5.6.7.8"), "5.6.7.8");
+  assert.equal(ipBucket("unknown"), "unknown");
+});
+
+test("ipBucket keys IPv6 on its /64, whatever the spelling", () => {
+  assert.equal(ipBucket("2001:db8:1:2::1"), "2001:db8:1:2::/64");
+  assert.equal(ipBucket("2001:0DB8:0001:0002:ffff:ffff:ffff:ffff"), "2001:db8:1:2::/64");
+  assert.equal(ipBucket("2001:db8::1"), "2001:db8:0:0::/64");
+  assert.equal(ipBucket("::1"), "0:0:0:0::/64");
+  assert.equal(ipBucket("2001:db8:1:3::1"), "2001:db8:1:3::/64", "the next /64 is another subscriber");
+});
+
+test("ipBucket keys an IPv4-mapped address as its IPv4, not the shared ::ffff:0:0/64", () => {
+  assert.equal(ipBucket("::ffff:5.6.7.8"), "5.6.7.8");
+  assert.equal(ipBucket("::FFFF:5.6.7.9"), "5.6.7.9");
+});
+
+test("ipBucket leaves anything that is not an address untouched", () => {
+  for (const odd of ["1::2::3", "2001:db8:1:2:3:4:5:6:7", "2001:db8:1:2:3:4:5", "2001:db8::g", "fe80::1%eth0", "64:ff9b::1.2.3.4"]) {
+    assert.equal(ipBucket(odd), odd, odd);
+  }
+});
+
+test("cloudflare: rotating addresses inside one IPv6 /64 cannot mint fresh rate-limit buckets", () => {
+  const run = Math.random();
+  const allowed = Array.from({ length: 50 }, (_, i) =>
+    rateLimit(`test-v6:${run}:${clientBucket(req({ "cf-connecting-ip": `2001:db8:1:2::${(i + 1).toString(16)}` }), CLOUDFLARE)}`, 6, 60_000),
+  ).filter(Boolean).length;
+  assert.equal(allowed, 6, "one /64 is one caller");
+  const other = clientBucket(req({ "cf-connecting-ip": "2001:db8:1:3::1" }), CLOUDFLARE);
+  assert.equal(rateLimit(`test-v6:${run}:${other}`, 6, 60_000), true, "a different /64 has its own bucket");
+});
+
+test("no route keys a rate limit on the raw address", () => {
+  const app = join(import.meta.dirname, "..", "app");
+  const routes = readdirSync(app, { recursive: true }).map(String).filter((f) => f.endsWith("route.ts"));
+  const raw = routes.filter((f) => /rateLimit\(`[^`]*\$\{(clientIp\(req\)|ip)\}/.test(readFileSync(join(app, f), "utf8")));
+  assert.deepEqual(raw, [], "use clientBucket(req) or ipBucket(ip) so an IPv6 /64 is one caller");
 });

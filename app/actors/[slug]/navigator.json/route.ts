@@ -1,6 +1,6 @@
 import { getActorByIdCached } from "@/lib/threatactors";
 import { canonicalActorId } from "@/lib/actor-aliases";
-import { rateLimit, clientIp } from "@/lib/ratelimit";
+import { rateLimit, clientBucket } from "@/lib/ratelimit";
 import { jsonError } from "@/lib/api";
 import { absoluteUrl } from "@/lib/site";
 import { etagFor, notModified } from "@/lib/etag";
@@ -20,7 +20,7 @@ export const revalidate = 3600;
 export async function GET(req: Request, ctx: { params: Promise<{ slug: string }> }) {
   // Tighter than /api/v1/actors/{id} (120/min): a 93-technique layer is an
   // order of magnitude more body per request than the dossier JSON.
-  if (!rateLimit(`navlayer:${clientIp(req)}`, 60, 60_000)) {
+  if (!rateLimit(`navlayer:${clientBucket(req)}`, 60, 60_000)) {
     return jsonError(429, "Too many requests — 60/min per IP.");
   }
 

@@ -1,4 +1,4 @@
-import { rateLimit, clientIp, clientGeo } from "@/lib/ratelimit";
+import { rateLimit, ipBucket, clientIp, clientGeo } from "@/lib/ratelimit";
 import { verifyPow } from "@/lib/pow";
 import { writeDb } from "@/lib/db-write";
 import { jsonError, jsonOk, readJsonBody, RATE } from "@/lib/api";
@@ -11,7 +11,7 @@ export const revalidate = 0;
 // email in the `signups` collection.
 export async function POST(req: Request) {
   const ip = clientIp(req);
-  if (!rateLimit(`waitlist:${ip}`, RATE.waitlist.limit, RATE.waitlist.windowMs)) {
+  if (!rateLimit(`waitlist:${ipBucket(ip)}`, RATE.waitlist.limit, RATE.waitlist.windowMs)) {
     return jsonError(429, "Too many requests — wait a minute");
   }
   if (!verifyPow(req.headers.get("x-pow"), ip)) {

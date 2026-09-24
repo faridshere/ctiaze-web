@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { rateLimit, clientIp } from "@/lib/ratelimit";
+import { rateLimit, clientBucket } from "@/lib/ratelimit";
 import { defang, type IocType } from "@/lib/ioc";
 import { GENERIC_TAGS } from "@/lib/actors";
 
@@ -159,7 +159,7 @@ async function enrichOne(term: string, key: string | undefined): Promise<EnrichI
 }
 
 export async function GET(req: Request) {
-  if (!rateLimit(`enrich:${clientIp(req)}`, 30, 60_000)) {
+  if (!rateLimit(`enrich:${clientBucket(req)}`, 30, 60_000)) {
     return NextResponse.json({ error: "rate_limited" }, { status: 429 });
   }
   // Accept a priority-ordered candidate list (specific → generic); the first

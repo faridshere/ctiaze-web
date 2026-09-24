@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { rateLimit, clientIp } from "@/lib/ratelimit";
+import { rateLimit, clientBucket } from "@/lib/ratelimit";
 import { lookupThreatFox, type TfHit, type TfKind } from "@/lib/threatfox";
 import { kevSet, epssFor, nvdLookup } from "@/lib/cveintel";
 
@@ -86,7 +86,7 @@ function hostOfUrl(u: string): string | null {
 }
 
 export async function GET(req: Request) {
-  if (!rateLimit(`threat:${clientIp(req)}`, 40, 60_000)) {
+  if (!rateLimit(`threat:${clientBucket(req)}`, 40, 60_000)) {
     return NextResponse.json({ error: "Too many requests — wait a minute" }, { status: 429 });
   }
   const raw = (new URL(req.url).searchParams.get("q") || "").trim();
