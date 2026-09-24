@@ -1,5 +1,5 @@
 import { ADMIN_COOKIE, tokenIsValid, newSessionValue } from "@/lib/admin-auth";
-import { rateLimit, clientBucket } from "@/lib/ratelimit";
+import { limitCaller } from "@/lib/ratelimit";
 import { jsonError, jsonOk, readJsonBody, RATE } from "@/lib/api";
 
 export const revalidate = 0;
@@ -7,7 +7,7 @@ export const revalidate = 0;
 // Exchange the admin token for a session cookie. Tightly rate-limited: this is
 // the one endpoint where guessing gets you the email list.
 export async function POST(req: Request) {
-  if (!rateLimit(`adminlogin:${clientBucket(req)}`, RATE.adminLogin.limit, RATE.adminLogin.windowMs)) {
+  if (!limitCaller(req, "adminlogin", RATE.adminLogin.limit, RATE.adminLogin.windowMs)) {
     return jsonError(429, "Too many attempts — wait a few minutes.");
   }
   const body = await readJsonBody<{ token?: unknown }>(req);

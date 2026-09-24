@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { createHash } from "crypto";
-import { rateLimit, clientBucket, clientIp, withinSharedDailyBudget } from "@/lib/ratelimit";
+import { limitCaller, clientIp, withinSharedDailyBudget } from "@/lib/ratelimit";
 import { verifyPow } from "@/lib/pow";
 import { generateLookalikes, brandMatch, splitDomain } from "@/lib/_disabled/lookalikes";
 import { RDAP_TLDS } from "@/lib/_disabled/domain-data";
@@ -1050,7 +1050,7 @@ async function scanDomain(domain: string) {
 }
 
 export async function GET(req: Request) {
-  if (!rateLimit(`scan:${clientBucket(req)}`, 12, 60_000)) {
+  if (!limitCaller(req, "scan", 12, 60_000)) {
     return NextResponse.json({ error: "Too many requests — wait a minute" }, { status: 429 });
   }
   if (!verifyPow(req.headers.get("x-pow"), clientIp(req))) {

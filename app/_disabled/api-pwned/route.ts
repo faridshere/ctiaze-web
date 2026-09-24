@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { rateLimit, clientBucket } from "@/lib/ratelimit";
+import { limitCaller } from "@/lib/ratelimit";
 
 // Pwned-password check via HIBP's k-anonymity range API. The browser SHA-1s the
 // password and sends ONLY the first 5 hex chars of the hash here; we proxy that
@@ -8,7 +8,7 @@ import { rateLimit, clientBucket } from "@/lib/ratelimit";
 export const revalidate = 0;
 
 export async function GET(req: Request) {
-  if (!rateLimit(`pwned:${clientBucket(req)}`, 30, 60_000)) {
+  if (!limitCaller(req, "pwned", 30, 60_000)) {
     return NextResponse.json({ error: "Too many requests — wait a minute" }, { status: 429 });
   }
   const prefix = (new URL(req.url).searchParams.get("prefix") || "").toUpperCase();

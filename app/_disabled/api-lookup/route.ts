@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { rateLimit, clientBucket } from "@/lib/ratelimit";
+import { limitCaller } from "@/lib/ratelimit";
 import { lookupThreatFox } from "@/lib/threatfox";
 
 // Live exposure lookup. Core source is Shodan's FREE InternetDB
@@ -120,7 +120,7 @@ async function epssMap(cves: string[]): Promise<Map<string, number>> {
 type Vuln = { cve: string; kev: boolean; epss: number | null };
 
 export async function GET(req: Request) {
-  if (!rateLimit(`lookup:${clientBucket(req)}`, 40, 60_000)) {
+  if (!limitCaller(req, "lookup", 40, 60_000)) {
     return NextResponse.json({ error: "Too many requests — wait a minute" }, { status: 429 });
   }
   const url = new URL(req.url);

@@ -1,6 +1,6 @@
 import { getActorByIdCached } from "@/lib/threatactors";
 import { canonicalActorId } from "@/lib/actor-aliases";
-import { rateLimit, clientBucket } from "@/lib/ratelimit";
+import { limitCaller } from "@/lib/ratelimit";
 import { jsonError } from "@/lib/api";
 import { absoluteUrl } from "@/lib/site";
 import { etagFor, notModified } from "@/lib/etag";
@@ -21,7 +21,7 @@ export const revalidate = 3600;
 export async function GET(req: Request, ctx: { params: Promise<{ slug: string }> }) {
   // Same budget as the Navigator layer: a bundle for a well-documented group
   // runs to a few hundred objects, far heavier than the dossier JSON's 120/min.
-  if (!rateLimit(`stixbundle:${clientBucket(req)}`, 60, 60_000)) {
+  if (!limitCaller(req, "stixbundle", 60, 60_000)) {
     return jsonError(429, "Too many requests — 60/min per IP.");
   }
 

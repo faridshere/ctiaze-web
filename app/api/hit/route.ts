@@ -1,4 +1,4 @@
-import { rateLimit, ipBucket, clientIp, clientGeo } from "@/lib/ratelimit";
+import { limitCaller, clientIp, clientGeo } from "@/lib/ratelimit";
 import { writeDb } from "@/lib/db-write";
 import { jsonOk, readJsonBody, RATE } from "@/lib/api";
 
@@ -16,7 +16,7 @@ let ttlEnsured = false;
 export async function POST(req: Request) {
   const ip = clientIp(req);
   // 30/min is generous for a human and cheap for us.
-  if (!rateLimit(`hit:${ipBucket(ip)}`, RATE.hit.limit, RATE.hit.windowMs)) {
+  if (!limitCaller(req, "hit", RATE.hit.limit, RATE.hit.windowMs)) {
     return jsonOk({ ok: true }); // silently drop; never error a beacon
   }
   const db = writeDb();

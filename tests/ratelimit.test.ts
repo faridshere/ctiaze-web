@@ -1,8 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { readdirSync, readFileSync } from "node:fs";
-import { join } from "node:path";
-import { rateLimit, clientIp, clientGeo, clientBucket, ipBucket, parseTrustedProxy, type TrustedProxy } from "../lib/ratelimit.ts";
+import { rateLimit, limitCaller, clientIp, clientGeo, ipBucket, networkPrefix, parseTrustedProxy, type TrustedProxy } from "../lib/ratelimit.ts";
 
 test("rateLimit allows exactly N requests in a window, then denies", () => {
   const key = `test-window:${Math.random()}`;
@@ -202,19 +200,30 @@ test("ipBucket leaves anything that is not an address untouched", () => {
   }
 });
 
-test("cloudflare: rotating addresses inside one IPv6 /64 cannot mint fresh rate-limit buckets", () => {
-  const run = Math.random();
-  const allowed = Array.from({ length: 50 }, (_, i) =>
-    rateLimit(`test-v6:${run}:${clientBucket(req({ "cf-connecting-ip": `2001:db8:1:2::${(i + 1).toString(16)}` }), CLOUDFLARE)}`, 6, 60_000),
-  ).filter(Boolean).length;
-  assert.equal(allowed, 6, "one /64 is one caller");
-  const other = clientBucket(req({ "cf-connecting-ip": "2001:db8:1:3::1" }), CLOUDFLARE);
-  assert.equal(rateLimit(`test-v6:${run}:${other}`, 6, 60_000), true, "a different /64 has its own bucket");
+test("networkPrefix gives the wider network the PoW binding uses: IPv4 /24, IPv6 /48", () => {
+  assert.equal(networkPrefix("198.51.100.7", 24, 48), "198.51.100.0/24");
+  assert.equal(networkPrefix("::ffff:198.51.100.7", 24, 48), "198.51.100.0/24");
+  assert.equal(networkPrefix("2001:db8::1", 24, 48), "2001:db8:0::/48");
+  assert.equal(networkPrefix("2001:0DB8:0000:ffff::9", 24, 48), "2001:db8:0::/48");
+  assert.equal(networkPrefix("unknown", 24, 48), "unknown");
 });
 
-test("no route keys a rate limit on the raw address", () => {
-  const app = join(import.meta.dirname, "..", "app");
-  const routes = readdirSync(app, { recursive: true }).map(String).filter((f) => f.endsWith("route.ts"));
-  const raw = routes.filter((f) => /rateLimit\(`[^`]*\$\{(clientIp\(req\)|ip)\}/.test(readFileSync(join(app, f), "utf8")));
-  assert.deepEqual(raw, [], "use clientBucket(req) or ipBucket(ip) so an IPv6 /64 is one caller");
+// Routes rate-limit only through limitCaller(), which builds the key itself,
+// so no route can key on the raw address (2026-09-24, review: the source-grep
+// guard this replaces missed any spelling but `${clientIp(req)}` and `${ip}`).
+test("cloudflare: rotating addresses inside one IPv6 /64 cannot mint fresh rate-limit buckets", () => {
+  const name = `test-v6:${Math.random()}`;
+  const allowed = Array.from({ length: 50 }, (_, i) =>
+    limitCaller(req({ "cf-connecting-ip": `2001:db8:1:2::${(i + 1).toString(16)}` }), name, 6, 60_000, CLOUDFLARE),
+  ).filter(Boolean).length;
+  assert.equal(allowed, 6, "one /64 is one caller");
+  assert.equal(limitCaller(req({ "cf-connecting-ip": "2001:db8:1:3::1" }), name, 6, 60_000, CLOUDFLARE), true, "a different /64 has its own bucket");
+});
+
+test("limitCaller keeps separate budgets per name for one caller", () => {
+  const caller = req({ "cf-connecting-ip": "5.6.7.8" });
+  const run = Math.random();
+  assert.equal(limitCaller(caller, `a:${run}`, 1, 60_000, CLOUDFLARE), true);
+  assert.equal(limitCaller(caller, `a:${run}`, 1, 60_000, CLOUDFLARE), false);
+  assert.equal(limitCaller(caller, `b:${run}`, 1, 60_000, CLOUDFLARE), true);
 });

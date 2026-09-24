@@ -4,7 +4,7 @@ import { CATEGORY_ORDER } from "@/lib/taxonomy";
 import { etagFor, notModified } from "@/lib/etag";
 import { completeSentences } from "@/lib/format";
 import { storyUrl } from "@/lib/site";
-import { rateLimit, clientBucket } from "@/lib/ratelimit";
+import { limitCaller } from "@/lib/ratelimit";
 import { jsonError } from "@/lib/api";
 import { clusterStories, clusterId } from "@/lib/dedup";
 import type { Story } from "@/lib/types";
@@ -114,7 +114,7 @@ function toApiItem(s: Story, cluster: { id: string; isDupe: boolean }, kev: Set<
 export async function GET(req: Request) {
   // Generous — this is meant to be used — but bounded so one caller can't pin
   // the read connection.
-  if (!rateLimit(`apiv1:${clientBucket(req)}`, 60, 60_000)) {
+  if (!limitCaller(req, "apiv1", 60, 60_000)) {
     return jsonError(429, "Too many requests — 60/min per IP.");
   }
 

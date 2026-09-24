@@ -1,6 +1,6 @@
 import { getActorsPageData } from "@/lib/threatactors";
 import { getWireMentions } from "@/lib/actor-wire";
-import { rateLimit, clientBucket } from "@/lib/ratelimit";
+import { limitCaller } from "@/lib/ratelimit";
 import { jsonError } from "@/lib/api";
 import { absoluteUrl } from "@/lib/site";
 import { etagFor, notModified } from "@/lib/etag";
@@ -18,7 +18,7 @@ export const revalidate = 3600;
 const MAX_LIMIT = 500;
 
 export async function GET(req: Request) {
-  if (!rateLimit(`apiv1actors:${clientBucket(req)}`, 60, 60_000)) {
+  if (!limitCaller(req, "apiv1actors", 60, 60_000)) {
     return jsonError(429, "Too many requests — 60/min per IP.");
   }
   const q = new URL(req.url).searchParams;
