@@ -4,6 +4,7 @@ import { PUBLISHED_FILTER } from "./stories";
 import { toStory, type StoryDoc } from "./types";
 import { buildMatcher, matchKeys } from "./actor-match";
 import { canonicalActorId, isAliasActorId } from "./actor-aliases";
+import { ttlMemo } from "./memo";
 
 export { buildMatcher, matchKeys } from "./actor-match";
 
@@ -78,4 +79,12 @@ async function computeWireMentions(): Promise<WireMentions> {
   return { byActor, recent, generatedAt: new Date().toISOString() };
 }
 
-export const getWireMentions = unstable_cache(computeWireMentions, ["actor-wire-v5"], { revalidate: 3600 });
+// Also memoised in-process for the same hour (2026-10-10). Next BYPASSES an
+// unstable_cache that is called inside another one (see "isNestedUnstableCache"
+// in next/dist/server/web/spec-extension/unstable-cache.js), and this one is
+// nested in two places: the /cve loader and getActorsPageData. So every cold
+// /cve render re-ran the full matcher, ~1,400 actor regexes over 400 stories,
+// about 0.7 s of CPU each (profiled). The memo makes the nested path cheap
+// and shares one computation between concurrent callers.
+const computeShared = ttlMemo(computeWireMentions, 3600_000, 1);
+export const getWireMentions = unstable_cache(() => computeShared(), ["actor-wire-v5"], { revalidate: 3600 });
