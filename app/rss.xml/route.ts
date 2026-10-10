@@ -1,4 +1,4 @@
-import { getStories } from "@/lib/stories";
+import { queryStories } from "@/lib/stories";
 import { completeSentences } from "@/lib/format";
 import { SITE_URL, storyUrl } from "@/lib/site";
 
@@ -41,10 +41,15 @@ export async function GET(req: Request) {
     ),
   ].slice(0, 10);
 
-  let stories = await getStories(80);
-  if (onlyKev) stories = stories.filter((s) => s.kev);
-  if (onlyRegion) stories = stories.filter((s) => s.region);
-  if (cat) stories = stories.filter((s) => s.category.toLowerCase() === cat);
+  // kev / region / cat run in Mongo over the whole archive (2026-10-10): this
+  // used to filter the newest 80 stories, so ?kev=1 returned 2 items. The free-
+  // text ?q= terms still match in memory, over a wider window of the already-
+  // filtered set (up to 300), since substring search has no index to use.
+  const { stories: matched } = await queryStories(
+    { kev: onlyKev, region: onlyRegion, category: cat || undefined },
+    terms.length ? 300 : 80,
+  );
+  let stories = matched;
   if (terms.length) {
     stories = stories.filter((s) => {
       const hay = `${s.titleAz} ${s.titleEn} ${s.category} ${s.cveIds.join(" ")}`.toLowerCase();

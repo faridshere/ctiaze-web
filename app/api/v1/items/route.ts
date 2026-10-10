@@ -1,4 +1,4 @@
-import { getStories, getStoriesBefore } from "@/lib/stories";
+import { queryStories } from "@/lib/stories";
 import { kevSet } from "@/lib/cveintel";
 import { CATEGORY_ORDER } from "@/lib/taxonomy";
 import { etagFor, notModified } from "@/lib/etag";
@@ -26,8 +26,8 @@ export const revalidate = 300;
 // determine is null with the reason stated in the docs rather than guessed.
 // ---------------------------------------------------------------------------
 const MAX_LIMIT = 200;
-// How many stories are pulled before filtering. Bounded so one caller cannot ask
-// the read connection to walk the whole collection.
+// How many matching stories are read for clustering and paging. Bounded so one
+// caller cannot ask the read connection to walk the whole collection.
 const WINDOW = 500;
 
 type ApiItem = {
@@ -124,23 +124,26 @@ type Query = {
 };
 
 const buildBody = ttlMemo(async ({ limit, wantKev, cve, category, since, sinceMs, before, beforeMs }: Query): Promise<string> => {
-  // Pull a wider window than `limit` so filters have something to bite on.
+  // The filters run in Mongo over the whole archive (lib/stories.ts
+  // queryStories, 2026-10-10); this used to pull the newest WINDOW stories and
+  // filter those, so ?kev=1 and ?cve= silently missed older items. WINDOW now
+  // only caps how many MATCHING stories are read for clustering and paging.
   //
-  // This used to be `.catch(() => [])`, which turned a database outage into a
-  // perfectly cheerful `200 {count: 0}`. A consumer then cannot tell "nothing
-  // matched" from "the feed is down", and a polling client would quietly treat
-  // an outage as an empty day. Fail loudly instead.
-  // A rejection here propagates to GET, which answers 503 (and ttlMemo does not
-  // cache it).
-  const [stories, kev] = await Promise.all([
-    before ? getStoriesBefore(new Date(beforeMs), WINDOW) : getStories(WINDOW),
+  // A database failure must stay an error, never `200 {count: 0}`: a rejection
+  // here propagates to GET, which answers 503 (and ttlMemo does not cache it).
+  const [{ stories: items, total }, kev] = await Promise.all([
+    queryStories(
+      {
+        kev: wantKev,
+        cve: cve || undefined,
+        category: category || undefined,
+        since: Number.isNaN(sinceMs) ? undefined : new Date(sinceMs),
+        before: Number.isNaN(beforeMs) ? undefined : new Date(beforeMs),
+      },
+      WINDOW,
+    ),
     kevSet().catch(() => new Set<string>()), // KEV outage degrades to item-level flags, never to an error
   ]);
-  let items = stories;
-  if (wantKev) items = items.filter((s) => s.kev);
-  if (cve) items = items.filter((s) => s.cveIds.some((c) => c.toUpperCase() === cve));
-  if (category) items = items.filter((s) => s.category.toLowerCase() === category);
-  if (!Number.isNaN(sinceMs)) items = items.filter((s) => Date.parse(s.publishedAt) >= sinceMs);
 
   // Cluster across the whole filtered set, then page — otherwise a duplicate
   // split across a page boundary would look unique.
@@ -164,11 +167,13 @@ const buildBody = ttlMemo(async ({ limit, wantKev, cve, category, since, sinceMs
       version: 1,
       generated_at: new Date().toISOString(),
       count: page.length,
-      // Honest about its own scope: this is the number that matched INSIDE the
-      // window, not the number that exists. Reporting it as a total would be a
-      // lie for any `since` reaching further back than the window covers.
+      // Exact: the filters run in the database over the whole archive. The
+      // window fields are kept for existing clients; the window now holds the
+      // newest WINDOW *matching* stories, so it is complete whenever
+      // total_matching fits in it.
+      total_matching: total,
       matched_in_window: items.length,
-      window: { size: WINDOW, stories_seen: stories.length, complete: stories.length < WINDOW },
+      window: { size: WINDOW, stories_seen: items.length, complete: total <= WINDOW },
       filters: { kev: wantKev, cve: cve || null, category: category || null, since: since || null, before: before || null, limit },
       // Feed this back as ?before= to get the next, older page.
       next_before: page.length ? page[page.length - 1].published_at : null,

@@ -14,10 +14,9 @@ export const metadata: Metadata = {
   title: "API",
   description: INTRO,
   alternates: { canonical: absoluteUrl("/api-docs") },
-  // Not advertised until early access opens: out of the sitemap, out of the
-  // footer, and out of search. The page still resolves for anyone holding the
-  // link, so nothing that already points here breaks.
-  robots: { index: false, follow: false },
+  // Indexed and linked from the header and footer since 2026-10-10: the API
+  // was always live and keyless, and hiding its docs "until early access"
+  // only hid the product.
 };
 
 const EXAMPLES: { label: string; cmd: string; note: string }[] = [
@@ -164,9 +163,11 @@ export default function ApiDocsPage() {
               that difference.
             </li>
             <li>
-              <strong className="text-ink-primary">matched_in_window is not a total.</strong> Filters run over the most
-              recent {"{"}window.size{"}"} stories. <code>window.complete</code> tells you whether that window covered
-              the whole archive, so a far-back <code>since</code> cannot quietly look like &ldquo;no results&rdquo;.
+              <strong className="text-ink-primary">Filters cover the whole archive.</strong> <code>kev</code>,{" "}
+              <code>cve</code>, <code>category</code>, <code>since</code> and <code>before</code> run against every
+              published story, and <code>total_matching</code> is the exact count. One response reads at most{" "}
+              {"{"}window.size{"}"} matching stories; when <code>window.complete</code> is false, page on with{" "}
+              <code>next_before</code>.
             </li>
           </ul>
         </section>

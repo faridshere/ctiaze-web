@@ -62,6 +62,57 @@ export async function getStoriesBefore(before: Date, limit = 60): Promise<Story[
   return docs.map(toStory);
 }
 
+// Filtered reads for the feeds and the API (2026-10-10). /api/v1/items and
+// /rss.xml used to pull the newest N stories and filter those in memory, so
+// ?kev=1 saw 36 of 84 KEV items and ?cve= missed anything older than a month.
+// The filters now run in Mongo over the whole published archive (all backed by
+// indexes: kev, cve_ids+effective_at, published+effective_at) and the count is
+// exact. Every field maps 1:1 to toStory(): kev, cveIds, category (missing or
+// empty ai_category reads as "other"), region, publishedAt (= effective_at).
+export type StoryQuery = {
+  kev?: boolean;
+  cve?: string;
+  category?: string;
+  region?: boolean;
+  since?: Date;
+  before?: Date;
+};
+
+function storyFilter(q: StoryQuery): Filter<StoryDoc> {
+  const f: Filter<StoryDoc> = { ...PUBLISHED_FILTER };
+  if (q.kev) f.kev = true;
+  if (q.cve) f.cve_ids = q.cve.toUpperCase();
+  if (q.category) {
+    const c = q.category.toLowerCase();
+    // $in with null also matches a missing field (the driver's types omit null).
+    f.ai_category = c === "other" ? ({ $in: [null, "", "other"] } as unknown as Filter<StoryDoc>["ai_category"]) : c;
+  }
+  if (q.region) f.ai_region = true;
+  if (q.since || q.before) {
+    f.effective_at = {
+      ...(q.since ? { $gte: q.since } : {}),
+      ...(q.before ? { $lt: q.before } : {}),
+    };
+  }
+  return f;
+}
+
+// Newest first, capped at `limit`, plus the exact number that matched. Shared
+// across requests for two minutes like getStories (callers must not mutate).
+export const queryStories = ttlMemo(
+  async (q: StoryQuery, limit: number): Promise<{ stories: Story[]; total: number }> => {
+    const col = await items();
+    const filter = storyFilter(q);
+    const [docs, total] = await Promise.all([
+      col.find(filter).sort({ effective_at: -1 }).limit(limit).toArray(),
+      col.countDocuments(filter),
+    ]);
+    return { stories: docs.map(toStory), total };
+  },
+  120_000,
+  32,
+);
+
 // Every published dispatch that names a CVE, newest first — the spine of the
 // /cve hub. Reads the indexed array field directly rather than scanning a window.
 export async function getStoriesForCve(cve: string, limit = 40): Promise<Story[]> {
