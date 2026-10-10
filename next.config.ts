@@ -59,6 +59,13 @@ const nextConfig: NextConfig = {
         source: "/:path*/opengraph-image",
         headers: [{ key: "Cache-Control", value: "public, s-maxage=31536000, max-age=3600, immutable" }],
       },
+      // The globe textures (~0.9 MB) went out with max-age=0 off Vercel, so
+      // every landing view re-validated them. A week, not immutable: the file
+      // names are not content-hashed, so a replaced texture must age out.
+      {
+        source: "/textures/:path*",
+        headers: [{ key: "Cache-Control", value: "public, max-age=604800, stale-while-revalidate=86400" }],
+      },
     ];
   },
   // Two jobs here, in priority order:

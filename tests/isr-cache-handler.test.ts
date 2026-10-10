@@ -129,3 +129,65 @@ test("next.config uses the handler off Vercel and Next's default on Vercel", asy
   assert.ok(existsSync(selfHosted.cacheHandler), "the configured handler file exists");
   assert.equal((await configWith("1", "vercel")).cacheHandler, undefined);
 });
+
+test("a 404 page and a null result expire after emptyTtlMs, so a story published late renders", async () => {
+  const s = sandbox();
+  const H = Handler as unknown as { emptyTtlMs: number };
+  const before = H.emptyTtlMs;
+  H.emptyTtlMs = 20;
+  try {
+    const key = `/news/${junk()}-published-a-moment-later`;
+    await s.cache.set(key, page(404), {});
+    const dataKey = `fetch-${junk()}`;
+    await s.cache.set(dataKey, cached(null), DATA_CTX);
+    assert.equal((await s.cache.get(key, { kind: "APP_PAGE" }))?.value?.status, 404, "fresh 404 still served from cache");
+    assert.equal((await s.cache.get(dataKey, { kind: "FETCH", tags: [] }))?.value?.data?.body, "null", "fresh null still served");
+    await new Promise((r) => setTimeout(r, 40));
+    assert.equal(await s.cache.get(key, { kind: "APP_PAGE" }), null, "an old 404 is a miss, so the page renders again");
+    assert.equal(await s.cache.get(dataKey, { kind: "FETCH", tags: [] }), null, "an old null is a miss too");
+  } finally {
+    H.emptyTtlMs = before;
+    s.cleanup();
+  }
+});
+
+test("a redirect and a real page do not expire early", async () => {
+  const s = sandbox();
+  const H = Handler as unknown as { emptyTtlMs: number };
+  const before = H.emptyTtlMs;
+  H.emptyTtlMs = 1;
+  try {
+    const redirectKey = `/news/cve-2024-340-junk${junk()}`;
+    await s.cache.set(redirectKey, page(308), {});
+    const pageKey = `/news/${junk()}-real`;
+    await s.cache.set(pageKey, page(200), { cacheControl: { revalidate: 86400, expire: 31536000 } });
+    await new Promise((r) => setTimeout(r, 10));
+    assert.equal((await s.cache.get(redirectKey, { kind: "APP_PAGE" }))?.value?.status, 308);
+    assert.equal((await s.cache.get(pageKey, { kind: "APP_PAGE" }))?.value?.status, 200);
+  } finally {
+    H.emptyTtlMs = before;
+    s.cleanup();
+  }
+});
+
+test("a route handler's 404 (an OG image for a made-up slug) stays off the disk and expires", async () => {
+  const s = sandbox();
+  const H = Handler as unknown as { emptyTtlMs: number };
+  const before = H.emptyTtlMs;
+  H.emptyTtlMs = 20;
+  try {
+    const key = `/news/${junk()}/opengraph-image`;
+    const route = (status: number) => ({ kind: "APP_ROUTE", body: Buffer.from("x"), status, headers: {} });
+    await s.cache.set(key, route(404), { cacheControl: { revalidate: 86400, expire: 31536000 } });
+    assert.deepEqual(s.filesUnder("server"), [], "no .body/.meta files for a 404");
+    assert.equal((await s.cache.get(key, { kind: "APP_ROUTE" }))?.value?.status, 404);
+    await new Promise((r) => setTimeout(r, 40));
+    assert.equal(await s.cache.get(key, { kind: "APP_ROUTE" }), null, "an old 404 renders again");
+    const okKey = `/news/${junk()}/opengraph-image`;
+    await s.cache.set(okKey, route(200), { cacheControl: { revalidate: 86400, expire: 31536000 } });
+    assert.ok(s.filesUnder("server").length > 0, "a real image is written to disk");
+  } finally {
+    H.emptyTtlMs = before;
+    s.cleanup();
+  }
+});
