@@ -310,16 +310,33 @@ async function computeActorsPageData(): Promise<ActorsPageData> {
 
 export const getActorsPageData = unstable_cache(computeActorsPageData, ["actors-page-v4"], { revalidate: 3600 });
 
-// Every substantive actor slug for the sitemap, richest first, capped.
-export async function getActorIds(limit = 800): Promise<string[]> {
-  const docs = await indexActors();
-  // Alias dossiers 308 to their canonical page, so advertising them in the
-  // sitemap would just hand crawlers a list of redirects.
+// A dossier with no ATT&CK techniques that our wire has never named is a thin
+// copy of a MISP galaxy entry (~1,300 of them, 2026-10-10 audit). It stays
+// reachable by URL and in the A–Z, but is noindex and left out of the sitemap,
+// so search engines see the dossiers that carry something of ours.
+export function isThinDossier(a: Pick<ThreatActor, "techniques">, wireMentions: number): boolean {
+  return !(a.techniques?.length) && wireMentions === 0;
+}
+
+function lastChanged(a: Pick<ThreatActor, "changed_at" | "last_refreshed">): Date | null {
+  for (const v of [a.changed_at, a.last_refreshed]) {
+    const t = v ? new Date(v).getTime() : NaN;
+    if (!Number.isNaN(t)) return new Date(t);
+  }
+  return null;
+}
+
+// The dossiers the sitemap lists, richest first: substantive, not an alias
+// (those 308 to their canonical page), not thin. lastModified is when the
+// dossier's content last changed (changed_at, falling back to the last refresh),
+// not one date stamped on every row.
+export async function getSitemapActors(limit = 5000): Promise<{ id: string; lastModified: Date | null }[]> {
+  const [docs, wire] = await Promise.all([indexActors(), getWireMentions().catch(() => null)]);
   return [...docs]
-    .filter((a) => !isAliasActorId(a._id))
+    .filter((a) => !isAliasActorId(a._id) && !isThinDossier(a, wire?.byActor[a._id]?.length ?? 0))
     .sort((a, b) => substance(b) - substance(a) || activity(b) - activity(a) || byName(a, b))
     .slice(0, limit)
-    .map((a) => a._id);
+    .map((a) => ({ id: a._id, lastModified: lastChanged(a) }));
 }
 
 /** The actor's target list split into countries we can place and the rest (orgs, companies). */

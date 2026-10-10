@@ -17,7 +17,7 @@ import { ActorCves } from "@/components/actors/ActorCves";
 import { ActorExports } from "@/components/actors/ActorExports";
 import { ActorSimilar, type SimilarEntry } from "@/components/actors/ActorSimilar";
 import { ActorRefs } from "@/components/actors/ActorRefs";
-import { getActorByIdCached, splitTargets, type ThreatActor, type Ttp } from "@/lib/threatactors";
+import { getActorByIdCached, isThinDossier, splitTargets, type ThreatActor, type Ttp } from "@/lib/threatactors";
 import {
   getActorPack,
   getTechniqueRef,
@@ -119,11 +119,16 @@ export async function generateMetadata({
   const description = briefText(a, pack?.intel ?? null) || `Threat-actor dossier for ${a.name}.`;
   const title = `${a.name} — threat actor dossier`;
   const url = absoluteUrl(`/actors/${a._id}`);
+  const wire = await getWireMentions().catch(() => null);
+  const thin = isThinDossier(a, wire?.byActor[a._id]?.length ?? 0);
   return {
     title,
     description,
     alternates: { canonical: url },
     openGraph: { title, description, url, type: "profile" },
+    // No techniques and never on our wire: reachable, but not for the index
+    // (and out of the sitemap, lib/threatactors.ts getSitemapActors).
+    ...(thin ? { robots: { index: false, follow: true } } : {}),
   };
 }
 
@@ -245,7 +250,7 @@ export default async function ActorPage({ params }: { params: Promise<{ slug: st
           <CtaBand
             source="actor:inline"
             heading={`Track ${a.name} on the wire.`}
-            blurb="Early access opens the actor API and MCP server first — and an alert every time this adversary lands on the wire. One email when it's ready."
+            blurb="This dossier is already data: the keyless actor API and a STIX 2.1 bundle. Mentions on the wire reach Telegram and RSS as they land; per-actor email alerts are next."
           />
         </div>
       </main>
