@@ -152,7 +152,7 @@ export default async function StoryPage({ params }: { params: Promise<Params> })
           <CtaBand
             source="story:inline"
             heading="Get the next one first."
-            blurb="Early access opens the actor API and MCP server first, plus alerts when an adversary you follow lands on the wire. One email when it's ready. Nothing else, ever."
+            blurb="Every dispatch goes to Telegram and RSS the moment it is published, and the whole wire is a keyless JSON API."
           />
         </div>
       </main>

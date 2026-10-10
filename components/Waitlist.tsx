@@ -117,7 +117,7 @@ export function Waitlist({ source = "site" }: { source?: string }) {
       >
         <p className="font-display text-lg font-semibold text-ink-primary">You&apos;re on the list.</p>
         <p className="mt-1 text-[14px] leading-relaxed text-ink-secondary">
-          One email when your free access is ready. Nothing else, ever — no tracking pixels, no reselling.
+          One email when alerts open. Nothing else, ever — no tracking pixels, no reselling.
         </p>
         <button
           type="button"
@@ -164,7 +164,7 @@ export function Waitlist({ source = "site" }: { source?: string }) {
           />
         </label>
         <Button type="submit" disabled={state === "loading"} glyph="→" className="shrink-0">
-          {state === "loading" ? "Sending" : "Get early access"}
+          {state === "loading" ? "Sending" : "Notify me"}
         </Button>
       </form>
       <div className="mt-2.5 flex items-center gap-3">

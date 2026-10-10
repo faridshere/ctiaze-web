@@ -1,11 +1,19 @@
 import { Waitlist } from "@/components/Waitlist";
+import { LINKS } from "@/lib/site";
+import { Button } from "./Button";
 import { Kicker } from "./Kicker";
 import { Panel } from "./Panel";
 
 // The black card: the one place the page asks for something. An orbital
 // wireframe rolls very slowly behind it (structure in cyan, barely there); the
 // copy is left-aligned in the card like xintra's "get in touch". `id="access"`
-// is what the header's Early access button jumps to.
+// stays as the anchor older links point at.
+//
+// 2026-10-10: the ask is "follow", not "wait". The card used to promise that
+// early access would open the API and STIX export, which have been live and
+// keyless for weeks. It now offers the three ways to follow that exist today
+// (Telegram, the KEV-only RSS, the API), and keeps the email form for the one
+// thing that genuinely is not built yet: alerts.
 function Orbital() {
   const rings = [0.28, 0.5, 0.72, 0.94];
   return (
@@ -28,10 +36,26 @@ function Orbital() {
   );
 }
 
+export function FollowLinks({ className = "" }: { className?: string }) {
+  return (
+    <div className={`flex flex-wrap gap-2 ${className}`}>
+      <Button href={LINKS.telegram} glyph="↗">
+        Follow on Telegram
+      </Button>
+      <Button href={LINKS.kevRss} variant="ghost">
+        KEV RSS
+      </Button>
+      <Button href={LINKS.api} variant="ghost" glyph="→">
+        API
+      </Button>
+    </div>
+  );
+}
+
 export function CtaBand({
   source,
-  heading = "Want the keys?",
-  blurb = "Early access opens three things first: the actor API and MCP server, alerts when an adversary you follow lands on the wire, and STIX export. One email when it's ready. Nothing else, ever.",
+  heading = "Follow the wire.",
+  blurb = "Every exploited CVE and adversary move as it lands: Telegram for the push, RSS for your reader, a keyless JSON API and per-actor STIX for your tooling.",
   id = "access",
 }: {
   source: string;
@@ -44,12 +68,16 @@ export function CtaBand({
       <Panel tone="void" className="px-7 py-14 sm:px-14 sm:py-20">
         <Orbital />
         <div className="relative max-w-[34rem]">
-          <Kicker>Early access</Kicker>
+          <Kicker>Follow</Kicker>
           <h2 className="mt-5 font-display text-[clamp(1.9rem,4.5vw,3.2rem)] font-semibold leading-[1.02] tracking-[-0.03em] text-ink-primary">
             {heading}
           </h2>
           <p className="mt-4 max-w-[30rem] text-[15px] leading-relaxed text-ink-secondary">{blurb}</p>
-          <div className="mt-8 max-w-md">
+          <FollowLinks className="mt-8" />
+          <div className="mt-10 max-w-md">
+            <p className="mb-3 font-mono text-[11px] uppercase tracking-[0.14em] text-ink-muted">
+              email alerts are next · one email when they open
+            </p>
             <Waitlist source={source} />
           </div>
         </div>

@@ -75,7 +75,7 @@ export function Pillars({ data }: { data: HomeData }) {
         </div>
         <Title>The feed</Title>
         <Line>
-          The same wire as JSON and RSS, live today, no key — point a reader, a SIEM or an agent at it. A developer API and an MCP server are being built; early access gets them first.
+          The same wire as JSON, RSS and a filterable JSON API, live today, no key — point a reader, a SIEM or an agent at it. An MCP server is next.
         </Line>
         <div className="relative mt-auto pt-8">
           <pre className="overflow-x-auto rounded-[var(--radius-btn)] border border-hairline bg-void/70 px-4 py-3 font-mono text-[11.5px] leading-relaxed text-ink-secondary">

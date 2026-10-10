@@ -10,6 +10,7 @@ import { SiteNavLink } from "./SiteNavLink";
 const NAV: { href: string; label: string; phone: boolean }[] = [
   { href: "/actors", label: "Adversaries", phone: true },
   { href: "/news", label: "Archive", phone: false },
+  { href: "/api-docs", label: "API", phone: false },
   { href: "/about", label: "About", phone: false },
 ];
 
@@ -33,16 +34,16 @@ export function SiteHeader() {
         </Link>
 
         <div className="flex items-center justify-end gap-2.5">
+          {/* The API and the feeds are live and keyless, so the header's one
+              orange action is "follow", not a waitlist (2026-10-10). */}
           <a
-            href={LINKS.telegram}
-            target="_blank"
-            rel="noopener noreferrer"
+            href={LINKS.kevRss}
             className="hidden font-mono text-[11px] uppercase tracking-[0.16em] text-ink-muted transition-colors hover:text-ink-primary sm:inline"
           >
-            Telegram <span aria-hidden>↗</span>
+            RSS
           </a>
-          <Button href="/#access" size="sm">
-            Early access
+          <Button href={LINKS.telegram} size="sm" glyph="↗">
+            Telegram
           </Button>
         </div>
       </div>

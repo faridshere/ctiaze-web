@@ -3,8 +3,7 @@ import { SiteHeader } from "@/components/site/SiteHeader";
 import { SiteFooter } from "@/components/site/SiteFooter";
 import { AuroraField } from "@/components/site/AuroraField";
 import { Kicker } from "@/components/site/Kicker";
-import { CtaBand } from "@/components/site/CtaBand";
-import { Waitlist } from "@/components/Waitlist";
+import { CtaBand, FollowLinks } from "@/components/site/CtaBand";
 import { WirePanel } from "@/components/home/WirePanel";
 import { Pillars } from "@/components/home/Pillars";
 import { ExposureCensus } from "@/components/home/ExposureCensus";
@@ -121,8 +120,11 @@ export default async function LandingPage() {
             <p data-sc className="mt-6 max-w-[30rem] text-[length:var(--t-body)] leading-relaxed text-ink-secondary">
               {SITE_TAGLINE} Exploited CVEs, adversary dossiers and a free JSON API, around the clock.
             </p>
-            <div data-sc="2" className="mt-9 w-full max-w-md text-left">
-              <Waitlist source="skopnix-landing" />
+            {/* Follow, not wait (2026-10-10): the API and feeds are live, so the
+                hero offers them. The email form lives in the CtaBand below,
+                for the alerts that are not built yet. */}
+            <div data-sc="2" className="mt-9 flex w-full justify-center">
+              <FollowLinks className="justify-center" />
             </div>
             {data.latestAt && (
               <p data-sc="3" className="mt-8 font-mono text-[11px] uppercase tracking-[0.16em] text-ink-muted">

@@ -12,10 +12,10 @@ const PAGES = [
   { href: "/about", label: "About" },
   { href: "/privacy", label: "Privacy" },
 ];
-// The API is deliberately absent: it is what early access opens, so the site
-// does not hand out its documentation in the footer first. The feeds stay —
-// a wire without RSS is not a wire.
+// Everything here is live and keyless (2026-10-10: the API used to be held back
+// as what "early access" would open; it has been public all along).
 const FEEDS = [
+  { href: LINKS.api, label: "API" },
   { href: LINKS.rss, label: "RSS" },
   { href: LINKS.jsonFeed, label: "JSON feed" },
   { href: LINKS.llms, label: "llms.txt" },

@@ -3,7 +3,7 @@ import { SiteHeader } from "@/components/site/SiteHeader";
 import { SiteFooter } from "@/components/site/SiteFooter";
 import { PageHead } from "@/components/site/PageHead";
 import { CtaBand } from "@/components/site/CtaBand";
-import { absoluteUrl, SAME_AS, SITE_NAME, SITE_URL } from "@/lib/site";
+import { absoluteUrl, SAME_AS, SITE_NAME, SITE_URL, SOURCE_COUNT } from "@/lib/site";
 import { jsonLdSafe } from "@/lib/format";
 
 export const revalidate = 3600;
@@ -31,14 +31,15 @@ const FAQ: { q: string; a: string }[] = [
   },
   {
     q: "Where does skopnix get its data?",
-    a: "From 66 watched sources — including NVD, CISA's Known Exploited Vulnerabilities catalogue, " +
+    a: `From ${SOURCE_COUNT} watched sources — including NVD, CISA's Known Exploited Vulnerabilities catalogue, ` +
        "ransomware.live, MITRE ATT&CK, and vendor and independent security research. Every story links " +
        "to the original report; skopnix aggregates and verifies, it does not author the reporting.",
   },
   {
     q: "Is skopnix free?",
     a: "Yes. The threat wire, the archive and the adversary dossiers are free to read, and the RSS and " +
-       "JSON feeds need no API key. A developer API and MCP server are in development.",
+       "JSON feeds need no API key. Neither do the JSON API (/api/v1/items and /api/v1/actors) and the " +
+       "per-actor STIX 2.1 bundles. An MCP server is in development.",
   },
   {
     q: "What does skopnix mean?",
@@ -63,7 +64,7 @@ export const metadata: Metadata = {
 // accountability claim below is written so it stands WITHOUT a personal name —
 // "the method is published" is a checkable promise, "trust me" is not.
 const FACTS = [
-  "66 sources watched",
+  `${SOURCE_COUNT} sources watched`,
   "grounded to the original source",
   "published to Telegram @skopnix and this site",
 ];

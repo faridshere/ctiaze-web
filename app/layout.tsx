@@ -2,7 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Schibsted_Grotesk, JetBrains_Mono } from "next/font/google";
 import { MotionRoot } from "@/components/MotionRoot";
 import { HitBeacon } from "@/components/HitBeacon";
-import { SITE_NAME, SITE_URL, LINKS } from "@/lib/site";
+import { SITE_NAME, SITE_URL, LINKS, SOURCE_COUNT } from "@/lib/site";
 import "./globals.css";
 
 // Type system: ONE grotesque (Schibsted) for the wordmark, headlines and body —
@@ -32,7 +32,7 @@ export const metadata: Metadata = {
     template: `%s — ${SITE_NAME}`,
   },
   description:
-    "Global cyber-threat intelligence, read straight off the wire: ~60 sources, AI-scored and grounded to the original report, every exploited CVE tied to the adversaries that use it, with a weekly internet-exposure census of the Caucasus and Central Asia — refreshed around the clock.",
+    `Global cyber-threat intelligence, read straight off the wire: ${SOURCE_COUNT} sources, AI-scored and grounded to the original report, every exploited CVE tied to the adversaries that use it, with a weekly internet-exposure census of the Caucasus and Central Asia — refreshed around the clock.`,
   openGraph: { type: "website", siteName: SITE_NAME, locale: "en_US" },
   twitter: { card: "summary_large_image" },
   alternates: {

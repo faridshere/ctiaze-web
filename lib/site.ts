@@ -3,6 +3,10 @@
 // (ctiaze → skopnix taught us) is a one-line change, not a grep across the tree.
 export const SITE_URL = "https://skopnix.com";
 export const SITE_NAME = "skopnix";
+// How many sources the pipeline watches: the entries under `structured:` and
+// `rss:` in ctiaze-engine/sources.yaml (13 + 76, counted 2026-10-10). One
+// number for every page that states it; recount when the registry changes.
+export const SOURCE_COUNT = 89;
 export const SITE_TAGLINE = "The world's cyber threats, read straight off the wire.";
 
 // Public profiles that belong to the same entity. `sameAs` in the Organization
@@ -30,6 +34,9 @@ export const LINKS = {
   // their message is worse than giving them the channel that works.
 
   rss: "/rss.xml",
+  // KEV-only: the feed most readers actually want to subscribe to.
+  kevRss: "/rss.xml?kev=1",
+  api: "/api-docs",
   jsonFeed: "/feed.json",
   llms: "/llms.txt",
 } as const;

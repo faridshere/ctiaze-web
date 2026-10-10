@@ -281,7 +281,7 @@ export default async function CvePage({ params }: { params: Promise<Params> }) {
         </section>
 
         <div className="mt-[var(--sp-section)]">
-          <CtaBand source={`cve-${id}`} heading="Watch this one?" blurb="Early access opens alerts first — one email when a CVE you follow lands on KEV or an adversary you follow lands on the wire. Nothing else, ever." />
+          <CtaBand source={`cve-${id}`} heading="Watch this one?" blurb="KEV additions reach Telegram and the KEV-only RSS as they land. Per-CVE email alerts are next: leave an address below for one email when they open." />
         </div>
       </main>
       <SiteFooter />

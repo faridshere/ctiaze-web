@@ -26,7 +26,7 @@ export async function POST(req: Request) {
 
   const db = writeDb();
   if (!db) {
-    return jsonError(503, "Early access isn't open just yet — check back soon.");
+    return jsonError(503, "Signups aren't open just yet — check back soon.");
   }
 
   try {

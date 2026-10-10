@@ -1,7 +1,7 @@
 // ---------------------------------------------------------------------------
 // Cross-source clustering.
 //
-// The wire ingests ~66 outlets, and a single event gets written up by several of
+// The wire ingests ~89 sources, and a single event gets written up by several of
 // them within hours: on one page of the archive Sality appeared 3×, SonicWall
 // SMA1000 3×, one indictment 3×. To a reader that reads as a broken feed; to an
 // analyst it means a third of the page is the same day's news wearing different

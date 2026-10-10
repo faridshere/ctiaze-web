@@ -8,11 +8,9 @@ import { SITE_URL } from "@/lib/site";
 // English (see app/rss.xml). Azerbaijani translations still ship in every feed
 // item, so they are documented as a field, not as the site's identity.
 //
-// Keep this in sync with what the site ACTUALLY serves. While the product runs lean,
-// the surface is the CTI feed + story pages + machine feeds; the actor/CVE/exposure/
-// scan tools are shelved (they 3xx away), so they must NOT be advertised here — an
-// llms.txt that points agents at dead sections is worse than none. When a tool comes
-// back (see next.config.ts redirects + app/_disabled), restore its line here.
+// Keep this in sync with what the site ACTUALLY serves: an llms.txt that points
+// agents at dead sections is worse than none. Shelved tools (app/_disabled)
+// 3xx away and must not be listed; restore a line when one comes back.
 export async function GET() {
   const body = `# skopnix
 
@@ -37,9 +35,19 @@ export async function GET() {
 - [RSS](${SITE_URL}/rss.xml): RSS 2.0, English by default. Filters: ?kev=1,
   ?cat=ransomware, ?region=1, ?lang=az.
 
+## JSON API (live, free, no key; 60 requests/min per IP; docs at ${SITE_URL}/api-docs)
+- [${SITE_URL}/api/v1/items](${SITE_URL}/api/v1/items): every story field. Filters
+  run over the whole archive: ?kev=1, ?cve=CVE-YYYY-NNNN, ?category=ransomware,
+  ?since=2026-09-01, ?before=<ISO> (cursor, see next_before), ?limit (max 200).
+  total_matching is the exact count.
+- [${SITE_URL}/api/v1/actors](${SITE_URL}/api/v1/actors): the adversary roster;
+  ?q=, ?type=nation-state|crime|unknown, ?origin=<ISO-2>. One actor at
+  /api/v1/actors/{id}; a STIX 2.1 bundle at /actors/{id}/stix.json and an ATT&CK
+  Navigator layer at /actors/{id}/navigator.json.
+
 ## Item fields (the feed.json _skopnix object)
-category, severity, cvss, epss, kev, cve_ids, source_url. A fuller API — every
-field, filters, and the adversary endpoints — opens with early access.
+category, severity, cvss, epss, kev, cve_ids, source_url. /api/v1/items carries
+the full set (kev_cves, cluster_id, exposure, also_reported_by and more).
 
 ## How to read the signals
 - kev is an OBSERVATION — CISA has confirmed exploitation in the wild.
@@ -60,8 +68,9 @@ facts are drawn from MITRE ATT&CK, ransomware.live, NVD and CISA — cited, neve
 invented.
 
 ## Status
-The JSON API above is live and free. Still to come: a CVE registry with EPSS/KEV
-context, a worldwide exposure dataset, and an MCP server.
+Live: the wire, the archive, adversary dossiers, a page per CVE at /cve/{id}
+(KEV, EPSS, CVSS and every dispatch that named it), the feeds and the JSON API.
+Still to come: email alerts and an MCP server.
 `;
   return new Response(body, {
     headers: {
