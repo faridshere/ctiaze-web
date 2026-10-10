@@ -4,6 +4,7 @@ import { limitCaller } from "@/lib/ratelimit";
 import { jsonError } from "@/lib/api";
 import { absoluteUrl } from "@/lib/site";
 import { etagFor, notModified } from "@/lib/etag";
+import { ttlMemo } from "@/lib/memo";
 
 export const revalidate = 3600;
 
@@ -17,25 +18,14 @@ export const revalidate = 3600;
 // ---------------------------------------------------------------------------
 const MAX_LIMIT = 500;
 
-export async function GET(req: Request) {
-  if (!limitCaller(req, "apiv1actors", 60, 60_000)) {
-    return jsonError(429, "Too many requests — 60/min per IP.");
-  }
-  const q = new URL(req.url).searchParams;
-  const limit = Math.min(MAX_LIMIT, Math.max(1, parseInt(q.get("limit") ?? "100", 10) || 100));
-  const needle = (q.get("q") ?? "").trim().toLowerCase();
-  const type = (q.get("type") ?? "").trim().toLowerCase();
-  const origin = (q.get("origin") ?? "").trim().toUpperCase();
-  if (type && type !== "nation-state" && type !== "crime" && type !== "unknown") {
-    return jsonError(400, "`type` must be one of: nation-state, crime, unknown");
-  }
-
-  let data, wire;
-  try {
-    [data, wire] = await Promise.all([getActorsPageData(), getWireMentions()]);
-  } catch {
-    return jsonError(503, "Upstream store unavailable — this is an error, not an empty roster.");
-  }
+// One built body per distinct query for five minutes (lib/memo.ts), the window
+// the CDN held it for on Vercel. Self-hosted, every poll otherwise re-parsed the
+// two cached roster blobs and rebuilt the list; it also keeps the ETag stable,
+// so If-None-Match can actually return 304 (generated_at changed every request).
+type Query = { limit: number; needle: string; type: string; origin: string };
+const buildBody = ttlMemo(async ({ limit, needle, type, origin }: Query): Promise<string> => {
+  // A rejection propagates to GET, which answers 503 (ttlMemo does not cache it).
+  const [data, wire] = await Promise.all([getActorsPageData(), getWireMentions()]);
   const onWire = new Map(wire.recent.map((r) => [r.id, r.count]));
 
   let rows = data.index;
@@ -57,7 +47,7 @@ export async function GET(req: Request) {
     on_wire_90d: onWire.get(a.id) ?? 0,
   }));
 
-  const body = JSON.stringify(
+  return JSON.stringify(
     {
       schema: "https://skopnix.com/api/v1/actors",
       version: 1,
@@ -71,6 +61,27 @@ export async function GET(req: Request) {
     null,
     2
   );
+}, 300_000, 32);
+
+export async function GET(req: Request) {
+  if (!limitCaller(req, "apiv1actors", 60, 60_000)) {
+    return jsonError(429, "Too many requests — 60/min per IP.");
+  }
+  const q = new URL(req.url).searchParams;
+  const limit = Math.min(MAX_LIMIT, Math.max(1, parseInt(q.get("limit") ?? "100", 10) || 100));
+  const needle = (q.get("q") ?? "").trim().toLowerCase();
+  const type = (q.get("type") ?? "").trim().toLowerCase();
+  const origin = (q.get("origin") ?? "").trim().toUpperCase();
+  if (type && type !== "nation-state" && type !== "crime" && type !== "unknown") {
+    return jsonError(400, "`type` must be one of: nation-state, crime, unknown");
+  }
+
+  let body: string;
+  try {
+    body = await buildBody({ limit, needle, type, origin });
+  } catch {
+    return jsonError(503, "Upstream store unavailable — this is an error, not an empty roster.");
+  }
   const etag = etagFor(body);
   if (notModified(req, etag)) return new Response(null, { status: 304, headers: { ETag: etag } });
   return new Response(body, {

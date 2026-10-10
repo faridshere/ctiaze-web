@@ -5,6 +5,7 @@ import { toStory, type Story, type StoryDoc } from "./types";
 import { slugify, storyIdKey } from "./slug";
 import { completeSentences } from "./format";
 import { storyUrl } from "./site";
+import { ttlMemo } from "./memo";
 
 // Only fully-published, non-retracted, real (non-stub) stories are ever shown —
 // mirrors the exact gate the pipeline itself uses before anything reaches
@@ -26,15 +27,26 @@ async function items() {
 // render (e.g. /cve runs getCveIndex(150) which itself calls getStories(150), plus
 // getStories(150) directly; the story page runs getStoryBySlug in generateMetadata
 // AND the body). Same args → one Mongo query, halving reads on the heaviest pages.
-export const getStories = cache(async (limit = 60): Promise<Story[]> => {
-  const col = await items();
-  const docs = await col
-    .find(PUBLISHED_FILTER)
-    .sort({ effective_at: -1 })
-    .limit(limit)
-    .toArray();
-  return docs.map(toStory);
-});
+//
+// ttlMemo (2026-10-10, self-hosted) shares the read ACROSS requests for two
+// minutes too: /rss.xml, /feed.json and /api/v1/items run on every poll now
+// that no CDN honours their s-maxage, and every /news/<slug> regeneration
+// reads the newest 60 for its sidebar. The pipeline publishes every ~2 h, so
+// two minutes of staleness is invisible. Callers must not mutate the array.
+const readStories = ttlMemo(
+  async (limit: number): Promise<Story[]> => {
+    const col = await items();
+    const docs = await col
+      .find(PUBLISHED_FILTER)
+      .sort({ effective_at: -1 })
+      .limit(limit)
+      .toArray();
+    return docs.map(toStory);
+  },
+  120_000,
+  8,
+);
+export const getStories = cache(async (limit = 60): Promise<Story[]> => readStories(limit));
 
 // The same newest-first read, but starting strictly before a timestamp. Lets an
 // API client page backwards through the archive instead of being stuck with

@@ -8,6 +8,7 @@ import { limitCaller } from "@/lib/ratelimit";
 import { jsonError } from "@/lib/api";
 import { clusterStories, clusterId } from "@/lib/dedup";
 import type { Story } from "@/lib/types";
+import { ttlMemo } from "@/lib/memo";
 
 export const revalidate = 300;
 
@@ -111,6 +112,73 @@ function toApiItem(s: Story, cluster: { id: string; isDupe: boolean }, kev: Set<
   };
 }
 
+type Query = {
+  limit: number;
+  wantKev: boolean;
+  cve: string;
+  category: string;
+  since: string | null;
+  sinceMs: number;
+  before: string | null;
+  beforeMs: number;
+};
+
+const buildBody = ttlMemo(async ({ limit, wantKev, cve, category, since, sinceMs, before, beforeMs }: Query): Promise<string> => {
+  // Pull a wider window than `limit` so filters have something to bite on.
+  //
+  // This used to be `.catch(() => [])`, which turned a database outage into a
+  // perfectly cheerful `200 {count: 0}`. A consumer then cannot tell "nothing
+  // matched" from "the feed is down", and a polling client would quietly treat
+  // an outage as an empty day. Fail loudly instead.
+  // A rejection here propagates to GET, which answers 503 (and ttlMemo does not
+  // cache it).
+  const [stories, kev] = await Promise.all([
+    before ? getStoriesBefore(new Date(beforeMs), WINDOW) : getStories(WINDOW),
+    kevSet().catch(() => new Set<string>()), // KEV outage degrades to item-level flags, never to an error
+  ]);
+  let items = stories;
+  if (wantKev) items = items.filter((s) => s.kev);
+  if (cve) items = items.filter((s) => s.cveIds.some((c) => c.toUpperCase() === cve));
+  if (category) items = items.filter((s) => s.category.toLowerCase() === category);
+  if (!Number.isNaN(sinceMs)) items = items.filter((s) => Date.parse(s.publishedAt) >= sinceMs);
+
+  // Cluster across the whole filtered set, then page — otherwise a duplicate
+  // split across a page boundary would look unique.
+  const clusters = clusterStories(
+    items.map((s) => ({ id: s.id, title: s.titleEn || s.titleAz, publishedAt: s.publishedAt, cveIds: s.cveIds }))
+  );
+  const clusterOf = new Map<string, { id: string; isDupe: boolean }>();
+  for (const c of clusters) {
+    const cid = clusterId(c.lead);
+    clusterOf.set(c.lead.id, { id: cid, isDupe: false });
+    for (const o of c.others) clusterOf.set(o.id, { id: cid, isDupe: true });
+  }
+
+  const page = items
+    .slice(0, limit)
+    .map((s) => toApiItem(s, clusterOf.get(s.id) ?? { id: clusterId({ id: s.id, title: s.titleEn, publishedAt: s.publishedAt }), isDupe: false }, kev));
+
+  return JSON.stringify(
+    {
+      schema: "https://skopnix.com/api/v1/items",
+      version: 1,
+      generated_at: new Date().toISOString(),
+      count: page.length,
+      // Honest about its own scope: this is the number that matched INSIDE the
+      // window, not the number that exists. Reporting it as a total would be a
+      // lie for any `since` reaching further back than the window covers.
+      matched_in_window: items.length,
+      window: { size: WINDOW, stories_seen: stories.length, complete: stories.length < WINDOW },
+      filters: { kev: wantKev, cve: cve || null, category: category || null, since: since || null, before: before || null, limit },
+      // Feed this back as ?before= to get the next, older page.
+      next_before: page.length ? page[page.length - 1].published_at : null,
+      items: page,
+    },
+    null,
+    2
+  );
+}, 300_000, 32);
+
 export async function GET(req: Request) {
   // Generous — this is meant to be used — but bounded so one caller can't pin
   // the read connection.
@@ -145,63 +213,16 @@ export async function GET(req: Request) {
     return jsonError(400, "`before` must be an ISO 8601 date, e.g. 2026-08-01T00:00:00Z");
   }
 
-  // Pull a wider window than `limit` so filters have something to bite on.
-  //
-  // This used to be `.catch(() => [])`, which turned a database outage into a
-  // perfectly cheerful `200 {count: 0}`. A consumer then cannot tell "nothing
-  // matched" from "the feed is down", and a polling client would quietly treat
-  // an outage as an empty day. Fail loudly instead.
-  let stories: Story[];
-  let kev: Set<string>;
+  // One built body per distinct query for five minutes (lib/memo.ts): the same
+  // window the CDN used to hold it for on Vercel. Also makes the ETag stable,
+  // so a polling client's If-None-Match finally gets its 304 (generated_at
+  // changed on every request before, so no two bodies ever matched).
+  let body: string;
   try {
-    [stories, kev] = await Promise.all([
-      before ? getStoriesBefore(new Date(beforeMs), WINDOW) : getStories(WINDOW),
-      kevSet().catch(() => new Set<string>()), // KEV outage degrades to item-level flags, never to an error
-    ]);
+    body = await buildBody({ limit, wantKev, cve, category, since, sinceMs, before, beforeMs });
   } catch {
     return jsonError(503, "Upstream feed unavailable — this is an error, not an empty result.");
   }
-  let items = stories;
-  if (wantKev) items = items.filter((s) => s.kev);
-  if (cve) items = items.filter((s) => s.cveIds.some((c) => c.toUpperCase() === cve));
-  if (category) items = items.filter((s) => s.category.toLowerCase() === category);
-  if (!Number.isNaN(sinceMs)) items = items.filter((s) => Date.parse(s.publishedAt) >= sinceMs);
-
-  // Cluster across the whole filtered set, then page — otherwise a duplicate
-  // split across a page boundary would look unique.
-  const clusters = clusterStories(
-    items.map((s) => ({ id: s.id, title: s.titleEn || s.titleAz, publishedAt: s.publishedAt, cveIds: s.cveIds }))
-  );
-  const clusterOf = new Map<string, { id: string; isDupe: boolean }>();
-  for (const c of clusters) {
-    const cid = clusterId(c.lead);
-    clusterOf.set(c.lead.id, { id: cid, isDupe: false });
-    for (const o of c.others) clusterOf.set(o.id, { id: cid, isDupe: true });
-  }
-
-  const page = items
-    .slice(0, limit)
-    .map((s) => toApiItem(s, clusterOf.get(s.id) ?? { id: clusterId({ id: s.id, title: s.titleEn, publishedAt: s.publishedAt }), isDupe: false }, kev));
-
-  const body = JSON.stringify(
-      {
-        schema: "https://skopnix.com/api/v1/items",
-        version: 1,
-        generated_at: new Date().toISOString(),
-        count: page.length,
-        // Honest about its own scope: this is the number that matched INSIDE the
-        // window, not the number that exists. Reporting it as a total would be a
-        // lie for any `since` reaching further back than the window covers.
-        matched_in_window: items.length,
-        window: { size: WINDOW, stories_seen: stories.length, complete: stories.length < WINDOW },
-        filters: { kev: wantKev, cve: cve || null, category: category || null, since: since || null, before: before || null, limit },
-        // Feed this back as ?before= to get the next, older page.
-        next_before: page.length ? page[page.length - 1].published_at : null,
-        items: page,
-      },
-      null,
-      2
-    );
   const etag = etagFor(body);
   if (notModified(req, etag)) return new Response(null, { status: 304, headers: { ETag: etag } });
   return new Response(body, {
