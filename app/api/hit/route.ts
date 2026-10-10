@@ -1,6 +1,7 @@
 import { limitCaller, clientIp, clientGeo } from "@/lib/ratelimit";
 import { writeDb } from "@/lib/db-write";
 import { jsonOk, readJsonBody, RATE } from "@/lib/api";
+import { refHost } from "@/lib/referrer";
 
 export const revalidate = 0;
 
@@ -29,8 +30,12 @@ export async function POST(req: Request) {
   // noise at best. Values that don't match are dropped, not stored raw.
   const rawPath = String(body.path ?? "/").slice(0, 200);
   const path = /^\/[\w\-./%?=&#]*$/.test(rawPath) ? rawPath : "/";
-  const rawRef = String(body.ref ?? "").slice(0, 200);
-  const ref = /^https?:\/\/[\w.-]+(?::\d+)?[\w\-./%?=&#]*$/.test(rawRef) ? rawRef : "";
+  // The beacon sends the referrer's HOST only (components/HitBeacon.tsx, by
+  // design: no paths or query strings from other sites). This used to accept
+  // only a full http(s) URL, so every ref was dropped and all ~2,800 stored
+  // visits read "direct" (found 2026-10-10). Accept a bare host, or a URL
+  // reduced to its host, and store the host lower-cased.
+  const ref = refHost(String(body.ref ?? "").slice(0, 200));
   const rawSrc = String(body.src ?? "").slice(0, 40);
   const src = /^[\w-]{1,40}$/.test(rawSrc) ? rawSrc : "";
 
