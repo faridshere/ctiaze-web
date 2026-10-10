@@ -11,7 +11,7 @@ import { GlyphChip } from "@/components/GlyphChip";
 import { getStories, getStoriesForCve } from "@/lib/stories";
 import { kevMeta, epssDetailed, nvdLookup } from "@/lib/cveintel";
 import { getWireMentions } from "@/lib/actor-wire";
-import { getActorsPageData } from "@/lib/threatactors";
+import { getActorNamesFor } from "@/lib/threatactors";
 import { epssPct } from "@/lib/storysignal";
 import { formatStoryDate, jsonLdSafe } from "@/lib/format";
 import { absoluteUrl } from "@/lib/site";
@@ -28,7 +28,12 @@ import { unstable_cache } from "next/cache";
 // ---------------------------------------------------------------------------
 const CVE_RE = /^CVE-\d{4}-\d{4,7}$/;
 
-export const revalidate = 3600;
+// 12 h (was 1 h, 2026-10-10). Its sources move daily at most: the KEV file is
+// re-pulled every 24 h (lib/cveintel.ts), EPSS publishes once a day, an NVD
+// record rarely changes, and the wire adds a dispatch every ~2 h. The sitemap
+// hands crawlers 400 of these URLs, so an hourly window meant up to 400 NVD +
+// EPSS + Mongo fan-outs an hour on one small box for numbers that had not moved.
+export const revalidate = 43200;
 export const maxDuration = 60;
 // Without generateStaticParams Next renders a dynamic segment per request
 // (private, no-store) even with `revalidate` set — verified on the sibling
@@ -55,7 +60,7 @@ function norm(id: string): string | null {
   return CVE_RE.test(u) ? u : null;
 }
 
-// One cached read per CVE per hour; null when nothing we hold knows the id.
+// One cached read per CVE per 12 h; null when nothing we hold knows the id.
 // Without the cache the three keyless upstream fetches (NVD, KEV, EPSS) made
 // Next render the route on every request (private, no-store) — ~1.4 s a hit
 // and a needless NVD call each time. v2 (2026-09-24): an unknown id caches
@@ -63,7 +68,7 @@ function norm(id: string): string | null {
 // page. Off Vercel a null stays in memory only (lib/isr-cache-handler.mjs), so
 // made-up ids never reach the persistent cache volume.
 const load = (id: string) => loadCached(id);
-const loadCached = unstable_cache(loadUncached, ["cve-hub-v2"], { revalidate: 3600 });
+const loadCached = unstable_cache(loadUncached, ["cve-hub-v2"], { revalidate: 43200 });
 
 async function loadUncached(id: string) {
   // GATE FIRST. A pentest walked made-up-but-well-formed ids (CVE-2013-125701)
@@ -80,25 +85,27 @@ async function loadUncached(id: string) {
   const kevRow = kev.get(id) ?? null;
   if (!kevRow && stories.length === 0) return null;
 
-  const [nvd, epss, wire, roster] = await Promise.all([
+  const [nvd, epss, wire] = await Promise.all([
     nvdLookup(id).catch(() => null),
     epssDetailed([id]).catch(() => new Map()),
     getWireMentions().catch(() => null),
-    getActorsPageData().catch(() => null),
   ]);
   const epssRow = epss.get(id) ?? null;
 
   // Adversaries: whichever actors our wire matched on the same dispatches.
+  // Names come from one small lookup of just those ids (2026-10-10), not from
+  // the whole roster index, which this used to parse on every CVE render.
   const slugs = new Set(stories.map((s) => s.slug));
-  const names = new Map((roster?.index ?? []).map((a) => [a.id, a.name]));
-  const actors: { id: string; name: string; hits: number }[] = [];
+  const hitsById: { id: string; hits: number }[] = [];
   if (wire) {
     for (const [actorId, mentions] of Object.entries(wire.byActor)) {
       const hits = mentions.filter((m) => slugs.has(m.slug)).length;
-      if (hits > 0) actors.push({ id: actorId, name: names.get(actorId) ?? actorId, hits });
+      if (hits > 0) hitsById.push({ id: actorId, hits });
     }
-    actors.sort((a, b) => b.hits - a.hits || a.name.localeCompare(b.name));
   }
+  const names = await getActorNamesFor(hitsById.map((a) => a.id)).catch(() => new Map<string, string>());
+  const actors = hitsById.map((a) => ({ id: a.id, name: names.get(a.id) ?? a.id, hits: a.hits }));
+  actors.sort((a, b) => b.hits - a.hits || a.name.localeCompare(b.name));
   const exposure = stories.map((s) => s.azExposure).find((e) => e && e.globalCount != null) ?? null;
   return { nvd, kevRow, epssRow, stories, actors, exposure };
 }

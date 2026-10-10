@@ -120,6 +120,36 @@ export async function getActorById(id: string): Promise<ThreatActor | null> {
   return (await col.findOne({ _id: id }, { projection: { ml: 0, description_az: 0 } })) as ThreatActor | null;
 }
 
+// Display names for a handful of actor ids, for the /cve hub's "adversaries
+// named alongside it" chips (2026-10-10). It used to read getActorsPageData()
+// for this, i.e. parse the whole ~1,400-actor index blob on every CVE render to
+// look up two or three names. Same rule as the index: an actor gets its name
+// only if actorHasInfo() would list it, otherwise the caller falls back to the
+// id. $slice keeps one element of each array, which is all actorHasInfo() needs
+// (it tests lengths), so the read stays a few hundred bytes per actor.
+export async function getActorNamesFor(ids: string[]): Promise<Map<string, string>> {
+  const out = new Map<string, string>();
+  if (!ids.length) return out;
+  const col = await collection();
+  const docs = (await col
+    .find(
+      { _id: { $in: ids } },
+      {
+        projection: {
+          name: 1,
+          description_en: 1,
+          mitre: 1,
+          victim_count: 1,
+          techniques: { $slice: 1 },
+          targets_countries: { $slice: 1 },
+        },
+      },
+    )
+    .toArray()) as ThreatActor[];
+  for (const a of docs) if (actorHasInfo(a)) out.set(a._id, a.name);
+  return out;
+}
+
 // Per-dossier shared cache (daily, like the page). Dates round-trip to strings.
 // Key bumped 2026-09-07: the weekly refresh raised APT28 from 16 techniques to
 // 93 (the old MITRE cap), and unstable_cache survives deployments — a version
