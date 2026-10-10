@@ -2,7 +2,6 @@
 
 import { useMemo } from "react";
 import Link from "next/link";
-import type { Story } from "@/lib/types";
 import { CATEGORY_ORDER, CATEGORY_META, catColor, categoryName, normalizeCategory, type Category } from "@/lib/taxonomy";
 import type { Locale } from "@/lib/locale";
 
@@ -23,11 +22,17 @@ function spektrLabel(n: number): string {
 // in the live spectrum. Priority flags (KEV/CVE/AZ) are a SEPARATE dimension —
 // counters outside the bar, shown only when > 0.
 
+// Only what the strip counts (2026-10-10). This is a client component, so its
+// props are serialised into the page's RSC payload: the story page used to
+// hand it 60 full Story objects (~110 KB per page) to count four things.
+// A Story still satisfies this type, so existing callers keep working.
+export type SpektrItem = { category: string; kev: boolean; region: boolean; cveIds?: string[]; hasCve?: boolean };
+
 export type SpektrActive = { cat: Category | null; kev: boolean; cve: boolean; az: boolean };
 
 export const EMPTY_ACTIVE: SpektrActive = { cat: null, kev: false, cve: false, az: false };
 
-function useCounts(stories: Story[]) {
+function useCounts(stories: SpektrItem[]) {
   return useMemo(() => {
     const m = new Map<Category, number>();
     for (const s of stories) {
@@ -45,7 +50,7 @@ function useCounts(stories: Story[]) {
       segments,
       total: stories.length,
       kev: stories.filter((s) => s.kev).length,
-      cve: stories.filter((s) => s.cveIds.length > 0).length,
+      cve: stories.filter((s) => s.hasCve ?? (s.cveIds?.length ?? 0) > 0).length,
       az: stories.filter((s) => s.region).length,
     };
   }, [stories]);
@@ -61,7 +66,7 @@ export function SpektrStrip({
   shown,
   locale = "en",
 }: {
-  stories: Story[];
+  stories: SpektrItem[];
   variant?: "full" | "mini";
   active?: SpektrActive;
   onChange?: (next: SpektrActive) => void;

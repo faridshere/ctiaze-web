@@ -8,6 +8,7 @@ import { ActorSearch } from "@/components/actors/ActorSearch";
 import { OnTheWire } from "@/components/actors/OnTheWire";
 import { ActorLedgerRow } from "@/components/actors/ActorLedgerRow";
 import { OriginStrip } from "@/components/actors/OriginStrip";
+import { RosterLetter } from "@/components/actors/RosterLetter";
 import { getActorsPageData } from "@/lib/threatactors";
 import { absoluteUrl } from "@/lib/site";
 
@@ -26,18 +27,12 @@ export const metadata: Metadata = {
   alternates: { canonical: absoluteUrl("/actors") },
 };
 
-const esc = (s: string) => s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]!);
-function rosterHtml(rows: { id: string; name: string }[]): string {
-  return rows
-    .map((a) => `<li class="min-w-0"><a href="/actors/${encodeURIComponent(a.id)}" class="roster-link" title="${esc(a.name)}">${esc(a.name)}</a></li>`)
-    .join("");
-}
-
 export default async function ActorsPage() {
   const data = await getActorsPageData();
 
   // A few hundred names read as an A–Z a visitor can jump through, not a wall
   // of tiny text: group by first letter, "#" catches anything non-alphabetic.
+  // (Same rule as letterOf() in RosterLetter, which re-groups on the client.)
   const groups = new Map<string, typeof data.index>();
   for (const a of data.index) {
     const ch = a.name[0]?.toUpperCase() ?? "#";
@@ -126,26 +121,11 @@ export default async function ActorsPage() {
                 ))}
               </ul>
             </nav>
-            {/* Each letter is a closed <details>: 1,300+ names stay crawlable in the
-                DOM without a 17,000px page, and the roster links are plain anchors —
-                a <Link> per dossier would prefetch hundreds of on-demand ISR renders
-                as a visitor scrolls, which is exactly the cost the free tier can't take. */}
+            {/* Each letter is a closed <details> whose names load on first open
+                (components/actors/RosterLetter.tsx): no 17,000px page, and the
+                roster is no longer serialised twice into every /actors render. */}
             {letters.map((L) => (
-              <details key={L} id={`actor-${L === "#" ? "num" : L}`} className="group scroll-mt-24 border-b border-hairline">
-                <summary className="flex cursor-pointer list-none items-baseline gap-3 py-3 font-mono text-[11px] font-semibold uppercase tracking-[0.14em] text-ink-secondary transition-colors hover:text-ink-primary [&::-webkit-details-marker]:hidden">
-                  <span className="text-ink-primary">{L}</span>
-                  <span aria-hidden className="h-px flex-1 bg-hairline" />
-                  <span className="font-normal normal-case tracking-normal text-ink-muted">{groups.get(L)!.length}</span>
-                  <span aria-hidden className="text-ink-muted transition-transform group-open:rotate-90">→</span>
-                </summary>
-                {/* Pre-rendered as one string: as React elements the roster was
-                    serialised twice (HTML and the RSC payload) and /actors weighed
-                    1 MB. Names are escaped; ids are slugs the engine minted. */}
-                <ul
-                  className="grid grid-cols-2 gap-x-4 gap-y-1.5 pb-5 sm:grid-cols-3 lg:grid-cols-4"
-                  dangerouslySetInnerHTML={{ __html: rosterHtml(groups.get(L)!) }}
-                />
-              </details>
+              <RosterLetter key={L} letter={L} count={groups.get(L)!.length} />
             ))}
           </section>
         )}
