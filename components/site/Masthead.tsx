@@ -20,6 +20,7 @@ const NAV: { href: string; label: string; phone: boolean }[] = [
   { href: "/stack", label: "Stack check", phone: false },
   { href: "/actors", label: "Adversaries", phone: true },
   { href: "/news", label: "Archive", phone: true },
+  { href: "/exploits", label: "Exploits", phone: false },
   { href: "/claims", label: "Claims", phone: false },
   { href: "/#census", label: "Census", phone: false },
   { href: "/api-docs", label: "API", phone: false },

@@ -25,6 +25,8 @@ const ENDPOINTS: { path: string; gives: string; limit: string; params: string }[
   { path: "/feed.json", gives: "JSON Feed 1.1 of the newest dispatches", limit: "cached, hourly", params: "none" },
   { path: "/rss.xml", gives: "RSS 2.0, English by default", limit: "cached, hourly", params: "kev, region, cat, lang, q" },
   { path: "/api/v1/items", gives: "dispatches as data, newest first, filterable over the whole archive", limit: "60/min", params: "kev, cve, category, since, before, limit" },
+  { path: "/api/v1/exploits", gives: "every public exploit we know of for one CVE, once each, grouped by source, GitHub repos with a trust verdict", limit: "60/min", params: "cve (required)" },
+  { path: "/api/v1/exploits/trending", gives: "the week's CVEs by new exploit activity, one row per CVE, with KEV, EPSS, cited attackers and the timeline", limit: "60/min", params: "none" },
   { path: "/api/v1/actors", gives: "the adversary roster, one lean row per dossier", limit: "60/min", params: "q, type, origin, limit" },
   { path: "/api/v1/actors/{id}", gives: "one dossier as data", limit: "120/min", params: "none" },
   { path: "/api/v1/cves/{id}/actors", gives: "actors a source is cited as tying to a CVE, each with its quote and source url", limit: "60/min", params: "none" },
@@ -48,6 +50,12 @@ const PARAMS: { route: string; items: { name: string; note: string }[] }[] = [
       { name: "since=…", note: "ISO 8601 date or datetime. A malformed one is a 400, not a silent empty list." },
       { name: "before=…", note: "Everything strictly older than this instant. Each response carries next_before; feed it back to keep walking." },
       { name: "limit=…", note: "1 to 200, default 50." },
+    ],
+  },
+  {
+    route: "/api/v1/exploits",
+    items: [
+      { name: "cve=CVE-YYYY-NNNN", note: "Required. Case and separators are forgiven (cve-2024-3400, 2024-3400); anything else is a 400." },
     ],
   },
   {
@@ -106,6 +114,16 @@ const EXAMPLES: { label: string; cmd: string; note: string }[] = [
     label: "Page backwards through the archive",
     cmd: `curl "${SITE_URL}/api/v1/items?before=2026-08-15T00:00:00Z&limit=100"`,
     note: "Everything strictly older than `before`. Each response carries next_before — feed it back to keep walking.",
+  },
+  {
+    label: "Every public exploit for one CVE",
+    cmd: `curl "${SITE_URL}/api/v1/exploits?cve=CVE-2024-3400"`,
+    note: "GitHub PoCs, Metasploit modules, Exploit-DB entries and Nuclei templates, each listed once. status is found, none-known (we checked, none known to us) or not-checked: an empty list alone never means safe. Links only; nothing is hosted or mirrored.",
+  },
+  {
+    label: "What is trending in exploits this week",
+    cmd: `curl "${SITE_URL}/api/v1/exploits/trending"`,
+    note: "One row per CVE from the newest daily snapshot: kev, epss, who_can_exploit in plain words, exploit counts per source, cited_actors (each with its citation_url) and the timeline from disclosure to the first cited attacker with days_from_previous.",
   },
   {
     label: "The adversary roster",
@@ -360,6 +378,14 @@ export default function ApiDocsPage() {
                 writes them with a trailing slash; this site serves them without one, so a client must follow the redirect.
                 taxii2-client and OpenCTI do; with curl, pass <code className="font-mono text-[13px]">-L</code>. The server is
                 read-only: there is no write endpoint and no key.
+              </p>
+              </li>
+              <li className="py-3">
+                <p className="max-w-[64ch] text-[14px] leading-relaxed text-ink-2">
+                <strong className="font-semibold text-ink">trust is a heuristic, not a verdict on a person.</strong> Fake
+                proof-of-concept repositories have been used to deliver malware, so every GitHub exploit carries the
+                engine&apos;s trust level (ok, caution or suspicious) and the flags behind it. Read the code before you run
+                any of it.
               </p>
               </li>
               <li className="py-3">

@@ -24,6 +24,10 @@ import { epssPct } from "@/lib/storysignal";
 import { formatStoryDate, jsonLdSafe } from "@/lib/format";
 import { absoluteUrl } from "@/lib/site";
 import { unstable_cache } from "next/cache";
+import { getExploitsForCve, getTimeline } from "@/lib/exploits";
+import { buildTimeline, exploitStatus, groupExploits } from "@/lib/exploit-shape";
+import { ExploitList } from "@/components/exploits/ExploitList";
+import { TimelineStrip } from "@/components/exploits/TimelineStrip";
 
 // ---------------------------------------------------------------------------
 // /cve/CVE-YYYY-NNNN — one page per CVE, which is how an analyst actually
@@ -80,7 +84,8 @@ function norm(id: string): string | null {
 // page. Off Vercel a null stays in memory only (lib/isr-cache-handler.mjs), so
 // made-up ids never reach the persistent cache volume.
 const load = (id: string) => loadCached(id);
-const loadCached = unstable_cache(loadUncached, ["cve-hub-v2"], { revalidate: 43200 });
+// v3 (2026-10-17): adds the exploit watch (exploits + cve_timeline).
+const loadCached = unstable_cache(loadUncached, ["cve-hub-v3"], { revalidate: 43200 });
 
 async function loadUncached(id: string) {
   // GATE FIRST. A pentest walked made-up-but-well-formed ids (CVE-2013-125701)
@@ -90,20 +95,22 @@ async function loadUncached(id: string) {
   // 30 s per IP, so a trickle of junk would have 403'd our real lookups).
   // KEV and our own archive are both already in memory/indexed and cheap, so
   // an id nothing has ever heard of is rejected before the expensive fan-out.
-  // The citations read (2026-10-17) is one indexed match on `cve`, as cheap as
-  // the stories read beside it, and a CVE only a report has tied to an actor is
-  // a CVE we know. It is deliberately NOT caught: a transient Mongo error
-  // swallowed as [] would be cached for 12 h and hide every citation; thrown,
-  // unstable_cache stores nothing and the next request reads again.
-  // The gate counts only citations a page can print (quote, source, CVE,
-  // actor): incomplete rows must not trigger the NVD/EPSS fan-out.
-  const [kev, stories, citations] = await Promise.all([
+  // citations: one indexed match on `cve`; NOT caught (a transient error as []
+  // would cache "no citations" for 12 h). exploit watch: one indexed query each
+  // (exploits.cve, cve_timeline._id), a failed read is null not "none". All gate:
+  // a CVE our report/engine has touched is a real id even before the wire names it.
+  const [kev, stories, citations, exploitDocs, timeline] = await Promise.all([
     kevMeta().catch(() => new Map()),
     getStoriesForCve(id, 40).catch(() => []),
     getCitationsForCve(id).then(displayableCitations),
+    getExploitsForCve(id).catch(() => null),
+    getTimeline(id).catch(() => null),
   ]);
   const kevRow = kev.get(id) ?? null;
-  if (!kevRow && stories.length === 0 && citations.length === 0) return null;
+  if (!kevRow && stories.length === 0 && citations.length === 0 && !exploitDocs?.length && !timeline) return null;
+  const exploits = exploitDocs ? groupExploits(exploitDocs) : null;
+  const exploitState = exploitStatus(exploits?.total ?? 0, exploitDocs ? timeline : null);
+  const steps = buildTimeline(timeline);
 
   const [nvd, epss, wire] = await Promise.all([
     nvdLookup(id).catch(() => null),
@@ -134,7 +141,7 @@ async function loadUncached(id: string) {
   // Shaped here, inside the 12 h cache, so a render does no work on it.
   const citedBy = groupCitationsByActor(citations, names);
   const exposure = stories.map((s) => s.azExposure).find((e) => e && e.globalCount != null) ?? null;
-  return { nvd, kevRow, epssRow, stories, actors, citedBy, exposure };
+  return { nvd, kevRow, epssRow, stories, actors, citedBy, exposure, exploits, exploitState, steps };
 }
 
 export async function generateMetadata({ params }: { params: Promise<Params> }): Promise<Metadata> {
@@ -147,6 +154,7 @@ export async function generateMetadata({ params }: { params: Promise<Params> }):
   if (d.kevRow) bits.push(`on CISA KEV${d.kevRow.dateAdded ? ` since ${d.kevRow.dateAdded}` : ""}`);
   if (d.epssRow) bits.push(`EPSS ${epssPct(d.epssRow.score)}`);
   if (d.nvd?.cvss != null) bits.push(`CVSS ${d.nvd.cvss}`);
+  if (d.exploits?.total) bits.push(`${d.exploits.total} public exploit${d.exploits.total === 1 ? "" : "s"}`);
   if (d.stories.length) bits.push(`${d.stories.length} dispatch${d.stories.length === 1 ? "" : "es"} on the wire`);
   const description = bits.length ? `${id}: ${bits.join(" · ")}.` : `${id} on skopnix.`;
   return {
@@ -236,6 +244,7 @@ export default async function CvePage({ params }: { params: Promise<Params> }) {
           </div>
           <h1 className="headline mt-4 break-all font-mono text-[clamp(2rem,6vw,4.75rem)] font-medium tracking-[-0.03em] text-ink">{id}</h1>
           {d.nvd?.description && <p className="deck mt-6 max-w-[64ch]">{d.nvd.description}</p>}
+          {d.steps.length > 1 && <TimelineStrip steps={d.steps} className="mt-6" />}
           <div className={`mt-6 ${kev ? "oxford" : "rule-b-2"}`} />
         </header>
 
@@ -327,40 +336,55 @@ export default async function CvePage({ params }: { params: Promise<Params> }) {
 
         <div className="sheet">
           <div className="grid gap-10 pt-[var(--sp-section)] md:grid-cols-12 md:gap-6">
-            {/* The ledger: every dispatch on our wire that named the id. */}
-            <section className="md:col-span-8" aria-labelledby="cve-wire">
-              <div className="rule-b flex items-baseline justify-between gap-3 pb-2">
-                <h2 id="cve-wire" className="label flex items-center gap-2 text-ink">
-                  {d.stories.length > 0 && <span aria-hidden className="live-dot" />}
-                  On the wire
-                </h2>
-                <span className="num font-mono text-[11px] uppercase tracking-[0.1em] text-ink-3">
-                  {d.stories.length} dispatch{d.stories.length === 1 ? "" : "es"}
-                </span>
-              </div>
-              {d.stories.length === 0 ? (
-                <p className="label py-6 text-ink-3">No dispatch on our wire has named this CVE yet.</p>
-              ) : (
-                <ol>
-                  {d.stories.map((s) => {
-                    const { date } = formatStoryDate(s.publishedAt, "en");
-                    return (
-                      <li key={s.id} className="row" data-sev={sevOf(s)}>
-                        <Link href={`/news/${s.slug}`} className="group grid grid-cols-[auto_1fr_auto] items-center gap-x-3 py-3.5">
-                          <time dateTime={s.publishedAt} className="num whitespace-nowrap font-mono text-[11px] text-ink-3">
-                            {date}
-                          </time>
-                          <span className="text-[15px] leading-[1.3] text-ink underline-offset-[3px] group-hover:underline">{s.titleEn || s.titleAz}</span>
-                          <span className="flex items-center gap-1.5">
-                            {s.kev ? <span className="stamp">KEV</span> : <GlyphChip category={s.category} />}
-                          </span>
-                        </Link>
-                      </li>
-                    );
-                  })}
-                </ol>
-              )}
-            </section>
+            <div className="min-w-0 md:col-span-8">
+              {/* Every public exploit we know of, each once, grouped by source. */}
+              <section aria-labelledby="cve-exploits" className="mb-12">
+                <div className="rule-b flex items-baseline justify-between gap-3 pb-2">
+                  <h2 id="cve-exploits" className="label text-ink">
+                    Exploits
+                  </h2>
+                  <span className="num font-mono text-[11px] uppercase tracking-[0.1em] text-ink-3">
+                    {d.exploits?.total ? `${d.exploits.total} known · links only` : d.exploitState === "none-known" ? "none known" : "not checked"}
+                  </span>
+                </div>
+                <ExploitList groups={d.exploits ?? groupExploits([])} status={d.exploitState} />
+              </section>
+
+              {/* The ledger: every dispatch on our wire that named the id. */}
+              <section aria-labelledby="cve-wire">
+                <div className="rule-b flex items-baseline justify-between gap-3 pb-2">
+                  <h2 id="cve-wire" className="label flex items-center gap-2 text-ink">
+                    {d.stories.length > 0 && <span aria-hidden className="live-dot" />}
+                    On the wire
+                  </h2>
+                  <span className="num font-mono text-[11px] uppercase tracking-[0.1em] text-ink-3">
+                    {d.stories.length} dispatch{d.stories.length === 1 ? "" : "es"}
+                  </span>
+                </div>
+                {d.stories.length === 0 ? (
+                  <p className="label py-6 text-ink-3">No dispatch on our wire has named this CVE yet.</p>
+                ) : (
+                  <ol>
+                    {d.stories.map((s) => {
+                      const { date } = formatStoryDate(s.publishedAt, "en");
+                      return (
+                        <li key={s.id} className="row" data-sev={sevOf(s)}>
+                          <Link href={`/news/${s.slug}`} className="group grid grid-cols-[auto_1fr_auto] items-center gap-x-3 py-3.5">
+                            <time dateTime={s.publishedAt} className="num whitespace-nowrap font-mono text-[11px] text-ink-3">
+                              {date}
+                            </time>
+                            <span className="text-[15px] leading-[1.3] text-ink underline-offset-[3px] group-hover:underline">{s.titleEn || s.titleAz}</span>
+                            <span className="flex items-center gap-1.5">
+                              {s.kev ? <span className="stamp">KEV</span> : <GlyphChip category={s.category} />}
+                            </span>
+                          </Link>
+                        </li>
+                      );
+                    })}
+                  </ol>
+                )}
+              </section>
+            </div>
 
             {/* The margin: cited actors with their quotes, adversaries as
                 pressed names, then the references. */}
