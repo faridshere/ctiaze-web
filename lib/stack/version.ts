@@ -93,7 +93,10 @@ export function evalRanges(version: string | null, matches: CpeMatch[]): RangeRe
       if (inside) {
         const lo = m.versionStartIncluding ? `[${m.versionStartIncluding}` : m.versionStartExcluding ? `(${m.versionStartExcluding}` : "(−∞";
         const hi = m.versionEndExcluding ? `${m.versionEndExcluding})` : m.versionEndIncluding ? `${m.versionEndIncluding}]` : "∞)";
-        return { verdict: "in-range", detail: `${version} ∈ ${lo}, ${hi}`, fixedIn: m.versionEndExcluding ?? fixAbove };
+        // An inclusive end names the last bad release, not the fix; the
+        // nearest fix of some other range may be another branch entirely.
+        const fixedIn = m.versionEndExcluding ?? (m.versionEndIncluding ? null : fixAbove);
+        return { verdict: "in-range", detail: `${version} ∈ ${lo}, ${hi}`, fixedIn };
       }
     } else {
       const exact = cpeVersion(m.criteria);

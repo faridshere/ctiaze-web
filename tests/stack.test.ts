@@ -65,6 +65,16 @@ test("Log4Shell ranges: 2.14.1 in range with the fix of its own branch, 2.17.1 a
   assert.equal(evalRanges("2.0", log4shell).verdict, "in-range");
 });
 
+test("an inclusive upper bound never borrows another branch's fix", () => {
+  // Shape seen live on a FortiOS CVE: 7.0.0–7.0.18 inclusive, plus a 7.4 branch fixed in 7.4.11.
+  const r = evalRanges("7.0.1", [
+    { criteria: "cpe:2.3:o:fortinet:fortios:*:*:*:*:*:*:*:*", vulnerable: true, versionStartIncluding: "7.0.0", versionEndIncluding: "7.0.18" },
+    { criteria: "cpe:2.3:o:fortinet:fortios:*:*:*:*:*:*:*:*", vulnerable: true, versionStartIncluding: "7.4.0", versionEndExcluding: "7.4.11" },
+  ]);
+  assert.equal(r.verdict, "in-range");
+  assert.equal(r.fixedIn, null);
+});
+
 test("evalRanges: no version, no vulnerable rows, wildcard without bounds, uncomparable bounds", () => {
   assert.equal(evalRanges(null, log4shell).verdict, "no-version");
   assert.equal(evalRanges("1.0", [{ criteria: "cpe:2.3:o:x:y:-:*:*:*:*:*:*:*", vulnerable: false }]).verdict, "not-checked");

@@ -105,7 +105,14 @@ export type NvdPull = { status: "ok"; cves: ProductCve[] } | { status: "error" }
  * per-request lookup budget). KEV name matches are reported either way, but
  * when NVD ranges exist they decide the version verdict.
  */
-export function assessComponent(c: Component, r: Resolved | null, nvd: NvdPull, kevNamed: KevEntry[], facts: CveFacts): ComponentResult {
+export function assessComponent(
+  c: Component,
+  r: Resolved | null,
+  nvd: NvdPull,
+  kevNamed: KevEntry[],
+  facts: CveFacts,
+  cap = MAX_FINDINGS_PER_COMPONENT,
+): ComponentResult {
   if (!r) {
     return { input: c, resolved: null, status: "unresolved", findings: [], total_affected: 0, not_affected: 0, note: "Could not tell which product this is. Try 'vendor product version', a purl or a CPE." };
   }
@@ -179,7 +186,7 @@ export function assessComponent(c: Component, r: Resolved | null, nvd: NvdPull, 
     input: c,
     resolved: r,
     status,
-    findings: findings.slice(0, MAX_FINDINGS_PER_COMPONENT),
+    findings: findings.slice(0, cap),
     total_affected: findings.length,
     not_affected: notAffected,
     note,
