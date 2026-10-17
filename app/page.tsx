@@ -10,15 +10,21 @@ import { Roster } from "@/components/home/Roster";
 import { Yesterday } from "@/components/home/Yesterday";
 import { Classifieds } from "@/components/home/Classifieds";
 import { WireLive } from "@/components/home/WireLive";
+import { StackDesk } from "@/components/home/StackDesk";
+import { RegionalDesk } from "@/components/home/RegionalDesk";
 import { jsonLdSafe } from "@/lib/format";
 import { getExposureCensus, EMPTY_CENSUS } from "@/lib/exposure";
 import { getHomeData, EMPTY_HOME_DATA } from "@/lib/home-data";
 import { getActorsPageData } from "@/lib/threatactors";
+import { getStackExample, getPipelineHealth, getRegionalBoard } from "@/lib/home-tool";
 import { SAME_AS, SITE_NAME, SITE_TAGLINE, SITE_URL } from "@/lib/site";
 
-// The front page of the paper. The lead is the newest actively-exploited
-// story, the wire runs beside it, and every number on the page is a count the
-// engine made. Hourly ISR from cached blobs; no Mongo read on the request path.
+// The front page of the paper. The tool comes first (2026-10-17): the stack
+// check with a real pre-run example, then the lead and the wire, then the
+// regional desk, then the rest of the paper. Every number on the page is a
+// count the engine made, and every module says when its own data was read.
+// Hourly ISR from cached blobs; no Mongo read and no upstream call on the
+// request path (the stack check itself runs in the browser).
 export const revalidate = 3600;
 
 export const metadata: Metadata = {
@@ -35,11 +41,16 @@ export const metadata: Metadata = {
 
 export default async function LandingPage() {
   // Never let the data layer take the front page down: no data, quiet page.
-  const [data, census, actors] = await Promise.all([
+  const [data, census, actors, example, health, board] = await Promise.all([
     getHomeData().catch(() => EMPTY_HOME_DATA),
     getExposureCensus().catch(() => EMPTY_CENSUS),
     getActorsPageData().catch(() => null),
+    getStackExample().catch(() => null),
+    getPipelineHealth().catch(() => null),
+    getRegionalBoard().catch(() => null),
   ]);
+  // The render's own time, only to decide whether a stamp needs its date.
+  const renderedAt = new Date().toISOString();
 
   const orgLd = {
     "@context": "https://schema.org",
@@ -87,38 +98,44 @@ export default async function LandingPage() {
       <FrontMasthead total={data.total} tapeRow={tapeRow} last24h={data.last24h} serverIso={data.generatedAt} />
       <main id="main">
         <WireLive />
+        {/* ---- the tool on page one: paste box, real example, the curl ---- */}
+        <StackDesk example={example} health={health} refIso={renderedAt} />
+
         {/* ---- the front page: lead left, the wire right ---- */}
-        <section className="sheet pt-8 sm:pt-10" aria-label="Front page">
+        <section className="sheet pt-[var(--sp-section)]" aria-label="Front page">
+          <div className="rule-2 mb-8 sm:mb-10" />
           <div className="grid gap-10 md:grid-cols-12 md:gap-6">
             <div className="md:col-span-7 md:pr-6">
               {data.lead ? (
-                <Lead lead={data.lead} />
+                <Lead lead={data.lead} as="h2" />
               ) : (
                 <div>
-                  <h1 className="headline text-[clamp(2.5rem,6vw,5.5rem)] text-ink">
+                  <h2 className="headline text-[clamp(2.5rem,6vw,5.5rem)] text-ink">
                     <span className="hl"><span>See it.</span></span>
                     <span className="hl"><span>Nix it.</span></span>
-                  </h1>
+                  </h2>
                   <p className="deck mt-6 max-w-[48ch]">{SITE_TAGLINE}</p>
                 </div>
               )}
             </div>
             <div className="md:col-span-5 md:row-span-2 md:border-l md:border-ink md:pl-6 lg:col-span-4 lg:col-start-9">
-              <Wire rows={data.wire} total={data.total} />
+              <Wire rows={data.wire} total={data.total} asOf={data.generatedAt} refIso={renderedAt} />
             </div>
             <div className="md:col-span-7 md:pr-6">
-              <IndexStrip week={data.week} daily={data.daily} />
+              <IndexStrip week={data.week} daily={data.daily} asOf={data.generatedAt} refIso={renderedAt} />
             </div>
           </div>
         </section>
 
-        <Standfirst data={data} />
+        {board && <RegionalDesk board={board} refIso={renderedAt} />}
+
+        <Standfirst data={data} refIso={renderedAt} />
 
         <Census rows={census.rows} measuredAt={census.measuredAt} previousAt={census.previousAt} />
 
-        {actors && <Roster data={actors} />}
+        {actors && <Roster data={actors} refIso={renderedAt} />}
 
-        <Yesterday rows={data.yesterday} dayKey={data.yesterdayKey} />
+        <Yesterday rows={data.yesterday} dayKey={data.yesterdayKey} asOf={data.generatedAt} refIso={renderedAt} />
 
         <Classifieds />
       </main>

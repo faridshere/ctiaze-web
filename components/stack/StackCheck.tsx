@@ -36,7 +36,10 @@ type Input = { source: "paste" } | { source: "sbom"; file: string; format: strin
 
 const pct = (x: number) => `${(x * 100).toFixed(x >= 0.1 ? 0 : 1)}%`;
 
-export function StackCheck() {
+// `compact` is the front page's version: the paste box only (the SBOM upload
+// stays on /stack), with `aside` (the pre-run example) beside it, and the
+// result full width underneath.
+export function StackCheck({ compact = false, aside }: { compact?: boolean; aside?: React.ReactNode }) {
   const [text, setText] = useState("");
   const [input, setInput] = useState<Input>({ source: "paste" });
   const [busy, setBusy] = useState(false);
@@ -110,8 +113,8 @@ export function StackCheck() {
 
   return (
     <div>
-      <form onSubmit={submit} className="grid gap-8 md:grid-cols-12 md:gap-6">
-        <div className="md:col-span-7">
+      <form onSubmit={submit} className={`grid md:grid-cols-12 ${compact ? "gap-6 md:gap-6" : "gap-8 md:gap-6"}`}>
+        <div className="min-w-0 md:col-span-7">
           <label htmlFor="stack-input" className="label text-ink">
             Paste your stack · one “vendor product version” per line
           </label>
@@ -120,15 +123,33 @@ export function StackCheck() {
             value={text}
             onChange={(e) => setText(e.target.value)}
             disabled={input.source === "sbom"}
-            rows={8}
+            rows={compact ? 5 : 8}
             spellCheck={false}
             placeholder={EXAMPLE}
-            className="ruled-input mt-3 block min-h-[12rem] resize-y border border-rule-soft border-b-2 border-b-ink bg-paper-deep px-3 leading-relaxed disabled:opacity-50"
+            className={`ruled-input mt-3 block resize-y border border-rule-soft border-b-2 border-b-ink bg-paper-deep px-3 leading-relaxed disabled:opacity-50 ${compact ? "min-h-[8.5rem]" : "min-h-[12rem]"}`}
           />
           <p className="mt-2 font-mono text-[11.5px] text-ink-3">
             Also accepted per line: a purl (pkg:maven/…) or a CPE 2.3 name. Up to {MAX_COMPONENTS} components.
+            {compact && (
+              <>
+                {" "}
+                <Link href="/stack" className="ulink hover:text-ink">
+                  SBOM upload on /stack
+                </Link>
+                .
+              </>
+            )}
           </p>
+          {compact && (
+            <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2">
+              <SubmitButton busy={busy} />
+              {busy && <span className="font-mono text-[11.5px] text-ink-3">Products not seen recently can take up to a minute.</span>}
+            </div>
+          )}
         </div>
+        {compact ? (
+          aside && <div className="min-w-0 md:col-span-5 md:border-l md:border-rule-soft md:pl-6">{aside}</div>
+        ) : (
         <div className="md:col-span-5 md:border-l md:border-rule-soft md:pl-6">
           <span className="label text-ink">Or an SBOM file</span>
           <p className="mt-3 text-[14.5px] leading-snug text-ink-2">
@@ -150,15 +171,10 @@ export function StackCheck() {
               </button>
             </p>
           )}
-          <button
-            type="submit"
-            disabled={busy}
-            className="label mt-6 inline-flex h-12 items-center justify-center gap-2 bg-ink px-5 text-paper transition-colors hover:bg-ink-2 disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            {busy ? "Checking…" : "Check stack"} <span aria-hidden>→</span>
-          </button>
+          <SubmitButton busy={busy} className="mt-6" />
           {busy && <p className="mt-3 font-mono text-[11.5px] text-ink-3">Pulling NVD records for products not seen recently can take up to a minute.</p>}
         </div>
+        )}
       </form>
 
       <div aria-live="polite">
@@ -170,6 +186,18 @@ export function StackCheck() {
         {report && <Results report={report} onDownload={download} />}
       </div>
     </div>
+  );
+}
+
+function SubmitButton({ busy, className = "" }: { busy: boolean; className?: string }) {
+  return (
+    <button
+      type="submit"
+      disabled={busy}
+      className={`label inline-flex h-12 items-center justify-center gap-2 bg-ink px-5 text-paper transition-colors hover:bg-ink-2 disabled:cursor-not-allowed disabled:opacity-50 ${className}`}
+    >
+      {busy ? "Checking…" : "Check stack"} <span aria-hidden>→</span>
+    </button>
   );
 }
 

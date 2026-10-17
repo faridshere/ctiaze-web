@@ -6,11 +6,14 @@ import { EditionNo } from "./EditionNo";
 // The colophon. Four cells under a 2px rule: the wordmark and tagline, the
 // pages, the machine feeds, and the printer's line. Everything here is live
 // and keyless; nothing is promised.
+// Archive, About and the census left the section nav on 2026-10-17; they are
+// listed here.
 const PAGES = [
   { href: "/", label: "The wire" },
   { href: "/actors", label: "Adversaries" },
   { href: "/news", label: "Archive" },
   { href: "/claims", label: "Claims" },
+  { href: "/#census", label: "Census" },
   { href: "/about", label: "About" },
   { href: "/privacy", label: "Privacy" },
 ];

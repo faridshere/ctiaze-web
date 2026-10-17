@@ -1,13 +1,14 @@
 import type { HomeData } from "@/lib/home-data";
 import { outageSpan, outagesIn } from "@/lib/outages";
 import { Sparkline } from "./Sparkline";
+import { AsOf } from "./AsOf";
 
 // The index strip under the lead: four seven-day figures set in mono, the
 // fortnight of daily counts as ink bars beside the first, and the source
 // line that says exactly what was counted. A day the pipeline was down still
 // prints its real zero; one line under the source line says so while that
 // outage is inside the fourteen days (lib/outages.ts).
-export function IndexStrip({ week, daily }: { week: HomeData["week"]; daily: HomeData["daily"] }) {
+export function IndexStrip({ week, daily, asOf, refIso }: { week: HomeData["week"]; daily: HomeData["daily"]; asOf?: string | null; refIso?: string | null }) {
   const outages = outagesIn(daily.map((d) => d.day));
   const cells = [
     { label: "Dispatches · 7 days", value: week.dispatches },
@@ -31,7 +32,8 @@ export function IndexStrip({ week, daily }: { week: HomeData["week"]; daily: Hom
       </dl>
       <div className="rule-soft" />
       <p className="mt-3 max-w-[64ch] text-[12.5px] leading-relaxed text-ink-3">
-        Counted over the same published-story gate the pipeline uses before a dispatch reaches Telegram. Refreshed hourly. The bars are the last fourteen days, a day each.
+        Counted over the same published-story gate the pipeline uses before a dispatch reaches Telegram. Refreshed hourly. The bars are the last fourteen days, a day each.{" "}
+        <AsOf iso={asOf} refIso={refIso} />
       </p>
       {outages.map((o) => (
         <p key={o.from} className="mt-1 max-w-[64ch] text-[12.5px] leading-relaxed text-ink-2" data-outage>
