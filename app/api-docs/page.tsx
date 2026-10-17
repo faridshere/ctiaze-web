@@ -27,6 +27,7 @@ const ENDPOINTS: { path: string; gives: string; limit: string; params: string }[
   { path: "/api/v1/items", gives: "dispatches as data, newest first, filterable over the whole archive", limit: "60/min", params: "kev, cve, category, since, before, limit" },
   { path: "/api/v1/exploits", gives: "every public exploit we know of for one CVE, once each, grouped by source, GitHub repos with a trust verdict", limit: "60/min", params: "cve (required)" },
   { path: "/api/v1/exploits/trending", gives: "the week's CVEs by new exploit activity, one row per CVE, with KEV, EPSS, cited attackers and the timeline", limit: "60/min", params: "none" },
+  { path: "/api/v1/az", gives: "the Azerbaijan threat board: this week's claimed campaigns with our reachability check, cited adversaries, breach-listing metadata and exploited CVEs relevant here", limit: "60/min", params: "none" },
   { path: "/api/v1/actors", gives: "the adversary roster, one lean row per dossier", limit: "60/min", params: "q, type, origin, limit" },
   { path: "/api/v1/actors/{id}", gives: "one dossier as data", limit: "120/min", params: "none" },
   { path: "/api/v1/cves/{id}/actors", gives: "actors a source is cited as tying to a CVE, each with its quote and source url", limit: "60/min", params: "none" },
