@@ -617,13 +617,17 @@ html.motion-ok [data-sc][data-in].col-rules {
   100% { opacity: 1; transform: scale(1); }
 }
 
-/* Wire rows fill top to bottom, capped so the panel never waits on itself. */
-html.motion-ok .wire-row {
-  opacity: 0;
-  animation: wire-in 0.4s var(--ease-out) forwards;
-  animation-delay: calc(0.45s + min(var(--i, 0), 10) * 0.04s);
+/* Wire rows fill top to bottom from first paint. Pure CSS, so it neither
+   waits on hydration nor needs JS to finish. It used to arm on motion-ok and
+   start at 0.45s, which hid rows the reader could already see and left the
+   column blank for about a second (2026-10-17: first row opaque at ~1.0s).
+   The whole stagger is capped at 0.5s: row 0 is in by 0.3s, row 10 by 0.8s.
+   A row WireLive lands has its own unfold (.row-land). */
+.wire-row:not(.row-land) {
+  animation: wire-in 0.3s var(--ease-out) both;
+  animation-delay: calc(min(var(--i, 0), 10) * 0.05s);
 }
-@keyframes wire-in { to { opacity: 1; } }
+@keyframes wire-in { from { opacity: 0; } }
 
 /* A dispatch landing while the paper is open: the row unfolds from the rule. */
 .row-land {
@@ -737,7 +741,7 @@ html.motion-ok .map-target {
     transition-duration: 0.001ms !important;
   }
   html.motion-ok [data-sc].col-rules { background-size: calc((100% + var(--col-gap)) / var(--cols, 12)) 100%; }
-  html.motion-ok .wire-row { opacity: 1; animation: none; }
+  .wire-row:not(.row-land) { opacity: 1; animation: none; }
   html.motion-ok .spark-bar,
   html.motion-ok .bar-draw { transform: none; transition: none; }
   html.motion-ok .map-target { opacity: 1; animation: none; }
