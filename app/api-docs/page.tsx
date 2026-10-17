@@ -27,6 +27,7 @@ const ENDPOINTS: { path: string; gives: string; limit: string; params: string }[
   { path: "/api/v1/items", gives: "dispatches as data, newest first, filterable over the whole archive", limit: "60/min", params: "kev, cve, category, since, before, limit" },
   { path: "/api/v1/actors", gives: "the adversary roster, one lean row per dossier", limit: "60/min", params: "q, type, origin, limit" },
   { path: "/api/v1/actors/{id}", gives: "one dossier as data", limit: "120/min", params: "none" },
+  { path: "/api/v1/cves/{id}/actors", gives: "actors a source is cited as tying to a CVE, each with its quote and source url", limit: "60/min", params: "none" },
   { path: "/actors/{id}/stix.json", gives: "the dossier as a STIX 2.1 bundle", limit: "60/min", params: "none" },
   { path: "/actors/{id}/navigator.json", gives: "the dossier as an ATT&CK Navigator layer", limit: "60/min", params: "none" },
   { path: "/llms.txt", gives: "a map of the site for AI agents", limit: "cached", params: "none" },
