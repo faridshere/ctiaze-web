@@ -17,6 +17,8 @@ type KevEntry = import("../lib/stack/match.ts").KevEntry;
 type CveFacts = import("../lib/stack/match.ts").CveFacts;
 type ProductCve = import("../lib/stack/types.ts").ProductCve;
 
+const { RateLimiter, nvdRate, pullProduct, epssBatched, SkipError } = await import("../lib/stack/upstream.ts");
+
 const fixture = (name: string) => JSON.parse(readFileSync(new URL(`./fixtures/stack/${name}`, import.meta.url), "utf8"));
 
 // Real records: NVD 2.0 CVE-2021-44228 / CVE-2021-41773 (apache rows) and CISA KEV rows.
@@ -470,4 +472,97 @@ test("#7 per-name NVD outcomes: a cut or failed alt name is a partial check, and
   const res2 = assessComponent(c, r, failed, [], facts());
   assert.equal(res2.status, "partial");
   assert.equal(res2.findings.length, 1);
+});
+
+/** A fake clock: sleep() advances time instantly. */
+function fakeClock(start = 0) {
+  let t = start;
+  return { now: () => t, sleep: async (ms: number) => void (t += ms), advance: (ms: number) => void (t += ms) };
+}
+
+test("#8 NVD limiter: keyless 5 per 30 s, keyed 50, waits for a slot and refuses one past the deadline", async () => {
+  assert.deepEqual([nvdRate(undefined).limit, nvdRate("").limit, nvdRate("k").limit], [5, 5, 50]);
+  assert.ok(nvdRate(undefined).windowMs >= 30_000);
+  const clock = fakeClock();
+  const lim = new RateLimiter(5, 30_000, clock);
+  for (let i = 0; i < 5; i++) assert.equal(await lim.acquire(), true);
+  assert.equal(clock.now(), 0); // the first five go at once
+  // the sixth would start at 30 s: refused, without waiting, when the deadline is 10 s
+  assert.equal(await lim.acquire(10_000), false);
+  assert.equal(clock.now(), 0);
+  // with time to spare it waits for the window to roll
+  assert.equal(await lim.acquire(40_000), true);
+  assert.equal(clock.now(), 30_000);
+  // the default example (5 CPE names) never exceeds 5 requests in any 30 s window
+  const c2 = fakeClock();
+  const l2 = new RateLimiter(5, 30_000, c2);
+  const starts: number[] = [];
+  for (let i = 0; i < 12; i++) if (await l2.acquire(Infinity)) starts.push(c2.now());
+  for (const t of starts) assert.ok(starts.filter((x) => x > t - 30_000 && x <= t).length <= 5);
+});
+
+test("#8 a pull refused by the limiter is skipped (rate limit), not an upstream error", async () => {
+  const clock = fakeClock();
+  const lim = new RateLimiter(1, 30_000, clock);
+  await lim.acquire();
+  let calls = 0;
+  const fetchJson = async <T,>() => {
+    calls++;
+    return { totalResults: 0, vulnerabilities: [] } as T;
+  };
+  await assert.rejects(
+    pullProduct("apache", "log4j", "a", { deadline: 10_000, limiter: lim, fetchJson, now: clock.now }),
+    (e: unknown) => e instanceof SkipError && e.reason === "rate-limit",
+  );
+  assert.equal(calls, 0);
+});
+
+test("#9 every NVD request's timeout is clipped to the time left, so one slow pull cannot outrun the deadline", async () => {
+  const lim = new RateLimiter(50, 30_000);
+  const asked: number[] = [];
+  // a hung NVD: answers only by timing out at whatever timeout it was given
+  const hung = <T,>(_url: string, ms: number) =>
+    new Promise<T>((_, rej) => {
+      asked.push(ms);
+      setTimeout(() => rej(Object.assign(new Error("timeout"), { name: "TimeoutError" })), ms);
+    });
+  const t0 = Date.now();
+  await assert.rejects(
+    pullProduct("apache", "log4j", null, { deadline: t0 + 1500, limiter: lim, fetchJson: hung }),
+    (e: unknown) => e instanceof SkipError && e.reason === "deadline",
+  );
+  assert.ok(Date.now() - t0 < 2500, `took ${Date.now() - t0} ms`);
+  assert.equal(asked.length, 1); // no second part ("o") started past the deadline
+  assert.ok(asked[0] <= 1500);
+  // a genuine NVD failure inside the time budget is still an error
+  await assert.rejects(
+    pullProduct("apache", "log4j", "a", { deadline: Date.now() + 60_000, limiter: lim, fetchJson: async () => { throw new Error("nvd answered 503"); } }),
+    (e: unknown) => !(e instanceof SkipError),
+  );
+});
+
+test("#9 EPSS is batched in parallel and bounded by the deadline", async () => {
+  const ids = Array.from({ length: 250 }, (_, i) => `CVE-2024-${String(i).padStart(5, "0")}`);
+  let inFlight = 0;
+  let peak = 0;
+  const timeouts: number[] = [];
+  const fetchJson = async <T,>(url: string, ms: number) => {
+    timeouts.push(ms);
+    inFlight++;
+    peak = Math.max(peak, inFlight);
+    await new Promise((r) => setTimeout(r, 20));
+    inFlight--;
+    const asked = decodeURIComponent(new URL(url).searchParams.get("cve")!).split(",");
+    return { data: asked.map((cve) => ({ cve, epss: "0.5" })) } as T;
+  };
+  const r = await epssBatched(ids, { deadline: Date.now() + 3000, fetchJson });
+  assert.equal(r.ok, true);
+  assert.equal(r.map.size, 250);
+  assert.equal(timeouts.length, 3);
+  assert.equal(peak, 3);
+  assert.ok(timeouts.every((ms) => ms <= 3000));
+  // out of time: no call is started at all
+  const late = await epssBatched(ids, { deadline: Date.now() - 1, fetchJson });
+  assert.equal(late.ok, false);
+  assert.equal(timeouts.length, 3);
 });

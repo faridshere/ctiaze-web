@@ -203,7 +203,7 @@ function Results({ report, onDownload }: { report: Report; onDownload: () => voi
       <p className="mt-3 font-mono text-[11.5px] leading-relaxed text-ink-3">
         CISA KEV {s.kev_catalog.status === "ok" ? `catalog of ${s.kev_catalog.released ?? "today"}` : <span className="text-worse">catalog unavailable: KEV flags may be missing</span>}
         {" · "}NVD: {s.nvd.pulled} product{s.nvd.pulled === 1 ? "" : "s"} read
-        {s.nvd.skipped > 0 && <span className="text-worse">, {s.nvd.skipped} over this check’s lookup budget</span>}
+        {s.nvd.skipped > 0 && <span className="text-worse">, {s.nvd.skipped} not read ({skipReasons(s.nvd)})</span>}
         {s.nvd.errors > 0 && <span className="text-worse">, {s.nvd.errors} failed</span>}
         {s.nvd.truncated.length > 0 && <span>, cut at 4,000 CVEs: {s.nvd.truncated.join(", ")}</span>}
         {" · "}EPSS: FIRST.org
@@ -219,6 +219,15 @@ function Results({ report, onDownload }: { report: Report; onDownload: () => voi
       </ol>
     </section>
   );
+}
+
+function skipReasons(n: Report["sources"]["nvd"]): string {
+  const out: string[] = [];
+  if (n.skipped_by.budget) out.push(`${n.skipped_by.budget} over this check’s lookup budget`);
+  if (n.skipped_by.rate_limit)
+    out.push(`${n.skipped_by.rate_limit} held back by NVD’s rate limit, ${n.rate.requests} requests per ${n.rate.per_seconds} s${n.keyed ? "" : " without an API key"}`);
+  if (n.skipped_by.deadline) out.push(`${n.skipped_by.deadline} out of time`);
+  return out.join("; ") || "skipped";
 }
 
 const score = (c: ComponentResult) =>

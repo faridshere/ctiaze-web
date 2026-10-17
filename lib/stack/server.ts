@@ -1,10 +1,9 @@
 import { getDb } from "../db";
-import { epssMap } from "../cveintel";
 import { ttlMemo } from "../memo";
-import type { ActorClaim, ActorCveRow, Component, ComponentResult, CpeMatch, CpePart, ProductCve, Resolved } from "./types";
+import type { ActorClaim, ActorCveRow, Component, ComponentResult, CpePart, Resolved } from "./types";
 import { resolveComponent, type KevName } from "./resolve";
-import { cpeName } from "./ids";
-import { actorClaims, assessComponent, combinePulls, cpeMatchesOf, kevByName, matchesFor, mergeClaims, type CveFacts, type KevEntry, type NvdPull } from "./match";
+import { RateLimiter, SkipError, epssBatched, nvdRate, pullProduct, type FetchJson, type ProductPull } from "./upstream";
+import { actorClaims, assessComponent, combinePulls, kevByName, mergeClaims, type CveFacts, type KevEntry, type NvdPull } from "./match";
 
 // Server-only I/O for the stack check: the CISA KEV catalog, NVD CVE records
 // per product, FIRST EPSS, and the read-only Mongo collections (items,
@@ -52,51 +51,35 @@ const kevCatalog = ttlMemo(
 
 // ---- NVD: every CVE filed under one vendor:product, ranges evaluated locally ----
 
-const NVD = "https://services.nvd.nist.gov/rest/json/cves/2.0";
-const NVD_PAGE = 2000;
-const NVD_CAP = 4000; // a Chrome-scale product is cut here, and the response says so
-
-type RawCve = { cve: { id: string; configurations?: { nodes?: { cpeMatch?: CpeMatch[] }[] }[] } };
-type ProductPull = { cves: ProductCve[]; truncated: boolean };
-
-async function pullOne(part: CpePart, vendor: string, product: string): Promise<{ total: number; cves: ProductCve[] }> {
-  const key = process.env.NVD_API_KEY;
-  const headers: Record<string, string> = key ? { apiKey: key } : {};
-  const base = `${NVD}?virtualMatchString=${encodeURIComponent(cpeName(part, vendor, product))}&resultsPerPage=${NVD_PAGE}`;
-  const out: ProductCve[] = [];
-  let total = 0;
-  for (let start = 0; start < NVD_CAP; start += NVD_PAGE) {
-    const d = await getJson<{ totalResults?: number; vulnerabilities?: RawCve[] }>(`${base}&startIndex=${start}`, 20_000, headers);
-    total = d.totalResults ?? 0;
-    // Keep only the rows naming this product: the cache then holds kilobytes, not the NVD record.
-    for (const v of d.vulnerabilities ?? []) out.push({ id: v.cve.id.toUpperCase(), matches: matchesFor(cpeMatchesOf(v.cve), vendor, product) });
-    if (!d.vulnerabilities?.length || start + NVD_PAGE >= total) break;
-  }
-  return { total, cves: out };
-}
+const NVD_KEY = process.env.NVD_API_KEY || undefined;
+const NVD_KEYED = !!NVD_KEY;
+const NVD_RATE = nvdRate(NVD_KEY);
+// One limiter for the whole process: concurrent checks share NVD's per-IP limit.
+const nvdLimiter = new RateLimiter(NVD_RATE.limit, NVD_RATE.windowMs);
+const nvdFetch: FetchJson = (url, ms) => getJson(url, ms, NVD_KEY ? { apiKey: NVD_KEY } : {});
+const fetchJson: FetchJson = (url, ms) => getJson(url, ms);
 
 // In-process and bounded (ttlMemo), not unstable_cache: the key is whatever
 // product name a caller types, and the data cache would write each one to the
-// host's disk (see lib/isr-cache-handler.mjs for why that matters here).
+// host's disk (see lib/isr-cache-handler.mjs for why that matters here). The
+// deadline is per request and not part of the key.
 const nvdProduct = ttlMemo(
-  async (vendor: string, product: string, part: CpePart | null): Promise<ProductPull> => {
-    for (const p of part ? [part] : (["a", "o"] as const)) {
-      const r = await pullOne(p, vendor, product);
-      if (r.total > 0) return { cves: r.cves, truncated: r.total > NVD_CAP };
-    }
-    return { cves: [], truncated: false };
-  },
+  (vendor: string, product: string, part: CpePart | null, deadline: number): Promise<ProductPull> =>
+    pullProduct(vendor, product, part, { deadline, limiter: nvdLimiter, fetchJson: nvdFetch }),
   12 * 3600_000,
   400,
+  (vendor, product, part) => JSON.stringify([vendor, product, part]),
 );
 
 // ---- the whole check ----------------------------------------------------------
 
-/** Distinct NVD product pulls one request may start (keyless NVD allows ~5 requests / 30 s). */
-const NVD_KEYED = !!process.env.NVD_API_KEY;
+/** Distinct NVD product pulls one request may start; the rate limiter paces them. */
 const NVD_BUDGET = NVD_KEYED ? 40 : 8;
 const NVD_WORKERS = NVD_KEYED ? 3 : 2;
+/** No NVD request runs past this (each request's timeout is clipped to it). */
 const NVD_DEADLINE_MS = 40_000;
+/** Facts (Mongo, EPSS) must be in by this, inside the route's 60 s maxDuration. */
+const FACTS_DEADLINE_MS = 52_000;
 const MAX_FACT_CVES = 3000;
 
 export type SourceStatus = "ok" | "unavailable";
@@ -105,7 +88,17 @@ export type StackReport = {
   summary: { components: number; with_findings: number; kev_cves: number; cves_with_cited_actors: number };
   sources: {
     kev_catalog: { status: SourceStatus; released: string | null };
-    nvd: { pulled: number; skipped: number; errors: number; truncated: string[] };
+    nvd: {
+      pulled: number;
+      skipped: number;
+      errors: number;
+      truncated: string[];
+      /** Whether an NVD API key is set; without one NVD allows 5 requests per 30 s. */
+      keyed: boolean;
+      rate: { requests: number; per_seconds: number };
+      /** Why CPE names were skipped: over the per-check budget, no rate-limit slot in time, or out of time. */
+      skipped_by: { budget: number; rate_limit: number; deadline: number };
+    };
     epss: SourceStatus;
     actors: SourceStatus;
     coverage: SourceStatus;
@@ -141,15 +134,19 @@ export async function checkStack(components: Component[]): Promise<StackReport> 
   const jobs = new Map<string, Job>();
   for (const i of order) for (const j of jobsFor(resolved[i]!)) if (!jobs.has(j.id) && jobs.size < NVD_BUDGET) jobs.set(j.id, j);
 
-  const pulls = new Map<string, ProductPull | "error">();
+  const pulls = new Map<string, ProductPull | "error" | "skipped">();
+  const skippedBy = { budget: 0, rate_limit: 0, deadline: 0 };
+  const nvdDeadline = started + NVD_DEADLINE_MS;
   const queue = [...jobs.values()];
   const worker = async () => {
     for (let j = queue.shift(); j; j = queue.shift()) {
-      if (Date.now() - started > NVD_DEADLINE_MS) return;
       try {
-        pulls.set(j.id, await nvdProduct(j.vendor, j.product, j.part));
-      } catch {
-        pulls.set(j.id, "error");
+        pulls.set(j.id, await nvdProduct(j.vendor, j.product, j.part, nvdDeadline));
+      } catch (e) {
+        if (e instanceof SkipError) {
+          pulls.set(j.id, "skipped");
+          skippedBy[e.reason === "rate-limit" ? "rate_limit" : "deadline"]++;
+        } else pulls.set(j.id, "error");
       }
     }
   };
@@ -172,7 +169,11 @@ export async function checkStack(components: Component[]): Promise<StackReport> 
   const draft = components.map((c, i) => assessComponent(c, resolved[i], nvd[i], named[i], empty, Infinity));
   const cveIds = [...new Set(draft.flatMap((d) => d.findings.map((f) => f.cve)))].slice(0, MAX_FACT_CVES);
 
-  const [mongo, epss] = await Promise.all([mongoFacts(cveIds), firstEpss(cveIds)]);
+  const factsDeadline = started + FACTS_DEADLINE_MS;
+  const [mongo, epss] = await Promise.all([
+    beforeDeadline(mongoFacts(cveIds), factsDeadline, MONGO_UNAVAILABLE),
+    epssBatched(cveIds.slice(0, MAX_EPSS_CVES), { deadline: factsDeadline, fetchJson }),
+  ]);
   const kevMap = kev?.entries ?? mongo.kevFallback;
   const facts: CveFacts = {
     kev: kevMap,
@@ -183,6 +184,7 @@ export async function checkStack(components: Component[]): Promise<StackReport> 
   const results = components.map((c, i) => assessComponent(c, resolved[i], nvd[i], named[i], facts));
 
   const all = results.flatMap((r) => r.findings);
+  const allJobIds = [...new Set(resolved.flatMap((r) => (r ? jobsFor(r).map((j) => j.id) : [])))];
   return {
     generated_at: new Date().toISOString(),
     summary: {
@@ -194,10 +196,13 @@ export async function checkStack(components: Component[]): Promise<StackReport> 
     sources: {
       kev_catalog: { status: kev ? "ok" : "unavailable", released: kev?.released ?? null },
       nvd: {
-        pulled: [...pulls.values()].filter((p) => p !== "error").length,
-        skipped: new Set(resolved.flatMap((r) => (r ? jobsFor(r).map((j) => j.id) : [])).filter((id) => !pulls.has(id))).size,
+        pulled: [...pulls.values()].filter((p) => p !== "error" && p !== "skipped").length,
+        skipped: allJobIds.filter((id) => !pulls.has(id) || pulls.get(id) === "skipped").length,
         errors: [...pulls.values()].filter((p) => p === "error").length,
-        truncated: [...pulls.entries()].filter(([, p]) => p !== "error" && p.truncated).map(([id]) => id),
+        truncated: [...pulls.entries()].filter(([, p]) => p !== "error" && p !== "skipped" && p.truncated).map(([id]) => id),
+        keyed: NVD_KEYED,
+        rate: { requests: NVD_RATE.limit, per_seconds: 30 },
+        skipped_by: { ...skippedBy, budget: allJobIds.filter((id) => !jobs.has(id)).length },
       },
       epss: epss.ok || mongo.ok ? "ok" : "unavailable",
       actors: mongo.ok ? "ok" : "unavailable",
@@ -207,17 +212,13 @@ export async function checkStack(components: Component[]): Promise<StackReport> 
   };
 }
 
-async function firstEpss(cves: string[]): Promise<{ ok: boolean; map: Map<string, number> }> {
-  const map = new Map<string, number>();
-  if (!cves.length) return { ok: true, map };
-  let ok = false;
-  // FIRST takes 100 ids per call; three calls cover the reported set in practice.
-  for (let i = 0; i < Math.min(cves.length, 300); i += 100) {
-    const part = await epssMap(cves.slice(i, i + 100));
-    if (part.size) ok = true;
-    for (const [k, v] of part) map.set(k, v);
-  }
-  return { ok, map };
+const MAX_EPSS_CVES = 300;
+
+/** `p`, or `fallback` once the deadline passes (the work itself is not cancelled, only no longer awaited). */
+function beforeDeadline<T>(p: Promise<T>, deadline: number, fallback: T): Promise<T> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const late = new Promise<T>((r) => (timer = setTimeout(() => r(fallback), Math.max(0, deadline - Date.now()))));
+  return Promise.race([p, late]).finally(() => clearTimeout(timer));
 }
 
 type MongoFacts = {
@@ -228,8 +229,10 @@ type MongoFacts = {
   kevFallback: Map<string, KevEntry>;
 };
 
+const MONGO_UNAVAILABLE: MongoFacts = { ok: false, epss: new Map(), priority: new Map(), actors: new Map(), kevFallback: new Map() };
+
 async function mongoFacts(cves: string[]): Promise<MongoFacts> {
-  const empty: MongoFacts = { ok: false, epss: new Map(), priority: new Map(), actors: new Map(), kevFallback: new Map() };
+  const empty = MONGO_UNAVAILABLE;
   if (!cves.length) return { ...empty, ok: true };
   try {
     const db = await getDb();

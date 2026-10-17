@@ -4,8 +4,10 @@ import { parseApiBody, MAX_COMPONENTS } from "@/lib/stack/parse";
 import { checkStack } from "@/lib/stack/server";
 
 export const runtime = "nodejs";
-// Cold NVD pulls for a fresh stack take tens of seconds; the check stops
-// starting new pulls at 40 s and reports the rest as skipped.
+// Cold NVD pulls for a fresh stack take tens of seconds. NVD requests are
+// rate-limited and none runs past 40 s (each one's timeout is clipped to the
+// time left); EPSS and Mongo facts must be in by 52 s. What did not fit is
+// reported as skipped, with the reason.
 export const maxDuration = 60;
 
 // ---------------------------------------------------------------------------
