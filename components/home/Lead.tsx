@@ -1,7 +1,7 @@
 import Link from "next/link";
 import type { LeadStory } from "@/lib/home-data";
 import { categoryName } from "@/lib/taxonomy";
-import { stripBoilerplate } from "@/lib/format";
+import { completeSentences, stripBoilerplate } from "@/lib/format";
 import { RelativeTime } from "./RelativeTime";
 
 // The front-page lead: the newest actively-exploited story, set like a
@@ -44,7 +44,9 @@ export function Lead({ lead }: { lead: LeadStory }) {
   const cve = lead.cveIds[0] ?? null;
   // The summary is the engine's own text; a feed that only echoes its source
   // ("submitted by …", "[link] [comments]") prints nothing rather than noise.
-  const summaryRaw = stripBoilerplate(lead.summary);
+  // The engine stores a fixed-length summary, so the deck ends at its last
+  // complete sentence rather than mid-word.
+  const summaryRaw = completeSentences(stripBoilerplate(lead.summary));
   const summary = summaryRaw.length >= 40 && !/^submitted by/i.test(summaryRaw) ? summaryRaw : "";
 
   const dateline: React.ReactNode[] = [];
