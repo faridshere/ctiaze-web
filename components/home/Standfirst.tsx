@@ -1,5 +1,6 @@
 import type { HomeData } from "@/lib/home-data";
 import { LINKS } from "@/lib/site";
+import { AsOf } from "./AsOf";
 
 // The standfirst: what this paper is, in three newspaper columns, each ending
 // in a real artefact from the data rather than a claim.
@@ -10,7 +11,7 @@ function monthYear(iso: string | null): string | null {
   return d.toLocaleDateString("en-GB", { month: "long", year: "numeric", timeZone: "UTC" });
 }
 
-export function Standfirst({ data }: { data: HomeData }) {
+export function Standfirst({ data, refIso }: { data: HomeData; refIso?: string | null }) {
   const since = monthYear(data.firstAt);
   const feedTitle = data.lead?.title ?? data.wire[0]?.title ?? null;
   const cols = [
@@ -54,6 +55,7 @@ export function Standfirst({ data }: { data: HomeData }) {
           </div>
         ))}
       </div>
+      <AsOf iso={data.generatedAt} refIso={refIso} className="mt-4 block" />
     </section>
   );
 }

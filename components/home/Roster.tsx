@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { ActorsPageData } from "@/lib/threatactors";
 import { RelativeTime } from "./RelativeTime";
+import { AsOf } from "./AsOf";
 
 // The roster page of the paper: the dossier totals as a ledger on the left,
 // and on the right the adversaries our own dispatches have named in the last
@@ -9,7 +10,7 @@ import { RelativeTime } from "./RelativeTime";
 // state about it, and the latest dispatch that named it.
 const TYPE_WORD: Record<string, string> = { "nation-state": "Nation-state", crime: "Crime" };
 
-export function Roster({ data }: { data: ActorsPageData }) {
+export function Roster({ data, refIso }: { data: ActorsPageData; refIso?: string | null }) {
   const rows = data.onTheWire.slice(0, 8);
   const s = data.stats;
   const head = [
@@ -35,7 +36,7 @@ export function Roster({ data }: { data: ActorsPageData }) {
               </div>
             ))}
           </dl>
-          {s.lastRefreshed && <p className="label mt-3 text-ink-3">Roster refreshed {s.lastRefreshed.slice(0, 10)}</p>}
+          {s.lastRefreshed && <p className="label mt-3 text-ink-3">Roster refreshed {s.lastRefreshed.slice(0, 10)} · <AsOf iso={s.lastRefreshed} refIso={refIso} /></p>}
           <p className="mt-6 max-w-[34ch] text-[14px] leading-relaxed text-ink-2">
             Every field is what a source states: MISP galaxy, MITRE ATT&amp;CK, ransomware leak sites, APTnotes. Assessed origin, observed targets, techniques by tactic, with the report that says so.
           </p>

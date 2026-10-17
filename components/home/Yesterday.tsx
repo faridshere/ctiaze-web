@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { WireRow } from "@/lib/home-data";
 import { GlyphChip } from "@/components/GlyphChip";
 import { sevOf } from "./Wire";
+import { AsOf } from "./AsOf";
 
 // The earlier edition: the previous day that had dispatches, set in two
 // newspaper columns with each story's running number, proving the masthead's
@@ -20,7 +21,7 @@ function hhmm(iso: string): string {
   return `${p(d.getUTCHours())}:${p(d.getUTCMinutes())}`;
 }
 
-export function Yesterday({ rows, dayKey }: { rows: WireRow[]; dayKey: string | null }) {
+export function Yesterday({ rows, dayKey, asOf, refIso }: { rows: WireRow[]; dayKey: string | null; asOf?: string | null; refIso?: string | null }) {
   if (!dayKey || rows.length === 0) return null;
   return (
     <section className="sheet pt-[var(--sp-section)]" aria-labelledby="yesterday-head">
@@ -48,6 +49,7 @@ export function Yesterday({ rows, dayKey }: { rows: WireRow[]; dayKey: string | 
           </li>
         ))}
       </ol>
+      <AsOf iso={asOf} refIso={refIso} className="mt-3 block" />
     </section>
   );
 }

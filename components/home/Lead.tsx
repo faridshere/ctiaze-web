@@ -40,7 +40,9 @@ export function tidyHeadline(title: string): string {
     .replace(/CVE-\d{4}-\d+/g, (m) => m.replaceAll("-", "‑"));
 }
 
-export function Lead({ lead }: { lead: LeadStory }) {
+// `as`: the front page's h1 is the stack check's positioning line, so the
+// lead is set as an h2 there; the splash looks the same either way.
+export function Lead({ lead, as: Heading = "h1" }: { lead: LeadStory; as?: "h1" | "h2" }) {
   const cve = lead.cveIds[0] ?? null;
   // The summary is the engine's own text; a feed that only echoes its source
   // ("submitted by …", "[link] [comments]") prints nothing rather than noise.
@@ -76,7 +78,7 @@ export function Lead({ lead }: { lead: LeadStory }) {
         {lead.kev && <span className="stamp">Actively exploited</span>}
       </p>
 
-      <h1 className={`headline mt-5 text-ink ${headlineSize(lead.title)}`}>
+      <Heading className={`headline mt-5 text-ink ${headlineSize(lead.title)}`}>
         <span className="hl">
           <span>
             <Link href={`/news/${lead.slug}`} className="transition-colors hover:text-ink-2">
@@ -84,7 +86,7 @@ export function Lead({ lead }: { lead: LeadStory }) {
             </Link>
           </span>
         </span>
-      </h1>
+      </Heading>
 
       {summary && (
         <p className="deck fade-up mt-6 max-w-[58ch]" style={{ animationDelay: "0.5s" }}>

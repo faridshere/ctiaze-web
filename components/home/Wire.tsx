@@ -1,8 +1,8 @@
 import Link from "next/link";
 import type { WireRow } from "@/lib/home-data";
 import { GlyphChip } from "@/components/GlyphChip";
-import { Waitlist } from "@/components/Waitlist";
 import { UtcClock } from "./UtcClock";
+import { AsOf } from "./AsOf";
 
 // THE WIRE: the newest dispatches as a ruled column, every time in UTC like
 // the rest of the front page. The bottom rule of every row is a data channel:
@@ -61,7 +61,7 @@ function GapRow({ n }: { n: number }) {
   );
 }
 
-export function Wire({ rows, total }: { rows: WireRow[]; total: number }) {
+export function Wire({ rows, total, asOf, refIso }: { rows: WireRow[]; total: number; asOf?: string | null; refIso?: string | null }) {
   const items: React.ReactNode[] = [];
   rows.forEach((r, i) => {
     const prev = rows[i - 1];
@@ -84,14 +84,7 @@ export function Wire({ rows, total }: { rows: WireRow[]; total: number }) {
         </Link>
         <span className="label text-ink-3">{total.toLocaleString("en-US")} dispatches · times UTC</span>
       </div>
-
-      <div className="double-box mt-8 p-4 sm:p-5">
-        <p className="label text-ink">Email alerts are next</p>
-        <p className="mt-1 text-[13.5px] leading-relaxed text-ink-2">One email when they open. Until then, the wire is Telegram, RSS and JSON.</p>
-        <div className="mt-4">
-          <Waitlist source="skopnix-landing:wire" />
-        </div>
-      </div>
+      {asOf && <AsOf iso={asOf} refIso={refIso} className="mt-2 block" />}
     </section>
   );
 }
