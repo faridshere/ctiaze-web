@@ -1,6 +1,5 @@
 import Link from "next/link";
 import type { KevRow } from "@/lib/cveintel";
-import { categoryName } from "@/lib/taxonomy";
 import type { Story } from "@/lib/types";
 
 // The data box: the structured facts of the dispatch on the deeper stock, in
@@ -10,15 +9,14 @@ import type { Story } from "@/lib/types";
 // gloss) in Archivo, since mono is for figures. Labels are ink-2, not ink-3:
 // ink-3 on the deeper stock measures 4.06:1 in the day edition, under AA.
 // Sits at the right of the story on a desk, under the deck on a phone.
+//
+// It carries only what the head does not: the head's eyebrow and dateline
+// already print the category, the filed date and time, the source and how
+// many outlets also carried it, so those rows are not repeated here
+// (2026-10-17).
 function epssText(e: number): string {
   const pct = e * 100;
   return `${pct.toFixed(pct >= 10 ? 0 : pct >= 1 ? 1 : 2)}%`;
-}
-
-function utcStamp(iso: string): string {
-  const d = new Date(iso);
-  const p = (n: number) => String(n).padStart(2, "0");
-  return `${d.getUTCFullYear()}-${p(d.getUTCMonth() + 1)}-${p(d.getUTCDate())} ${p(d.getUTCHours())}:${p(d.getUTCMinutes())} UTC`;
 }
 
 // A figure inside a prose value.
@@ -35,16 +33,10 @@ function Unit({ children }: { children: React.ReactNode }) {
 export function StoryFacts({
   story,
   kevRows,
-  hasSource,
-  host,
-  code,
 }: {
   story: Story;
   /** CISA's row for each of the story's CVEs that is on KEV (dates, ransomware use) */
   kevRows: Map<string, KevRow>;
-  hasSource: boolean;
-  host: string;
-  code: string;
 }) {
   const rows: { k: string; v: React.ReactNode }[] = [];
   const cves = story.cveIds.map((c) => c.toUpperCase());
@@ -113,7 +105,6 @@ export function StoryFacts({
     rows.push({ k: "KEV", v: <span className="text-ink-3">not listed</span> });
   }
 
-  rows.push({ k: "Category", v: categoryName(story.category, "en") });
   if (story.region)
     rows.push({
       k: "Region",
@@ -123,26 +114,6 @@ export function StoryFacts({
         </>
       ),
     });
-  if (hasSource) {
-    rows.push({
-      k: "Source",
-      v: (
-        <a href={story.sourceUrl} target="_blank" rel="noopener noreferrer" className="ulink hover:text-ink" aria-label={`Source: ${host}`}>
-          <Fig>{code}</Fig> · <Fig>{host}</Fig> ↗
-        </a>
-      ),
-    });
-  }
-  if (story.altSources.length > 0)
-    rows.push({
-      k: "Also carried",
-      v: (
-        <>
-          <Fig>{story.altSources.length}</Fig> outlet{story.altSources.length === 1 ? "" : "s"}
-        </>
-      ),
-    });
-  rows.push({ k: "Filed", v: <Fig>{utcStamp(story.publishedAt)}</Fig> });
   if (story.azExposure && story.azExposure.globalCount !== null) {
     rows.push({
       k: "Exposed",
@@ -153,6 +124,9 @@ export function StoryFacts({
       ),
     });
   }
+
+  // Nothing beyond what the head already printed: no box at all.
+  if (rows.length === 0) return null;
 
   return (
     <aside className="ink-box bg-paper-deep p-5" aria-label="Facts on file">

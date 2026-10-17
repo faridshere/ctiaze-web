@@ -153,7 +153,7 @@ export default async function StoryPage({ params }: { params: Promise<Params> })
             </div>
             <aside className="mt-8 md:col-span-4 md:col-start-9 md:row-span-2 md:row-start-1 md:mt-6 md:border-l md:border-rule-soft md:pl-6">
               <div className="md:sticky md:top-[92px]">
-                <StoryFacts story={story} kevRows={kevRows} hasSource={hasSource} host={host} code={code} />
+                <StoryFacts story={story} kevRows={kevRows} />
               </div>
             </aside>
             <div className="min-w-0 md:col-span-8 md:col-start-1 md:row-start-2">
