@@ -41,3 +41,9 @@ export function canonicalActorId(id: string): string {
 export function isAliasActorId(id: string): boolean {
   return id.toLowerCase() in ACTOR_ALIAS_CANONICAL;
 }
+
+/** Every id stored for this actor: the canonical id and each alias that maps to it. */
+export function actorIdsFor(id: string): string[] {
+  const canon = canonicalActorId(id);
+  return [canon, ...Object.keys(ACTOR_ALIAS_CANONICAL).filter((k) => ACTOR_ALIAS_CANONICAL[k] === canon)];
+}
