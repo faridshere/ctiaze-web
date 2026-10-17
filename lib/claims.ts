@@ -1,6 +1,9 @@
 import { getDb } from "@/lib/db";
+import { claimsFilter, regionOf, type ClaimRegion, type RegionParam } from "./claims-shape";
 
-// Hacktivist / leak-site claims against Azerbaijan, written by the engine's
+export type { ClaimRegion, RegionParam } from "./claims-shape";
+
+// Hacktivist / leak-site claims, Azerbaijan and worldwide, written by the engine's
 // hacktivist watch (ctiaze-engine cti/hacktivist.py → `hacktivist_posts`).
 //
 // What is public and what is not:
@@ -9,11 +12,13 @@ import { getDb } from "@/lib/db";
 //   • dark-web (ahmia/onion) hits never leave the private review channel: they are
 //     noisy and an onion link to a leak is not something to publish.
 // Onion URLs are also stripped from ransomware rows (link goes to ransomware.live).
+// Region and noise rules live in lib/claims-shape.ts.
 
 export type ClaimCheck = { target: string; here: string; checkhost: string };
 
 export type ClaimRow = {
   id: string;
+  region: ClaimRegion;
   kind: "telegram" | "bluesky" | "ransomware";
   group: string;
   channel: string;
@@ -32,21 +37,20 @@ export type ClaimStats = {
   total30d: number;
   groups: { group: string; n: number; last: string }[];
   byKind: Record<string, number>;
+  lastSeen: string | null;  // ISO: newest first_seen of any public row in scope, all time
 };
 
-// Exported for the TAXII az-claims collection (lib/cited-data.ts), so the
-// two public surfaces cannot drift apart on what counts as public.
-export const PUBLIC_FILTER = {
-  az: true,
-  $or: [
-    { kind: { $in: ["telegram", "bluesky"] }, claim_like: true },
-    { kind: "ransomware" },
-  ],
-};
+// The Azerbaijan public filter, exported for the TAXII az-claims collection
+// (lib/cited-data.ts) and the /az board, so every public surface agrees on
+// what counts as a public AZ claim (noise excluded).
+export const PUBLIC_FILTER = claimsFilter("az");
 
 export type ClaimDoc = {
   _id: string;
   kind: ClaimRow["kind"];
+  az?: boolean;
+  region?: string | null;
+  noise?: boolean;
   group?: string;
   channel?: string;
   url?: string;
@@ -75,6 +79,7 @@ export function toRow(d: ClaimDoc): ClaimRow {
     : [...(d.ext?.az_domains ?? [])].slice(0, 6);
   return {
     id: String(d._id),
+    region: regionOf(d) ?? "az",
     kind: d.kind,
     group: d.group ?? d.channel ?? "unknown",
     channel: d.channel ?? "",
@@ -90,12 +95,12 @@ export function toRow(d: ClaimDoc): ClaimRow {
   };
 }
 
-export async function getClaims(limit = 120): Promise<ClaimRow[]> {
+export async function getClaims(limit = 120, region: RegionParam = "az"): Promise<ClaimRow[]> {
   const db = await getDb();
   const docs = await db
     .collection<ClaimDoc>("hacktivist_posts")
     .aggregate<ClaimDoc>([
-      { $match: PUBLIC_FILTER },
+      { $match: claimsFilter(region) },
       { $addFields: { _at: { $ifNull: ["$published", "$first_seen"] } } },
       { $sort: { _at: -1 } },
       { $limit: Math.min(Math.max(limit, 1), 500) },
@@ -105,14 +110,15 @@ export async function getClaims(limit = 120): Promise<ClaimRow[]> {
   return docs.map(toRow);
 }
 
-export async function getClaimStats(): Promise<ClaimStats> {
+export async function getClaimStats(region: RegionParam = "az"): Promise<ClaimStats> {
   const db = await getDb();
   // Counted by when the claim was MADE, not when the watch first stored it: the
   // first run back-fills old leak-site listings, which are not "this month".
   const since = new Date(Date.now() - 30 * 86400_000);
-  const match = { ...PUBLIC_FILTER, $expr: { $gte: [{ $ifNull: ["$published", "$first_seen"] }, since] } };
+  const filter = claimsFilter(region);
+  const match = { ...filter, $expr: { $gte: [{ $ifNull: ["$published", "$first_seen"] }, since] } };
   const col = db.collection("hacktivist_posts");
-  const [groups, kinds] = await Promise.all([
+  const [groups, kinds, newest] = await Promise.all([
     col
       .aggregate<{ _id: string; n: number; last: Date }>([
         { $match: { ...match, kind: { $ne: "bluesky" } } },   // trackers repost; count the claimants
@@ -122,11 +128,14 @@ export async function getClaimStats(): Promise<ClaimStats> {
       ])
       .toArray(),
     col.aggregate<{ _id: string; n: number }>([{ $match: match }, { $group: { _id: "$kind", n: { $sum: 1 } } }]).toArray(),
+    // Freshness: when the watch last stored a public row in this scope.
+    col.find(filter, { projection: { first_seen: 1 } }).sort({ first_seen: -1 }).limit(1).toArray(),
   ]);
   const byKind = Object.fromEntries(kinds.map((k) => [k._id, k.n]));
   return {
     total30d: kinds.reduce((a, k) => a + k.n, 0),
     groups: groups.map((g) => ({ group: g._id, n: g.n, last: new Date(g.last).toISOString() })),
     byKind,
+    lastSeen: newest[0]?.first_seen ? new Date(newest[0].first_seen).toISOString() : null,
   };
 }
