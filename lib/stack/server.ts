@@ -20,9 +20,9 @@ async function getJson<T>(url: string, ms: number, headers: Record<string, strin
 
 // ---- CISA KEV (with vendor/product names, which lib/cveintel's kevMeta drops) ----
 
-type KevCatalog = { entries: Map<string, KevEntry>; names: KevName[]; released: string | null };
+export type KevCatalog = { entries: Map<string, KevEntry>; names: KevName[]; released: string | null };
 
-const kevCatalog = ttlMemo(
+export const kevCatalog = ttlMemo(
   async (): Promise<KevCatalog> => {
     const d = await getJson<{
       dateReleased?: string;
