@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { cache } from "react";
 import { SiteHeader } from "@/components/site/SiteHeader";
 import { SiteFooter } from "@/components/site/SiteFooter";
 import { CtaBand } from "@/components/site/CtaBand";
@@ -83,7 +84,11 @@ function norm(id: string): string | null {
 // null instead of an `unknown` flag, so no v1 entry may be read back as a real
 // page. Off Vercel a null stays in memory only (lib/isr-cache-handler.mjs), so
 // made-up ids never reach the persistent cache volume.
-const load = (id: string) => loadCached(id);
+// cache() (2026-10-17): generateMetadata and the page render concurrently and
+// unstable_cache does not share an in-flight miss, so every cold or
+// regenerating render ran this whole loader twice (2× NVD, EPSS and each Mongo
+// read, counted with the mongod profiler). One promise per id per render now.
+const load = cache((id: string) => loadCached(id));
 // v3 (2026-10-17): adds the exploit watch (exploits + cve_timeline).
 const loadCached = unstable_cache(loadUncached, ["cve-hub-v3"], { revalidate: 43200 });
 

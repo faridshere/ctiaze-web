@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { unstable_cache } from "next/cache";
 import { withSnapshot } from "./snapshot";
 import { getDb } from "./db";
@@ -166,9 +167,12 @@ export async function getActorNamesFor(ids: string[]): Promise<Map<string, strin
 // Key bumped 2026-09-07: the weekly refresh raised APT28 from 16 techniques to
 // 93 (the old MITRE cap), and unstable_cache survives deployments — a version
 // key is the only way to make the site show data that already changed.
-export const getActorByIdCached = unstable_cache(async (id: string) => getActorById(id), ["actor-by-id-v4"], {
-  revalidate: 86400,
-});
+// cache() shares one in-flight read per render (2026-10-17): the dossier's
+// generateMetadata and page body both call this, concurrently, and
+// unstable_cache alone ran the Mongo read for each of them on a cold render.
+export const getActorByIdCached = cache(
+  unstable_cache(async (id: string) => getActorById(id), ["actor-by-id-v4"], { revalidate: 86400 }),
+);
 
 // --- ranking signals ---------------------------------------------------------
 
