@@ -4,7 +4,7 @@ import { ttlMemo } from "../memo";
 import type { ActorClaim, ActorCveRow, Component, ComponentResult, CpeMatch, CpePart, ProductCve, Resolved } from "./types";
 import { resolveComponent, type KevName } from "./resolve";
 import { cpeName } from "./ids";
-import { actorClaims, assessComponent, cpeMatchesOf, kevByName, matchesFor, mergeClaims, type CveFacts, type KevEntry, type NvdPull } from "./match";
+import { actorClaims, assessComponent, combinePulls, cpeMatchesOf, kevByName, matchesFor, mergeClaims, type CveFacts, type KevEntry, type NvdPull } from "./match";
 
 // Server-only I/O for the stack check: the CISA KEV catalog, NVD CVE records
 // per product, FIRST EPSS, and the read-only Mongo collections (items,
@@ -155,20 +155,15 @@ export async function checkStack(components: Component[]): Promise<StackReport> 
   };
   await Promise.all(Array.from({ length: NVD_WORKERS }, worker));
 
-  const nvdFor = (r: Resolved): NvdPull => {
-    const got = jobsFor(r).map((j) => pulls.get(j.id));
-    if (got.every((g) => g === undefined)) return { status: "skipped" };
-    if (got.some((g) => g === "error")) return { status: "error" };
-    const byId = new Map<string, ProductCve>();
-    for (const g of got) {
-      if (!g || g === "error") continue;
-      for (const c of g.cves) {
-        const cur = byId.get(c.id);
-        byId.set(c.id, cur ? { id: c.id, matches: [...cur.matches, ...c.matches] } : c);
-      }
-    }
-    return { status: "ok", cves: [...byId.values()] };
-  };
+  // Per CPE name: a cut or failed alt name makes the check partial, never
+  // silently complete, and never throws away what the other names returned.
+  const nvdFor = (r: Resolved): NvdPull =>
+    combinePulls(
+      jobsFor(r).map((j) => {
+        const got = pulls.get(j.id);
+        return { name: `${j.vendor}:${j.product}`, result: got === undefined ? "skipped" : got };
+      }),
+    );
   const nvd = resolved.map((r) => (r ? nvdFor(r) : ({ status: "skipped" } as NvdPull)));
 
   // First pass without facts and without the per-component cap, to learn

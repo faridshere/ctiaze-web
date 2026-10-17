@@ -102,7 +102,43 @@ export function compareFindings(a: CveFinding, b: CveFinding): number {
   );
 }
 
-export type NvdPull = { status: "ok"; cves: ProductCve[] } | { status: "error" } | { status: "skipped" };
+/** Why one CPE name's NVD records are missing: NVD failed, or the request's budget, rate limit or deadline cut it. */
+export type NvdMissing = { name: string; reason: "error" | "skipped" };
+
+export type NvdPull =
+  | { status: "ok"; cves: ProductCve[] }
+  /** Some of the product's CPE names were read, others are missing: versions checked against part of NVD. */
+  | { status: "partial"; cves: ProductCve[]; missing: NvdMissing[] }
+  | { status: "error" }
+  | { status: "skipped" };
+
+/** What the NVD pull of one CPE name ("vendor:product") came back with. */
+export type NameOutcome = { name: string; result: { cves: ProductCve[] } | "error" | "skipped" };
+
+/**
+ * Combine a product's per-name NVD outcomes (primary CPE name + alts). A
+ * failed or skipped alt never discards what the other names returned, and
+ * never passes for a complete check either: that is "partial".
+ */
+export function combinePulls(outcomes: NameOutcome[]): NvdPull {
+  const byId = new Map<string, ProductCve>();
+  const missing: NvdMissing[] = [];
+  let read = 0;
+  for (const o of outcomes) {
+    if (o.result === "error" || o.result === "skipped") {
+      missing.push({ name: o.name, reason: o.result });
+      continue;
+    }
+    read++;
+    for (const c of o.result.cves) {
+      const cur = byId.get(c.id);
+      byId.set(c.id, cur ? { id: c.id, matches: [...cur.matches, ...c.matches] } : c);
+    }
+  }
+  if (!read) return missing.some((m) => m.reason === "error") ? { status: "error" } : { status: "skipped" };
+  const cves = [...byId.values()];
+  return missing.length ? { status: "partial", cves, missing } : { status: "ok", cves };
+}
 
 /**
  * Assess one component. `nvd` is what the route got from NVD for the resolved
@@ -119,11 +155,14 @@ export function assessComponent(
   cap = MAX_FINDINGS_PER_COMPONENT,
 ): ComponentResult {
   if (!r) {
-    return { input: c, resolved: null, status: "unresolved", findings: [], total_affected: 0, not_affected: 0, note: "Could not tell which product this is. Try 'vendor product version', a purl or a CPE." };
+    const note = c.purl || c.namespace
+      ? "This package has no curated mapping to an NVD product, and its name is also another product's (a client or binding named after a server, say), so it was not guessed. Send its CPE to check it."
+      : "Could not tell which product this is. Try 'vendor product version', a purl or a CPE.";
+    return { input: c, resolved: null, status: "unresolved", findings: [], total_affected: 0, not_affected: 0, note };
   }
   const products = [{ vendor: r.vendor, product: r.product }, ...(r.alts ?? [])];
   const verdicts = new Map<string, { verdict: VersionVerdict; detail: string | null; fixedIn: string | null }>();
-  if (nvd.status === "ok") {
+  if (nvd.status === "ok" || nvd.status === "partial") {
     for (const cve of nvd.cves) {
       const rows = products.flatMap((p) => matchesFor(cve.matches, p.vendor, p.product));
       // Our product only as the platform another product runs on
@@ -167,23 +206,37 @@ export function assessComponent(
   }
   findings.sort(compareFindings);
 
+  // "checked" means NVD version ranges were actually evaluated for this
+  // product: NVD answering, or KEV name matches existing, is not enough.
+  const evaluated = verdicts.size > 0;
+  const missing = nvd.status === "partial" ? nvd.missing : [];
+  const missingErr = missing.some((m) => m.reason === "error");
+  const missingText = missing.map((m) => `${m.name} (${m.reason === "error" ? "NVD did not answer" : "over this check's NVD budget or time limit"})`).join(", ");
   let status: ComponentStatus;
   let note: string | null = null;
-  if (nvd.status === "ok" && (nvd.cves.length > 0 || findings.length > 0)) status = "checked";
-  else if (nvd.status === "error") {
+  if (evaluated && nvd.status === "partial") {
+    status = "partial";
+    note = `Versions checked against NVD for part of this product only: missing ${missingText}. CVEs filed only under the missing name may not be shown.`;
+  } else if (evaluated) status = "checked";
+  else if (nvd.status === "error" || missingErr) {
     status = "upstream-error";
     note = "NVD did not answer for this product, so versions were not checked. KEV name matches are still shown.";
   } else if (kevNamed.length > 0) {
     status = "kev-only";
-    note = nvd.status === "skipped"
-      ? "Over this request's NVD lookup budget: matched against CISA KEV by name, versions not checked."
+    note = nvd.status === "skipped" || nvd.status === "partial"
+      ? "Over this request's NVD lookup budget or time limit: matched against CISA KEV by name, versions not checked."
       : "NVD lists nothing under this CPE name: matched against CISA KEV by name, versions not checked.";
-  } else if (nvd.status === "skipped") {
+  } else if (nvd.status === "skipped" || nvd.status === "partial") {
     status = "no-records";
-    note = "Over this request's NVD lookup budget and not in CISA KEV by name. Check it in a smaller batch.";
+    note = "Over this request's NVD lookup budget or time limit and not in CISA KEV by name. Check it in a smaller batch.";
   } else {
     status = "no-records";
     note = `Neither NVD (as ${r.vendor}:${r.product}) nor CISA KEV lists anything under this name. A different spelling, a purl or a CPE may resolve it.`;
+  }
+  if (evaluated) {
+    // KEV name matches NVD does not file under this product were not version-checked.
+    const unchecked = findings.filter((f) => !verdicts.has(f.cve)).length;
+    if (unchecked) note = (note ? note + " " : "") + `${unchecked} CISA KEV name match${unchecked === 1 ? "" : "es"} NVD does not list under this product: version not checked.`;
   }
   if (!c.version && findings.length) note = (note ? note + " " : "") + "No version given: every CVE for the product is listed, unconfirmed.";
 

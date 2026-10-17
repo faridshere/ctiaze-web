@@ -11,7 +11,7 @@ const { cmpVersion, evalRanges } = await import("../lib/stack/version.ts");
 const { parsePurl, parseCpe23, cpeName } = await import("../lib/stack/ids.ts");
 const { parseLine, parsePaste, parseSbom, parseApiBody, MAX_COMPONENTS } = await import("../lib/stack/parse.ts");
 const { resolveComponent } = await import("../lib/stack/resolve.ts");
-const { assessComponent, actorClaims, mergeClaims, kevByName, cpeMatchesOf, confidenceOf, matchesFor } = await import("../lib/stack/match.ts");
+const { assessComponent, actorClaims, mergeClaims, kevByName, cpeMatchesOf, confidenceOf, matchesFor, combinePulls } = await import("../lib/stack/match.ts");
 
 type KevEntry = import("../lib/stack/match.ts").KevEntry;
 type CveFacts = import("../lib/stack/match.ts").CveFacts;
@@ -424,4 +424,50 @@ test("#2 a library named after a server product is not that product; word aliase
   assert.equal(resolveComponent({ name: "redis", version: "7.0.1", purl: "pkg:deb/debian/redis@7.0.1", origin: "sbom" })?.product, "redis");
   assert.equal(resolveComponent({ name: "tomcat", version: "9.0.1", purl: "pkg:maven/org.apache.tomcat/tomcat@9.0.1", origin: "sbom" })?.product, "tomcat");
   assert.equal(resolveComponent(parseLine("apache-tomcat 9.0.1")!)?.product, "tomcat");
+});
+
+test("#6 status says whether versions were evaluated: KEV-by-name hits with zero NVD records are kev-only, not checked", () => {
+  const c = { name: "http_server", version: "2.4.49", vendor: "apache" };
+  const r = resolveComponent(c, KEV_NAMES)!;
+  const named = kevByName(r, c, KEV);
+  // NVD answered with nothing under this name
+  const empty = assessComponent(c, r, { status: "ok", cves: [] }, named, facts());
+  assert.equal(empty.status, "kev-only");
+  assert.match(empty.note!, /versions not checked/);
+  assert.ok(empty.findings.every((f) => f.version === "not-checked"));
+  // NVD answered with records that only name other products
+  const others = assessComponent(c, r, { status: "ok", cves: NVD.filter((x) => x.id === "CVE-2021-44228") }, named, facts());
+  assert.equal(others.status, "kev-only");
+  // evaluated, but a KEV name match NVD does not list under this product is called out
+  const mixed = assessComponent(c, r, { status: "ok", cves: NVD.filter((x) => x.id === "CVE-2021-41773") }, named, facts());
+  assert.equal(mixed.status, "checked");
+  assert.match(mixed.note!, /1 CISA KEV name match.*not checked/);
+});
+
+test("#7 per-name NVD outcomes: a cut or failed alt name is a partial check, and a failed alt never discards the primary", () => {
+  const ok = { cves: NVD };
+  assert.deepEqual(combinePulls([{ name: "f5:nginx", result: ok }]), { status: "ok", cves: NVD });
+  const cut = combinePulls([{ name: "f5:nginx", result: ok }, { name: "nginx:nginx", result: "skipped" }]);
+  assert.equal(cut.status, "partial");
+  const failed = combinePulls([{ name: "f5:nginx", result: ok }, { name: "nginx:nginx", result: "error" }]);
+  assert.equal(failed.status, "partial");
+  assert.equal(failed.status === "partial" && failed.cves.length, NVD.length);
+  assert.deepEqual(combinePulls([{ name: "a:b", result: "error" }, { name: "c:d", result: "skipped" }]), { status: "error" });
+  assert.deepEqual(combinePulls([{ name: "a:b", result: "skipped" }, { name: "c:d", result: "skipped" }]), { status: "skipped" });
+  // the same CVE from two names merges its rows
+  const merged = combinePulls([
+    { name: "a:x", result: { cves: [{ id: "CVE-1", matches: [{ criteria: "cpe:2.3:a:a:x:1:*:*:*:*:*:*:*" }] }] } },
+    { name: "b:x", result: { cves: [{ id: "CVE-1", matches: [{ criteria: "cpe:2.3:a:b:x:1:*:*:*:*:*:*:*" }] }] } },
+  ]);
+  assert.equal(merged.status === "ok" && merged.cves[0].matches.length, 2);
+
+  const c = { name: "log4j", version: "2.14.1" };
+  const r = resolveComponent(c)!;
+  const res = assessComponent(c, r, cut, [], facts());
+  assert.equal(res.status, "partial");
+  assert.match(res.note!, /nginx:nginx/);
+  assert.equal(res.findings[0].cve, "CVE-2021-44228");
+  const res2 = assessComponent(c, r, failed, [], facts());
+  assert.equal(res2.status, "partial");
+  assert.equal(res2.findings.length, 1);
 });

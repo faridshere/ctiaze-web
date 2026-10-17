@@ -108,6 +108,7 @@ export type CveFinding = {
 
 export type ComponentStatus =
   | "checked" // NVD ranges evaluated
+  | "partial" // NVD ranges evaluated for some of the product's CPE names; others failed or were cut
   | "kev-only" // matched the KEV catalog by name; NVD ranges not evaluated
   | "no-records" // resolved, but neither NVD nor KEV has anything under that name
   | "unresolved" // we could not tell which product this is

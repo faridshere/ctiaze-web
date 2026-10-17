@@ -247,7 +247,9 @@ function ComponentBlock({ c }: { c: ComponentResult }) {
         {c.not_affected > 0 && ` · ${c.not_affected} ruled out by version`}
         {c.total_affected > c.findings.length && ` · the ${c.findings.length} most urgent shown`}
       </p>
-      {c.note && <p className={`mt-2 text-[14px] leading-snug ${c.status === "upstream-error" ? "text-worse" : "text-ink-2"}`}>{c.note}</p>}
+      {c.note && (
+        <p className={`mt-2 text-[14px] leading-snug ${c.status === "upstream-error" ? "text-worse" : c.status === "partial" ? "text-caution" : "text-ink-2"}`}>{c.note}</p>
+      )}
       {c.findings.length > 0 && (
         <ol className="mt-3">
           {c.findings.map((f) => (
