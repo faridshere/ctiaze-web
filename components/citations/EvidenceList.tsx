@@ -4,7 +4,9 @@ import { relationLabel, type Evidence } from "@/lib/citations";
 // The quotes behind one cited actor-to-CVE link, newest first. Every entry is a
 // verbatim quote with its source link under it: lib/citations.ts drops any row
 // missing either, so this never prints a link without evidence or a claim
-// without a source.
+// without a source. A quote that does not itself name the actor (the engine
+// found the name within ~400 characters of it) says "named nearby" in the
+// same line, so a reader can weigh it; rankEvidence lists those last.
 export function EvidenceList({ evidence, more }: { evidence: Evidence[]; more: number }) {
   if (evidence.length === 0) return null;
   return (
@@ -16,6 +18,12 @@ export function EvidenceList({ evidence, more }: { evidence: Evidence[]; more: n
           </blockquote>
           <p className="mt-1 pl-3 font-mono text-[11px] leading-snug text-ink-3">
             <span>{relationLabel(e.relation)}</span>
+            {!e.inQuote && (
+              <span title="The quote does not name the actor; the source names it nearby, within a few sentences.">
+                {" · "}
+                <span className="text-ink-2">named nearby</span>
+              </span>
+            )}
             {" · source: "}
             {e.external ? (
               <a className="ulink break-all hover:text-ink" href={e.href} target="_blank" rel="noopener noreferrer" title={e.href}>

@@ -398,3 +398,21 @@ test("actor_in_quote: quote-named citations first; nearby ones labelled, not hid
   assert.deepEqual(api.map((c) => c.actor_in_quote), [true, false]);
 });
 
+// Findings 8 and 11 live in the page, which cannot be imported without a
+// database; these read its source so neither regression can come back quietly.
+test("finding 8: the CVE page lets a citations read error throw (unstable_cache stores nothing)", async () => {
+  const { readFileSync } = await import("node:fs");
+  const src = readFileSync(new URL("../app/cve/[id]/page.tsx", import.meta.url), "utf8");
+  const call = src.slice(src.indexOf("getCitationsForCve(id)"), src.indexOf("getCitationsForCve(id)") + 80);
+  assert.ok(call.startsWith("getCitationsForCve(id)"), "the read is still there");
+  assert.doesNotMatch(call, /\.catch\(/, "no catch-to-[] on the cached read");
+  const db = readFileSync(new URL("../lib/citations-db.ts", import.meta.url), "utf8");
+  assert.doesNotMatch(db, /\.catch\(/);
+});
+
+test("finding 11: the CVE page imports CVE_RE and normCve rather than redefining them", async () => {
+  const { readFileSync } = await import("node:fs");
+  const src = readFileSync(new URL("../app/cve/[id]/page.tsx", import.meta.url), "utf8");
+  assert.doesNotMatch(src, /const CVE_RE\s*=/);
+  assert.match(src, /normCve,?[\s\S]*from "@\/lib\/citations"/);
+});

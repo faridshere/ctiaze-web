@@ -1,6 +1,12 @@
 import Link from "next/link";
 import type { ActorCve } from "@/lib/threatactors";
-import { buildDossierCves, type CveActorCitationDoc, type DossierCve } from "@/lib/citations";
+import {
+  buildDossierCves,
+  dossierCitedHeading,
+  relationsIn,
+  type CveActorCitationDoc,
+  type DossierCve,
+} from "@/lib/citations";
 import { EvidenceList } from "@/components/citations/EvidenceList";
 import { DOSSIER_SECTION, SectionHead } from "./ActorHeader";
 
@@ -9,7 +15,8 @@ import { DOSSIER_SECTION, SectionHead } from "./ActorHeader";
 //   • cited — a source (a report, or one of our dispatches) is quoted tying the
 //     actor to the flaw. Each such CVE prints its quotes and their source links
 //     (lib/citations.ts drops any citation missing either), and the wording is
-//     "cited as exploiting", never "confirmed" or a bare "exploits".
+//     "cited as …" from the relations present, never "confirmed" or a bare
+//     "exploits".
 //   • named alongside — our dispatches named both, with no quote tying them.
 //     A story can name a group and a flaw without the group having used the
 //     flaw, so these stay "named alongside", as they always were.
@@ -45,13 +52,15 @@ function CitedRow({ c }: { c: DossierCve }) {
 export function ActorCves({
   cves,
   citations,
+  storySlugs,
   actorName,
 }: {
   cves: ActorCve[] | null | undefined;
   citations?: CveActorCitationDoc[] | null;
+  storySlugs?: ReadonlyMap<string, string>;
   actorName: string;
 }) {
-  const { cited, named } = buildDossierCves(cves, citations);
+  const { cited, named } = buildDossierCves(cves, citations, storySlugs);
   if (cited.length === 0 && named.length === 0) return null;
   const kevCount = [...cited, ...named].filter((r) => r.kev).length;
   const aside = kevCount > 0 ? `${kevCount} on CISA KEV` : "none on KEV";
@@ -59,7 +68,11 @@ export function ActorCves({
   return (
     <section className={DOSSIER_SECTION} aria-labelledby="cves-head">
       <SectionHead id="cves-head" aside={aside}>
-        {cited.length > 0 ? <>CVEs {actorName} is cited as exploiting</> : <>CVEs named alongside {actorName}</>}
+        {cited.length > 0 ? (
+          dossierCitedHeading(relationsIn(cited.map((c) => c.evidence)), actorName)
+        ) : (
+          <>CVEs named alongside {actorName}</>
+        )}
       </SectionHead>
 
       {cited.length > 0 && (

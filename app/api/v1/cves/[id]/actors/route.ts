@@ -1,5 +1,5 @@
 import { getCitationsForCve } from "@/lib/citations-db";
-import { normCve, toPublicCitation } from "@/lib/citations";
+import { normCve, toPublicCitations } from "@/lib/citations";
 import { limitCaller } from "@/lib/ratelimit";
 import { jsonError } from "@/lib/api";
 import { absoluteUrl } from "@/lib/site";
@@ -17,9 +17,8 @@ export const revalidate = 300;
 const buildBody = ttlMemo(
   async (cve: string): Promise<string> => {
     const docs = await getCitationsForCve(cve);
-    const citations = docs
-      .map((d) => toPublicCitation(d, (id) => absoluteUrl(`/actors/${id}`)))
-      .filter((c): c is NonNullable<typeof c> => c !== null);
+    // Canonical actor ids, quote-named citations first (lib/citations.ts).
+    const citations = toPublicCitations(docs, (id) => absoluteUrl(`/actors/${id}`));
     return JSON.stringify(
       {
         generated_at: new Date().toISOString(),
@@ -27,7 +26,7 @@ const buildBody = ttlMemo(
         version: 1,
         cve,
         cve_url: absoluteUrl(`/cve/${cve}`),
-        note: "Each row is a third-party source cited as tying this actor to this CVE, with the quote that says so and its source_url. relation is what the extractor read: exploited, used_in_campaign or attributed_by_report. A citation, not a confirmation.",
+        note: "Each row is a third-party source cited as tying this actor to this CVE, with the quote that says so and its source_url. relation is what the extractor read: exploited, used_in_campaign or attributed_by_report (an unknown value is served as the weakest, attributed_by_report). actor_in_quote is true when the quote itself names the actor, false when the actor is only named near it. actor_id is canonical: an alias id such as nobelium is served as apt29. A citation, not a confirmation.",
         count: citations.length,
         citations,
       },

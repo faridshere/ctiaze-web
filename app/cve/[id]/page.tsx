@@ -10,7 +10,15 @@ import { kevMeta, epssDetailed, nvdLookup } from "@/lib/cveintel";
 import { getWireMentions } from "@/lib/actor-wire";
 import { getActorNamesFor } from "@/lib/threatactors";
 import { getCitationsForCve } from "@/lib/citations-db";
-import { groupCitationsByActor, type CveActorCitationDoc } from "@/lib/citations";
+import {
+  CVE_RE,
+  citedActorIds,
+  cveCitedHeading,
+  displayableCitations,
+  groupCitationsByActor,
+  normCve,
+  relationsIn,
+} from "@/lib/citations";
 import { EvidenceList } from "@/components/citations/EvidenceList";
 import { epssPct } from "@/lib/storysignal";
 import { formatStoryDate, jsonLdSafe } from "@/lib/format";
@@ -32,7 +40,6 @@ import { unstable_cache } from "next/cache";
 // severity; the adversaries are pressed names. Every figure is a field the
 // data already held; a missing one prints nothing.
 // ---------------------------------------------------------------------------
-const CVE_RE = /^CVE-\d{4}-\d{4,7}$/;
 
 // 12 h (was 1 h, 2026-10-10). Its sources move daily at most: the KEV file is
 // re-pulled every 24 h (lib/cveintel.ts), EPSS publishes once a day, an NVD
@@ -62,8 +69,7 @@ function norm(id: string): string | null {
   // does not touch. That remaining 500 comes from Next decoding the route
   // param above the page component, so it is one fix for every dynamic route
   // and not this one; left alone deliberately rather than claimed as fixed.
-  const u = id.trim().toUpperCase();
-  return CVE_RE.test(u) ? u : null;
+  return normCve(id);
 }
 
 // One cached read per CVE per 12 h; null when nothing we hold knows the id.
@@ -84,13 +90,17 @@ async function loadUncached(id: string) {
   // 30 s per IP, so a trickle of junk would have 403'd our real lookups).
   // KEV and our own archive are both already in memory/indexed and cheap, so
   // an id nothing has ever heard of is rejected before the expensive fan-out.
-  // The citations read (2026-10-17) is one equality match on `cve`, as cheap as
+  // The citations read (2026-10-17) is one indexed match on `cve`, as cheap as
   // the stories read beside it, and a CVE only a report has tied to an actor is
-  // a CVE we know.
+  // a CVE we know. It is deliberately NOT caught: a transient Mongo error
+  // swallowed as [] would be cached for 12 h and hide every citation; thrown,
+  // unstable_cache stores nothing and the next request reads again.
+  // The gate counts only citations a page can print (quote, source, CVE,
+  // actor): incomplete rows must not trigger the NVD/EPSS fan-out.
   const [kev, stories, citations] = await Promise.all([
     kevMeta().catch(() => new Map()),
     getStoriesForCve(id, 40).catch(() => []),
-    getCitationsForCve(id).catch((): CveActorCitationDoc[] => []),
+    getCitationsForCve(id).then(displayableCitations),
   ]);
   const kevRow = kev.get(id) ?? null;
   if (!kevRow && stories.length === 0 && citations.length === 0) return null;
@@ -113,8 +123,9 @@ async function loadUncached(id: string) {
       if (hits > 0) hitsById.push({ id: actorId, hits });
     }
   }
-  // One names lookup covers both lists: the wire's matches and the cited actors.
-  const citedIds = [...new Set(citations.map((c) => c.actor_id).filter(Boolean))];
+  // One names lookup covers both lists: the wire's matches and the cited
+  // actors, by canonical id (an alias such as nobelium is listed as apt29).
+  const citedIds = citedActorIds(citations);
   const names = await getActorNamesFor([...new Set([...hitsById.map((a) => a.id), ...citedIds])]).catch(
     () => new Map<string, string>(),
   );
@@ -358,7 +369,7 @@ export default async function CvePage({ params }: { params: Promise<Params> }) {
                 <section className="mb-10" aria-labelledby="cve-cited">
                   <div className="rule-b pb-2">
                     <h2 id="cve-cited" className="label text-ink">
-                      Cited as exploited by
+                      {cveCitedHeading(relationsIn(citedBy.map((g) => g.evidence)))}
                     </h2>
                   </div>
                   <ol>
