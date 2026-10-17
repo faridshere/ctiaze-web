@@ -124,8 +124,19 @@ function citeLine(c: { quote: string; url: string }): string {
  * The event for one actor. Attributes are deduplicated on (type, value) —
  * MISP refuses the same value twice in one event — with up to three citing
  * quotes in the comment. Deterministic: same rows in, same bytes out.
+ *
+ * `stamp` is the instant manifest.json lists for this event. Pass it: MISP
+ * re-fetches an event whenever the manifest's timestamp is newer than the one
+ * it holds, so the two must be equal by construction, not by coincidence —
+ * the newest cited row can be one this function drops (a malformed indicator).
+ * Without it the event is stamped with its newest attribute.
  */
-export function mispEvent(actor: Pick<ThreatActor, "_id" | "name">, cves: CveCitation[], iocs: IocCitation[]): MispEvent {
+export function mispEvent(
+  actor: Pick<ThreatActor, "_id" | "name">,
+  cves: CveCitation[],
+  iocs: IocCitation[],
+  stamp?: string,
+): MispEvent {
   const drafts = new Map<string, Draft>();
   const add = (d: Omit<Draft, "cites">, quote: string | null | undefined, url: string) => {
     const key = `${d.type}\u0000${d.value}`;
@@ -181,8 +192,7 @@ export function mispEvent(actor: Pick<ThreatActor, "_id" | "name">, cves: CveCit
 
   // The dossier link and the actor's name, so an analyst landing on the event
   // in MISP can get back to the record it came from.
-  const latest = kept[0]?.at ?? null;
-  const stamp = latest ?? "2026-09-07T00:00:00.000Z";
+  const eventStamp = stamp ?? kept[0]?.at ?? "2026-09-07T00:00:00.000Z";
   attributes.push(
     {
       uuid: uuid5(`misp-attribute:${actor._id}:threat-actor`),
@@ -191,7 +201,7 @@ export function mispEvent(actor: Pick<ThreatActor, "_id" | "name">, cves: CveCit
       value: actor.name,
       to_ids: false,
       comment: `${SITE_NAME} dossier id ${actor._id}`,
-      timestamp: unix(stamp),
+      timestamp: unix(eventStamp),
       distribution: "5",
       disable_correlation: false,
     },
@@ -202,7 +212,7 @@ export function mispEvent(actor: Pick<ThreatActor, "_id" | "name">, cves: CveCit
       value: absoluteUrl(`/actors/${actor._id}`),
       to_ids: false,
       comment: `${SITE_NAME} dossier`,
-      timestamp: unix(stamp),
+      timestamp: unix(eventStamp),
       distribution: "5",
       disable_correlation: true,
     },
@@ -212,12 +222,12 @@ export function mispEvent(actor: Pick<ThreatActor, "_id" | "name">, cves: CveCit
     Event: {
       uuid: mispEventUuid(actor._id),
       info: eventInfo(actor),
-      date: day(stamp),
+      date: day(eventStamp),
       threat_level_id: "4",
       analysis: "1",
       published: true,
-      timestamp: unix(stamp),
-      publish_timestamp: unix(stamp),
+      timestamp: unix(eventStamp),
+      publish_timestamp: unix(eventStamp),
       Orgc: MISP_ORG,
       Tag: TAGS,
       Attribute: attributes,
@@ -226,8 +236,8 @@ export function mispEvent(actor: Pick<ThreatActor, "_id" | "name">, cves: CveCit
 }
 
 /**
- * One manifest row. `latest` must be the same instant the event itself is
- * stamped with (the newest citation), or MISP re-fetches on every pull.
+ * One manifest row. `latest` must be the instant mispEvent() is stamped
+ * with (its `stamp`), or MISP re-fetches the event on every pull.
  */
 export function manifestEntry(actor: Pick<ThreatActor, "name">, latest: string): ManifestEntry {
   return {

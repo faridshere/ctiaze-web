@@ -192,6 +192,8 @@ test("hacktivist claims: a Low-confidence report, labelled unverified, that vali
   // the bluesky row is a tracker reposting, so it does not mint a threat-actor
   assert.deepEqual(actors.map((a) => a.name).sort(), ["LockBit", "Team Insane PK"]);
   assert.deepEqual(actors.find((a) => a.name === "LockBit")?.threat_actor_types, ["crime-syndicate"]);
+  // threat-actor-type-ov has no "hacktivist" (stix2-validator warns on it)
+  assert.deepEqual(actors.find((a) => a.name === "Team Insane PK")?.threat_actor_types, ["activist"]);
 });
 
 test("normalizeIoc refangs the conventional forms and refuses what is not its type", () => {

@@ -532,7 +532,10 @@ export function claimObjects(c: ClaimRow): StixObject[] {
       ...SHARED,
       id: stixId("threat-actor", `claimant:${group.toLowerCase()}`),
       name: group,
-      threat_actor_types: [c.kind === "ransomware" ? "crime-syndicate" : "hacktivist"],
+      // threat-actor-type-ov has no "hacktivist"; its "activist" is the
+      // politically-motivated disruptor, and the label keeps the plain word.
+      threat_actor_types: [c.kind === "ransomware" ? "crime-syndicate" : "activist"],
+      labels: [c.kind === "ransomware" ? "ransomware" : "hacktivist"],
     };
     out.push(actor);
     refs.unshift(actor.id);

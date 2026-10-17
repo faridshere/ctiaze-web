@@ -207,6 +207,20 @@ test("MISP: deterministic, stamped with the newest citation, and the manifest ag
   assert.equal(m.date, event.date);
 });
 
+test("MISP: an explicit stamp wins, so the event always matches its manifest row", () => {
+  // The newest cited row can be one the event drops (here a malformed hash):
+  // the manifest counts it, so the event must take the manifest's instant.
+  const rows = [
+    ...CITED_ROWS.iocs,
+    { actor_id: "apt28", type: "sha256", value: "short", url: "https://research.example.com/x", extracted_at: "2026-10-09T00:00:00Z" },
+  ];
+  const stamped = misp.mispEvent(CITED_ACTOR, CITED_ROWS.cves, rows, "2026-10-09T00:00:00.000Z").Event;
+  const m = misp.manifestEntry(CITED_ACTOR, "2026-10-09T00:00:00.000Z");
+  assert.equal(stamped.timestamp, m.timestamp);
+  assert.equal(stamped.date, "2026-10-09");
+  assert.equal(stamped.Attribute.length, event.Attribute.length, "the malformed row adds nothing");
+});
+
 test("MISP: the attribute cap keeps the newest", () => {
   const many = Array.from({ length: misp.MAX_ATTRIBUTES + 50 }, (_, i) => ({
     actor_id: "apt28",
