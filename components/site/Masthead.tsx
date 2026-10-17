@@ -16,16 +16,16 @@ import { SiteNavLink } from "./SiteNavLink";
 // edition number left, the 24-hour dial and the dateline right, and the
 // sections beneath. Every other page gets the compact strip with a section
 // line. Once the nameplate scrolls off, the strip slides in (StickyStrip).
+// Exactly five sections (2026-10-17): the tool first. Archive, About and the
+// census live in the colophon; Exploits returns when its board is populated.
+// Phones print the product's two (the check and its API): with Telegram and
+// the edition toggle beside them, two longer labels clipped at 390px.
 const NAV: { href: string; label: string; phone: boolean }[] = [
-  { href: "/stack", label: "Stack check", phone: false },
-  { href: "/actors", label: "Adversaries", phone: true },
-  { href: "/news", label: "Archive", phone: true },
-  { href: "/exploits", label: "Exploits", phone: false },
+  { href: "/stack", label: "Stack check", phone: true },
+  { href: "/actors", label: "Adversaries", phone: false },
   { href: "/claims", label: "Claims", phone: false },
   { href: "/az", label: "Azerbaijan", phone: false },
-  { href: "/#census", label: "Census", phone: false },
-  { href: "/api-docs", label: "API", phone: false },
-  { href: "/about", label: "About", phone: false },
+  { href: "/api-docs", label: "API", phone: true },
 ];
 
 function Wordmark({ mark, text, className = "" }: { mark: string; text: string; className?: string }) {
