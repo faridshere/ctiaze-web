@@ -156,10 +156,22 @@ export function groupCampaigns(rows: CampaignInput[], now: Date, days = 7, limit
 
 export type CitationIn = { quote?: string | null; url?: string | null; source?: string | null };
 
+// The engine's dossier (ctiaze-engine cti/az_adversaries.py) names its fields
+// type / confidence / claim_count / last_seen_az / threat_actor_id /
+// targets_sectors {sector: n} / cited_reports [{url, quote}] / az_claims; the
+// older names (kind, credibility, claims_count, ...) are still read so a fixture
+// or an earlier row keeps working.
 export type AdversaryDoc = {
   _id?: unknown;
   name?: string | null;
   actor_id?: string | null;
+  threat_actor_id?: string | null;
+  type?: string | null;
+  confidence?: string | number | null;
+  claim_count?: number | null;
+  last_seen_az?: DateLike;
+  targets_sectors?: Record<string, number> | null;
+  cited_reports?: CitationIn[] | null;
   aliases?: string[] | null;
   alignment?: string | null;
   motivation?: string | null;
@@ -200,14 +212,24 @@ export function credibilityWord(v: unknown): string | null {
 }
 
 function firstCitation(d: AdversaryDoc): Citation | null {
-  const all: CitationIn[] = [...(d.citations ?? []), { quote: d.quote, url: d.source_url }];
+  const all: CitationIn[] = [...(d.citations ?? []), ...(d.cited_reports ?? []), { quote: d.quote, url: d.source_url }];
   for (const c of all) {
     // Whole words: the engine stores these cut at 400, and 300 used to slice again mid-word.
     const quote = str(typeof c?.quote === "string" ? wholeQuote(c.quote, 300) : null, Infinity);
     const url = safeHttps(c?.url);
-    if (quote && url) return { quote, url, source: str(c?.source, 60) ?? hostOf(url) };
+    // The same personal-data rule as every other row here: a quote with an e-mail address is skipped.
+    if (quote && url && !EMAIL_RE.test(quote)) return { quote, url, source: str(c?.source, 60) ?? hostOf(url) };
   }
   return null;
+}
+
+// {sector: n} to sector names, most-claimed first. "unknown" and "other" say nothing.
+function sectorsByCount(v: unknown): string[] {
+  if (!v || typeof v !== "object" || Array.isArray(v)) return [];
+  return Object.entries(v as Record<string, unknown>)
+    .filter(([k, n]) => k !== "unknown" && k !== "other" && typeof n === "number" && n > 0)
+    .sort((a, b) => (b[1] as number) - (a[1] as number))
+    .map(([k]) => k);
 }
 
 // One card per group that carries a quote and a source. A group with no
@@ -220,25 +242,27 @@ export function shapeAdversaries(docs: AdversaryDoc[], dossierIds: Set<string> =
   for (const d of docs) {
     const name = str(d.name, 80);
     if (!name || seen.has(name.toLowerCase())) continue;
-    if (d.kind && DARK_RE.test(d.kind)) continue;
+    const kind = d.kind ?? d.type;
+    if (kind && DARK_RE.test(kind)) continue;
     const citation = firstCitation(d);
     if (!citation) {
       withheld += 1;
       continue;
     }
     seen.add(name.toLowerCase());
-    const actorId = typeof d.actor_id === "string" && d.actor_id.trim() ? d.actor_id.trim() : null;
+    const rawActor = d.actor_id ?? d.threat_actor_id;
+    const actorId = typeof rawActor === "string" && rawActor.trim() ? rawActor.trim() : null;
     cards.push({
       id: String(d._id ?? actorId ?? name),
       name,
       aliases: strList(d.aliases, 4).filter((a) => a.toLowerCase() !== name.toLowerCase()),
       alignment: str(d.alignment, 60) ?? str(d.motivation, 60),
-      hits: strList(d.targets ?? d.sectors ?? d.target_sectors, 6),
-      credibility: credibilityWord(d.credibility),
+      hits: strList(d.targets ?? d.sectors ?? d.target_sectors ?? sectorsByCount(d.targets_sectors), 6),
+      credibility: credibilityWord(d.credibility ?? d.confidence),
       dossier: actorId && dossierIds.has(actorId) ? `/actors/${encodeURIComponent(actorId)}` : null,
       citation,
-      claims: typeof d.claims_count === "number" && Number.isFinite(d.claims_count) ? d.claims_count : null,
-      lastSeen: isoOf(d.last_seen),
+      claims: [d.claims_count, d.claim_count].find((n): n is number => typeof n === "number" && Number.isFinite(n)) ?? null,
+      lastSeen: isoOf(d.last_seen ?? d.last_seen_az),
     });
   }
   cards.sort((a, b) => (b.lastSeen ?? "").localeCompare(a.lastSeen ?? "") || a.name.localeCompare(b.name));

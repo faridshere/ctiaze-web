@@ -51,18 +51,58 @@ async function readClaims(): Promise<ClaimDoc[]> {
     .toArray();
 }
 
+type AdversaryRead = AdversaryDoc & { az_claims?: { claim_url?: string | null; date?: Date | string | null }[] | null };
+
+// Claims an adversary's citation is drawn from, newest first, per dossier.
+const CLAIM_URLS_PER_ADVERSARY = 10;
+
 async function readAdversaries(): Promise<AdversaryDoc[]> {
   const db = await getDb();
-  return db
-    .collection<AdversaryDoc>("az_adversaries")
-    .find({ kind: { $nin: DARK } } as never, {
+  const docs = await db
+    .collection<AdversaryRead>("az_adversaries")
+    .find({ type: { $nin: DARK }, kind: { $nin: DARK } } as never, {
       projection: {
-        name: 1, actor_id: 1, aliases: 1, alignment: 1, motivation: 1, kind: 1, targets: 1, sectors: 1,
-        target_sectors: 1, credibility: 1, citations: 1, quote: 1, source_url: 1, claims_count: 1, last_seen: 1,
+        // The engine's dossier fields (cti/az_adversaries.py), then the older names.
+        name: 1, aliases: 1, alignment: 1, motivation: 1, type: 1, confidence: 1, claim_count: 1, last_seen_az: 1,
+        targets_sectors: 1, cited_reports: 1, threat_actor_id: 1,
+        actor_id: 1, kind: 1, targets: 1, sectors: 1, target_sectors: 1, credibility: 1, citations: 1, quote: 1,
+        source_url: 1, claims_count: 1, last_seen: 1,
+        "az_claims.claim_url": 1, "az_claims.date": 1,
       },
     })
     .limit(200)
     .toArray();
+
+  // The engine's dossier carries cited_reports (curated quote + link) and no
+  // quote of its own. Where that is empty, the citation is the group's own post
+  // that made the claim: the same public telegram / bluesky / leak-site row
+  // /claims already prints, with its link. A group with no such post stays
+  // withheld by shapeAdversaries rather than printed on our say-so.
+  const need = docs.filter((d) => !d.cited_reports?.length && !d.citations?.length && !d.quote);
+  const urlsOf = (d: AdversaryRead): string[] =>
+    (d.az_claims ?? [])
+      .filter((c) => typeof c?.claim_url === "string" && c.claim_url)
+      .sort((a, b) => Date.parse(String(b.date ?? "")) - Date.parse(String(a.date ?? "")) || 0)
+      .map((c) => c.claim_url as string)
+      .slice(0, CLAIM_URLS_PER_ADVERSARY);
+  const wanted = [...new Set(need.flatMap(urlsOf))];
+  if (wanted.length) {
+    const posts = await db
+      .collection<ClaimDoc>("hacktivist_posts")
+      .find({ ...PUBLIC_FILTER, url: { $in: wanted } } as never, {
+        projection: { url: 1, kind: 1, group: 1, channel: 1, text: 1, published: 1, first_seen: 1, summary: 1 },
+        maxTimeMS: 5000,
+      })
+      .toArray();
+    const byUrl = new Map(posts.map((p) => [p.url, toRow(p)]));
+    for (const d of need) {
+      d.citations = urlsOf(d).flatMap((u) => {
+        const r = byUrl.get(u);
+        return r && r.url && r.text.trim().length >= 20 ? [{ quote: r.text, url: r.url, source: r.channel || r.group }] : [];
+      });
+    }
+  }
+  return docs;
 }
 
 async function readExposure(): Promise<ExposureDoc[]> {
@@ -124,13 +164,17 @@ export async function getAzBoard(): Promise<AzBoard> {
     settle("exposure", readExposure().then((d) => shapeExposure(d)), []),
     settle("exploits", getTrendingBoardCached(), { day: null, cards: [] }),
   ]);
-  if (!claimDocs.ok && !advDocs.ok && !exposure.ok && !trending.ok) {
-    // Nothing readable: throw so the last-good snapshot is served instead.
-    throw new Error("az board: no source readable");
+  // Nothing readable from Mongo: throw so the last-good snapshot is served instead.
+  // The exploit board counts for nothing here: it carries its own snapshot, so it
+  // reports ok with an empty board even when the database is down, and a board
+  // of four failed sections used to be saved as "last good" and then printed as
+  // dashes (18 Oct 2026, a build run against the dead Atlas URI).
+  if (!claimDocs.ok && !advDocs.ok && !exposure.ok) {
+    throw new Error("az board: no database section readable");
   }
 
   const claimRows = claimDocs.rows.map(toRow);
-  const actorIds = [...new Set(advDocs.rows.map((d) => d.actor_id).filter((a): a is string => typeof a === "string" && !!a))];
+  const actorIds = [...new Set(advDocs.rows.map((d) => d.actor_id ?? d.threat_actor_id).filter((a): a is string => typeof a === "string" && !!a))];
   const cves = trending.rows.cards.map((c) => c.cve);
   const [names, azExposure, iocs] = await Promise.all([
     getActorNamesFor(actorIds).catch(() => new Map<string, string>()),

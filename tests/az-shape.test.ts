@@ -85,6 +85,40 @@ test("groupCampaigns takes the verdict from the newest claim that checked that t
   assert.ok(!("verdictAt" in c));
 });
 
+test("shapeAdversaries reads the engine's dossier fields (type, confidence, claim_count, last_seen_az, targets_sectors, threat_actor_id)", () => {
+  const { cards, withheld } = shapeAdversaries(
+    [
+      {
+        _id: "groupx",
+        name: "GroupX",
+        aliases: ["GX"],
+        type: "hacktivist",
+        alignment: "pro-example",
+        confidence: "high",
+        claim_count: 8,
+        last_seen_az: "2099-01-07T10:00:00.000Z",
+        targets_sectors: { unknown: 4, other: 2, government: 3, finance: 1 },
+        threat_actor_id: "groupx",
+        cited_reports: [{ url: "https://t.me/groupx/1", quote: "GroupX claims to have targeted example.az" }],
+      },
+      { _id: "groupy", name: "GroupY", type: "ransomware", cited_reports: [] },
+      {
+        _id: "groupz",
+        name: "GroupZ",
+        cited_reports: [{ url: "https://t.me/groupz/1", quote: "write to leaks@example.az for the dump" }],
+      },
+    ],
+    new Set(["groupx"]),
+  );
+  assert.equal(cards.length, 1);
+  assert.equal(withheld, 2);
+  assert.deepEqual(cards[0].hits, ["government", "finance"]);
+  assert.equal(cards[0].credibility, "high");
+  assert.equal(cards[0].claims, 8);
+  assert.equal(cards[0].lastSeen, "2099-01-07T10:00:00.000Z");
+  assert.equal(cards[0].dossier, "/actors/groupx");
+});
+
 test("shapeAdversaries prints only cited groups and counts the rest", () => {
   const { cards, withheld } = shapeAdversaries(
     [
