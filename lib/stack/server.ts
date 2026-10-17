@@ -3,7 +3,7 @@ import { ttlMemo } from "../memo";
 import type { ActorClaim, ActorCveRow, Component, ComponentResult, CpePart, Resolved } from "./types";
 import { resolveComponent, type KevName } from "./resolve";
 import { RateLimiter, SkipError, epssBatched, nvdRate, pullProduct, type FetchJson, type ProductPull } from "./upstream";
-import { actorClaims, assessComponent, combinePulls, kevByName, mergeClaims, type CveFacts, type KevEntry, type NvdPull } from "./match";
+import { actorClaims, assessComponent, combinePulls, kevByName, mergeClaims, planFacts, type CveFacts, type KevEntry, type NvdPull } from "./match";
 
 // Server-only I/O for the stack check: the CISA KEV catalog, NVD CVE records
 // per product, FIRST EPSS, and the read-only Mongo collections (items,
@@ -102,6 +102,8 @@ export type StackReport = {
     epss: SourceStatus;
     actors: SourceStatus;
     coverage: SourceStatus;
+    /** Over the per-check caps, facts go to the most urgent CVEs (KEV first); the rest carry not_looked_up. */
+    facts: { cves: number; looked_up: number; epss_looked_up: number; truncated: boolean };
   };
   components: ComponentResult[];
 };
@@ -167,12 +169,15 @@ export async function checkStack(components: Component[]): Promise<StackReport> 
   // every CVE we might report (facts change the ranking, hence the cap).
   const empty: CveFacts = { kev: kev?.entries ?? new Map(), epss: new Map(), priority: new Map(), actors: new Map() };
   const draft = components.map((c, i) => assessComponent(c, resolved[i], nvd[i], named[i], empty, Infinity));
-  const cveIds = [...new Set(draft.flatMap((d) => d.findings.map((f) => f.cve)))].slice(0, MAX_FACT_CVES);
+  // Over the caps, the most urgent CVEs (KEV first) get their facts; the rest
+  // are flagged per finding and counted in sources.facts, never silently cut.
+  const plan = planFacts(draft, MAX_FACT_CVES, MAX_EPSS_CVES);
+  const cveIds = plan.facts;
 
   const factsDeadline = started + FACTS_DEADLINE_MS;
   const [mongo, epss] = await Promise.all([
     beforeDeadline(mongoFacts(cveIds), factsDeadline, MONGO_UNAVAILABLE),
-    epssBatched(cveIds.slice(0, MAX_EPSS_CVES), { deadline: factsDeadline, fetchJson }),
+    epssBatched(plan.epss, { deadline: factsDeadline, fetchJson }),
   ]);
   const kevMap = kev?.entries ?? mongo.kevFallback;
   const facts: CveFacts = {
@@ -180,6 +185,7 @@ export async function checkStack(components: Component[]): Promise<StackReport> 
     epss: new Map([...mongo.epss, ...epss.map]),
     priority: mongo.priority,
     actors: mongo.actors,
+    lookedUp: plan.truncated ? { facts: new Set(plan.facts), epss: new Set(plan.epss) } : undefined,
   };
   const results = components.map((c, i) => assessComponent(c, resolved[i], nvd[i], named[i], facts));
 
@@ -207,6 +213,7 @@ export async function checkStack(components: Component[]): Promise<StackReport> 
       epss: epss.ok || mongo.ok ? "ok" : "unavailable",
       actors: mongo.ok ? "ok" : "unavailable",
       coverage: mongo.ok ? "ok" : "unavailable",
+      facts: { cves: plan.total, looked_up: plan.facts.length, epss_looked_up: plan.epss.length, truncated: plan.truncated },
     },
     components: results,
   };

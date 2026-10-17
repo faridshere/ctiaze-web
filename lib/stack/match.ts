@@ -38,7 +38,28 @@ export type CveFacts = {
   epss: Map<string, number>;
   priority: Map<string, string>;
   actors: Map<string, ActorClaim[]>;
+  /** Which CVEs the facts were looked up for, when a cap cut the list (absent = all of them). */
+  lookedUp?: { facts: Set<string>; epss: Set<string> };
 };
+
+export type FactPlan = { facts: string[]; epss: string[]; total: number; truncated: boolean };
+
+/**
+ * Which CVEs to look facts (actors, coverage) and EPSS up for, when there are
+ * more than the caps: the most urgent first (KEV, then version certainty), as
+ * findings are ranked, never in component order.
+ */
+export function planFacts(drafts: ComponentResult[], factCap: number, epssCap: number): FactPlan {
+  const best = new Map<string, CveFinding>();
+  for (const d of drafts) for (const f of d.findings) {
+    const cur = best.get(f.cve);
+    if (!cur || compareFindings(f, cur) < 0) best.set(f.cve, f);
+  }
+  const ranked = [...best.values()].sort(compareFindings).map((f) => f.cve);
+  const facts = ranked.slice(0, factCap);
+  const epss = ranked.slice(0, epssCap);
+  return { facts, epss, total: ranked.length, truncated: facts.length < ranked.length || epss.length < ranked.length };
+}
 
 /**
  * Keep only the cpeMatch rows that name this product (vendor:product), any
@@ -190,18 +211,23 @@ export function assessComponent(
   for (const id of ids) {
     const v = verdicts.get(id) ?? { verdict: c.version ? ("not-checked" as const) : ("no-version" as const), detail: null, fixedIn: null };
     const kev = facts.kev.get(id);
+    const epss = facts.epss.get(id) ?? null;
+    const notLookedUp: CveFinding["not_looked_up"] = [];
+    if (facts.lookedUp && !facts.lookedUp.facts.has(id)) notLookedUp.push("actors");
+    if (facts.lookedUp && epss === null && !facts.lookedUp.epss.has(id)) notLookedUp.push("epss");
     findings.push({
       cve: id,
       kev: !!kev,
       kev_date_added: kev?.dateAdded ?? null,
       ransomware: kev?.ransomware ?? false,
-      epss: facts.epss.get(id) ?? null,
+      epss,
       version: v.verdict,
       version_detail: v.detail,
       fixed_in: v.fixedIn,
       confidence: confidenceOf(r.via, v.verdict),
       actors: facts.actors.get(id) ?? [],
       coverage_priority: facts.priority.get(id) ?? null,
+      not_looked_up: notLookedUp,
     });
   }
   findings.sort(compareFindings);

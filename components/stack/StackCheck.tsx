@@ -207,6 +207,13 @@ function Results({ report, onDownload }: { report: Report; onDownload: () => voi
         {s.nvd.errors > 0 && <span className="text-worse">, {s.nvd.errors} failed</span>}
         {s.nvd.truncated.length > 0 && <span>, cut at 4,000 CVEs: {s.nvd.truncated.join(", ")}</span>}
         {" · "}EPSS: FIRST.org
+        {s.facts.truncated && (
+          <span className="text-worse">
+            {" "}
+            · {s.facts.cves} CVEs, over this check’s limit: actors looked up for the {s.facts.looked_up} and EPSS for the{" "}
+            {s.facts.epss_looked_up} most urgent (KEV first); the rest are marked
+          </span>
+        )}
         {s.actors !== "ok" && (
           <span className="text-worse"> · actor citations unavailable right now: this is an outage, not “no actors”</span>
         )}
@@ -291,6 +298,12 @@ function Finding({ f }: { f: CveFinding }) {
         {f.version_detail && ` · ${f.version_detail}`}
         {f.fixed_in && ` · fixed in ${f.fixed_in}`}
         {f.coverage_priority && ` · our coverage: ${f.coverage_priority}`}
+        {f.not_looked_up.length > 0 && (
+          <span className="text-worse">
+            {" "}
+            · {f.not_looked_up.map((x) => (x === "actors" ? "actors" : "EPSS")).join(" and ")} not looked up (over this check’s limit)
+          </span>
+        )}
       </p>
       {f.actors.length > 0 && (
         <div className="mt-2">

@@ -104,6 +104,11 @@ export type CveFinding = {
   actors: ActorClaim[];
   /** The engine's own triage for this CVE (cve_intel.priority), when it has one. */
   coverage_priority: string | null;
+  /**
+   * Facts this check did not look up for this CVE because it was over the
+   * per-check cap: "actors" (actors and coverage) or "epss". Empty means looked up.
+   */
+  not_looked_up: ("actors" | "epss")[];
 };
 
 export type ComponentStatus =

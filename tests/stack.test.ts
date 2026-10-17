@@ -11,7 +11,7 @@ const { cmpVersion, evalRanges } = await import("../lib/stack/version.ts");
 const { parsePurl, parseCpe23, cpeName } = await import("../lib/stack/ids.ts");
 const { parseLine, parsePaste, parseSbom, parseApiBody, MAX_COMPONENTS } = await import("../lib/stack/parse.ts");
 const { resolveComponent } = await import("../lib/stack/resolve.ts");
-const { assessComponent, actorClaims, mergeClaims, kevByName, cpeMatchesOf, confidenceOf, matchesFor, combinePulls } = await import("../lib/stack/match.ts");
+const { assessComponent, actorClaims, mergeClaims, kevByName, cpeMatchesOf, confidenceOf, matchesFor, combinePulls, planFacts } = await import("../lib/stack/match.ts");
 
 type KevEntry = import("../lib/stack/match.ts").KevEntry;
 type CveFacts = import("../lib/stack/match.ts").CveFacts;
@@ -565,4 +565,41 @@ test("#9 EPSS is batched in parallel and bounded by the deadline", async () => {
   const late = await epssBatched(ids, { deadline: Date.now() - 1, fetchJson });
   assert.equal(late.ok, false);
   assert.equal(timeouts.length, 3);
+});
+
+test("#10 facts and EPSS go to KEV CVEs first, and what was not looked up says so", () => {
+  // component 1: many non-KEV CVEs in range; component 2 (later): one KEV CVE
+  const c1 = { name: "widget", version: "1.0", vendor: "acme" };
+  const r1 = resolveComponent(c1)!;
+  const many: ProductCve[] = Array.from({ length: 6 }, (_, i) => ({
+    id: `CVE-2099-000${i}`,
+    matches: [{ criteria: "cpe:2.3:a:acme:widget:*:*:*:*:*:*:*:*", vulnerable: true, versionEndExcluding: "2.0" }],
+  }));
+  const c2 = { name: "log4j", version: "2.14.1" };
+  const r2 = resolveComponent(c2)!;
+  const drafts = [
+    assessComponent(c1, r1, { status: "ok", cves: many }, [], facts(), Infinity),
+    assessComponent(c2, r2, { status: "ok", cves: NVD }, [], facts(), Infinity),
+  ];
+  const plan = planFacts(drafts, 3, 2);
+  assert.equal(plan.total, 7);
+  assert.equal(plan.facts[0], "CVE-2021-44228");
+  assert.equal(plan.epss[0], "CVE-2021-44228");
+  assert.deepEqual([plan.facts.length, plan.epss.length], [3, 2]);
+  assert.equal(plan.truncated, true);
+  assert.equal(planFacts(drafts, 3000, 300).truncated, false);
+
+  const lookedUp = { facts: new Set(plan.facts), epss: new Set(plan.epss) };
+  const res = assessComponent(c1, r1, { status: "ok", cves: many }, [], facts({ lookedUp }));
+  const skipped = res.findings.filter((f) => f.not_looked_up.includes("actors"));
+  assert.equal(skipped.length, 4); // 6 CVEs, 2 of them got facts
+  assert.equal(res.findings.filter((f) => f.not_looked_up.includes("epss")).length, 5); // and 1 got EPSS
+  assert.deepEqual(skipped[0].not_looked_up, ["actors", "epss"]);
+  const kevRes = assessComponent(c2, r2, { status: "ok", cves: NVD }, [], facts({ lookedUp }));
+  assert.deepEqual(kevRes.findings[0].not_looked_up, []);
+  // an EPSS score from another source is not "not looked up"
+  const withEpss = assessComponent(c1, r1, { status: "ok", cves: many }, [], facts({ lookedUp, epss: new Map(many.map((m) => [m.id, 0.1])) }));
+  assert.ok(withEpss.findings.every((f) => !f.not_looked_up.includes("epss")));
+  // without a plan (every CVE looked up), nothing is flagged
+  assert.ok(assessComponent(c1, r1, { status: "ok", cves: many }, [], facts()).findings.every((f) => f.not_looked_up.length === 0));
 });
