@@ -1,0 +1,73 @@
+{
+ "_note": "Trimmed from the NVD CVE API 2.0 (services.nvd.nist.gov), fetched 2026-10-17: only the cpeMatch rows naming apache products.",
+ "vulnerabilities": [
+  {
+   "cve": {
+    "id": "CVE-2021-44228",
+    "configurations": [
+     {
+      "nodes": [
+       {
+        "cpeMatch": [
+         {
+          "vulnerable": true,
+          "criteria": "cpe:2.3:a:apache:log4j:*:*:*:*:*:*:*:*",
+          "versionStartIncluding": "2.0.1",
+          "versionEndExcluding": "2.3.1"
+         },
+         {
+          "vulnerable": true,
+          "criteria": "cpe:2.3:a:apache:log4j:*:*:*:*:*:*:*:*",
+          "versionStartIncluding": "2.4.0",
+          "versionEndExcluding": "2.12.2"
+         },
+         {
+          "vulnerable": true,
+          "criteria": "cpe:2.3:a:apache:log4j:*:*:*:*:*:*:*:*",
+          "versionStartIncluding": "2.13.0",
+          "versionEndExcluding": "2.15.0"
+         },
+         {
+          "vulnerable": true,
+          "criteria": "cpe:2.3:a:apache:log4j:2.0:-:*:*:*:*:*:*"
+         },
+         {
+          "vulnerable": true,
+          "criteria": "cpe:2.3:a:apache:log4j:2.0:beta9:*:*:*:*:*:*"
+         },
+         {
+          "vulnerable": true,
+          "criteria": "cpe:2.3:a:apache:log4j:2.0:rc1:*:*:*:*:*:*"
+         },
+         {
+          "vulnerable": true,
+          "criteria": "cpe:2.3:a:apache:log4j:2.0:rc2:*:*:*:*:*:*"
+         }
+        ]
+       }
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "cve": {
+    "id": "CVE-2021-41773",
+    "configurations": [
+     {
+      "nodes": [
+       {
+        "cpeMatch": [
+         {
+          "vulnerable": true,
+          "criteria": "cpe:2.3:a:apache:http_server:2.4.49:*:*:*:*:*:*:*"
+         }
+        ]
+       }
+      ]
+     }
+    ]
+   }
+  }
+ ]
+}
