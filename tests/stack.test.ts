@@ -46,7 +46,7 @@ test("cmpVersion orders numerically and refuses to guess across digit/letter seg
   assert.equal(cmpVersion("2.14.1", "2.15.0"), -1);
   assert.equal(cmpVersion("2.10.0", "2.9.9"), 1);
   assert.equal(cmpVersion("v1.2.3", "1.2.3"), 0);
-  assert.equal(cmpVersion("2.4", "2.4.0"), -1);
+  assert.equal(cmpVersion("2.4", "2.4.0"), 0);
   assert.equal(cmpVersion("8.2p1", "8.2.1"), null);
   assert.equal(cmpVersion("", "1"), null);
 });
@@ -310,4 +310,27 @@ test("findings rank KEV and cited-actor CVEs first", () => {
   const res = assessComponent(c, r, { status: "ok", cves }, [], facts({ actors, epss: new Map([["CVE-2099-0002", 0.99]]) }));
   assert.deepEqual(res.findings.map((f) => f.cve), ["CVE-2021-44228", "CVE-2099-0002"]);
   assert.equal(res.findings[0].actors[0].actor, "A");
+});
+
+// ---- review fixes (PR #13) ----------------------------------------------------
+
+test("#1 cmpVersion: missing segments are 0, pre-releases sort before the release", () => {
+  assert.equal(cmpVersion("2.17", "2.17.0"), 0);
+  assert.equal(cmpVersion("2.17.0", "2.17"), 0);
+  assert.equal(cmpVersion("2.17", "2.17.1"), -1);
+  assert.equal(cmpVersion("2.15.0-rc1", "2.15.0"), -1);
+  assert.equal(cmpVersion("2.15.0", "2.15.0-rc1"), 1);
+  assert.equal(cmpVersion("2.15.0-alpha1", "2.15.0-beta1"), -1);
+  assert.equal(cmpVersion("2.15.0-beta2", "2.15.0-rc1"), -1);
+  assert.equal(cmpVersion("2.15.0-rc1", "2.15.0-rc2"), -1);
+  assert.equal(cmpVersion("2.15.0.rc1", "2.14.9"), 1);
+  // a post-release letter (OpenSSL 1.1.1a, OpenSSH 8.2p1) still sorts after the release
+  assert.equal(cmpVersion("1.1.1a", "1.1.1"), 1);
+  assert.equal(cmpVersion("8.2p1", "8.2"), 1);
+  assert.equal(cmpVersion("8.2p1", "8.2.1"), null);
+  // log4j 2.17 against CVE-2021-45105's "fixed in 2.17.0" is the fixed release
+  const cve45105 = [{ criteria: "cpe:2.3:a:apache:log4j:*:*:*:*:*:*:*:*", vulnerable: true, versionStartIncluding: "2.13.0", versionEndExcluding: "2.17.0" }];
+  assert.equal(evalRanges("2.17", cve45105).verdict, "not-affected");
+  // and a 2.15.0 pre-release is still inside Log4Shell's [2.13.0, 2.15.0)
+  assert.equal(evalRanges("2.15.0-rc1", log4shell).verdict, "in-range");
 });

@@ -6,10 +6,31 @@ import type { CpeMatch, VersionVerdict } from "./types";
 // virtualMatchString does NOT filter by version, so ranges are always
 // evaluated here, locally.
 
+// Pre-release words, in release order; each sorts before the release itself
+// ("2.15.0-rc1" < "2.15.0"). Bare "a"/"b" are not here: OpenSSL's 1.1.1a is a
+// post-release letter, and so is OpenSSH's "p1".
+const PRE: Record<string, number> = { dev: 0, snapshot: 0, alpha: 1, beta: 2, milestone: 3, pre: 4, preview: 4, rc: 5, cr: 5 };
+// Words that name the release itself ("2.17.0.Final", "1.0-GA").
+const RELEASE = new Set(["final", "ga", "release"]);
+
+/** What the rest of a version says once the other side has run out: 0 = nothing more, 1 = later, -1 = earlier (pre-release). */
+function tail(segs: string[], from: number): number {
+  for (let i = from; i < segs.length; i++) {
+    const s = segs[i];
+    if (/^\d+$/.test(s)) {
+      if (parseInt(s, 10) !== 0) return 1;
+    } else if (s in PRE) return -1;
+    else if (!RELEASE.has(s)) return 1;
+  }
+  return 0;
+}
+
 /**
  * Compare two version strings segment by segment (digits numerically, letters
- * lexically). Returns null when the two cannot be ordered honestly, e.g. a
- * digit segment against a letter segment ("8.2p1" vs "8.2.1").
+ * lexically). Missing segments count as 0 ("2.17" = "2.17.0"), and a
+ * pre-release sorts before its release ("2.15.0-rc1" < "2.15.0"). Returns null
+ * when the two cannot be ordered honestly, e.g. a digit segment against a
+ * letter segment ("8.2p1" vs "8.2.1").
  */
 export function cmpVersion(a: string, b: string): number | null {
   const norm = (s: string) => s.toLowerCase().replace(/^v/, "").match(/\d+|[a-z]+/g) ?? [];
@@ -20,16 +41,29 @@ export function cmpVersion(a: string, b: string): number | null {
   for (let i = 0; i < n; i++) {
     const x = A[i];
     const y = B[i];
-    if (x === undefined) return -1;
-    if (y === undefined) return 1;
+    if (x === undefined) return 0 - tail(B, i) || 0;
+    if (y === undefined) return tail(A, i);
     const xn = /^\d+$/.test(x);
     const yn = /^\d+$/.test(y);
     if (xn && yn) {
       const dx = parseInt(x, 10);
       const dy = parseInt(y, 10);
       if (dx !== dy) return dx < dy ? -1 : 1;
-    } else if (xn !== yn) return null;
-    else if (x !== y) return x < y ? -1 : 1;
+    } else if (xn !== yn) {
+      // "2.15.0-rc1" vs "2.15.0.1": the pre-release comes first. A
+      // post-release letter against a digit ("8.2p1" vs "8.2.1") has no order.
+      const letter = xn ? y : x;
+      if (!(letter in PRE)) return null;
+      return xn ? 1 : -1;
+    } else if (x !== y) {
+      const px = PRE[x];
+      const py = PRE[y];
+      if (px !== undefined || py !== undefined) {
+        if (px === undefined) return 1;
+        if (py === undefined) return -1;
+        if (px !== py) return px < py ? -1 : 1;
+      } else return x < y ? -1 : 1;
+    }
   }
   return 0;
 }
