@@ -291,6 +291,8 @@ export function indicatorFor(ioc: NormalizedIoc): StixObject {
     ...SHARED,
     id: stixId("indicator", `${ioc.kind}:${ioc.value}`),
     name: ioc.value,
+    // Fixed text: a shared object cannot carry one citation's quote.
+    description: "Cited in published reporting. The indicates relationships carry each source URL and quoted sentence.",
     indicator_types: ["malicious-activity"],
     pattern: stixPattern(ioc),
     pattern_type: "stix",

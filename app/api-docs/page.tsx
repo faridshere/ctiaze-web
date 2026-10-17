@@ -29,6 +29,11 @@ const ENDPOINTS: { path: string; gives: string; limit: string; params: string }[
   { path: "/api/v1/actors/{id}", gives: "one dossier as data", limit: "120/min", params: "none" },
   { path: "/actors/{id}/stix.json", gives: "the dossier as a STIX 2.1 bundle", limit: "60/min", params: "none" },
   { path: "/actors/{id}/navigator.json", gives: "the dossier as an ATT&CK Navigator layer", limit: "60/min", params: "none" },
+  { path: "/api/v1/stix/actors/{id}", gives: "an actor's cited intelligence as a STIX 2.1 bundle: every CVE, technique and indicator link quoted and sourced", limit: "60/min", params: "page" },
+  { path: "/api/v1/stix/cves/{cve}", gives: "every actor a published report ties to one CVE, as a STIX 2.1 bundle", limit: "60/min", params: "page" },
+  { path: "/taxii2/", gives: "TAXII 2.1 discovery: the read-only API root and its collections, cited-intel and az-claims", limit: "60/min", params: "none" },
+  { path: "/api/v1/taxii2/collections/{id}/objects/", gives: "one page of a TAXII collection as an envelope of STIX 2.1 objects", limit: "60/min", params: "added_after, limit, next" },
+  { path: "/api/v1/misp/manifest.json", gives: "a MISP feed: one event per actor with its cited indicators and CVEs", limit: "60/min", params: "none" },
   { path: "/llms.txt", gives: "a map of the site for AI agents", limit: "cached", params: "none" },
 ];
 
@@ -51,6 +56,21 @@ const PARAMS: { route: string; items: { name: string; note: string }[] }[] = [
       { name: "type=…", note: "nation-state, crime or unknown. Anything else is a 400." },
       { name: "origin=…", note: "ISO-2 country code, as the source states it." },
       { name: "limit=…", note: "1 to 500, default 100." },
+    ],
+  },
+  {
+    route: "/api/v1/stix/actors/{id} · /api/v1/stix/cves/{cve}",
+    items: [
+      { name: "page=…", note: "1 and up, default 1. A page holds up to 400 citations, so never more than 803 objects. X-Total-Pages gives the count and a Link: rel=\"next\" header names the next page. Past the last page is a 404." },
+    ],
+  },
+  {
+    route: "/api/v1/taxii2/collections/{id}/objects/",
+    items: [
+      { name: "{id}", note: "The collection's UUID from /api/v1/taxii2/collections/, or its title: cited-intel or az-claims." },
+      { name: "added_after=…", note: "RFC 3339 UTC timestamp. Only objects added strictly after it. Anything else is a 400." },
+      { name: "limit=…", note: "Objects per page, 3 to 1000, default 1000. A citation's objects are never split across pages, so a page can hold fewer." },
+      { name: "next=…", note: "The opaque value the previous page returned while more was true. Use it rather than added_after to walk a collection: many rows can share one second, and next never skips them." },
     ],
   },
   {
@@ -105,6 +125,31 @@ const EXAMPLES: { label: string; cmd: string; note: string }[] = [
     label: "A dossier as a STIX 2.1 bundle",
     cmd: `curl "${SITE_URL}/actors/apt28/stix.json"`,
     note: "intrusion-set, one attack-pattern per technique, malware, tools, and the uses relationships between them — the shape a TIP ingests without anyone writing a parser for us. Alias ids 308 to the canonical actor.",
+  },
+  {
+    label: "An actor's cited intelligence, as STIX 2.1",
+    cmd: `curl "${SITE_URL}/api/v1/stix/actors/apt28"`,
+    note: "The CVEs it exploits, the techniques it uses and the indicators that indicate it, each a relationship carrying the source URL and the sentence it rests on. Same intrusion-set and attack-pattern ids as stix.json above, so the two merge in your TIP.",
+  },
+  {
+    label: "Who exploits this CVE",
+    cmd: `curl "${SITE_URL}/api/v1/stix/cves/CVE-2023-23397"`,
+    note: "One vulnerability, every actor we hold a dossier for that a published report ties to it, and one exploits relationship per report.",
+  },
+  {
+    label: "TAXII 2.1, from the top",
+    cmd: `curl -L -H "Accept: application/taxii+json;version=2.1" "${SITE_URL}/taxii2/"`,
+    note: "Discovery names the API root; the root lists the collections. Point OpenCTI's TAXII2 connector, or any TAXII 2.1 client, at this URL.",
+  },
+  {
+    label: "Poll a collection for what is new",
+    cmd: `curl -L -H "Accept: application/taxii+json;version=2.1" "${SITE_URL}/api/v1/taxii2/collections/cited-intel/objects/?added_after=2026-10-01T00:00:00Z&limit=500"`,
+    note: "An envelope: objects, more, and next while more is true. X-TAXII-Date-Added-Last is the added_after for your next poll.",
+  },
+  {
+    label: "MISP feed",
+    cmd: `${SITE_URL}/api/v1/misp`,
+    note: "In MISP: Sync Actions → Feeds → Add Feed, source format MISP Feed, this URL. MISP reads manifest.json and fetches each actor's event as it changes; every attribute's comment is the quoted sentence and its source.",
   },
 ];
 
@@ -277,10 +322,43 @@ export default function ApiDocsPage() {
               </li>
               <li className="py-3">
                 <p className="max-w-[64ch] text-[14px] leading-relaxed text-ink-2">
-                <strong className="font-semibold text-ink">The exports carry no scoring of ours.</strong> Every technique in a
+                <strong className="font-semibold text-ink">The dossier exports carry no scoring of ours.</strong> Every technique in a
                 Navigator layer scores the same, because we hold no per-technique confidence or frequency and a graded
                 heatmap would be invented. STIX object ids are deterministic (UUIDv5), so re-fetching a dossier diffs
-                against the last one instead of looking like a fresh set of objects.
+                against the last one instead of looking like a fresh set of objects, and re-pulling a TAXII collection or a
+                MISP event deduplicates instead of piling up copies.
+              </p>
+              </li>
+              <li className="py-3">
+                <p className="max-w-[64ch] text-[14px] leading-relaxed text-ink-2">
+                <strong className="font-semibold text-ink">Cited means quoted.</strong> Every relationship in the STIX, TAXII and
+                MISP exports is one sentence in one report we can link to, and carries both. A row with no source URL is never
+                published, and a citation naming an actor we hold no dossier for is left out rather than turned into a new
+                group named after free text. <code className="font-mono text-[13px]">confidence</code> is 85 when the quoted
+                sentence names the actor itself, 50 when the actor comes from the rest of the report, and absent when we do not know.
+              </p>
+              </li>
+              <li className="py-3">
+                <p className="max-w-[64ch] text-[14px] leading-relaxed text-ink-2">
+                <strong className="font-semibold text-ink">exploits is our word, not STIX&apos;s.</strong> STIX 2.1 suggests{" "}
+                <code className="font-mono text-[13px]">targets</code> between an intrusion-set and a vulnerability; we say{" "}
+                <code className="font-mono text-[13px]">exploits</code>, because that is what the quoted sentences say. Custom
+                relationship types are valid STIX; a tool that only accepts the suggested ones may drop these links.
+              </p>
+              </li>
+              <li className="py-3">
+                <p className="max-w-[64ch] text-[14px] leading-relaxed text-ink-2">
+                <strong className="font-semibold text-ink">az-claims are claims.</strong> Each is a report labelled{" "}
+                <code className="font-mono text-[13px]">unverified-claim</code> at confidence 15: a hacktivist channel or leak site
+                saying it hit an Azerbaijani target, not a confirmed incident. Dark-web sources are never in it.
+              </p>
+              </li>
+              <li className="py-3">
+                <p className="max-w-[64ch] text-[14px] leading-relaxed text-ink-2">
+                <strong className="font-semibold text-ink">TAXII URLs end in a slash and answer with a 308.</strong> The spec
+                writes them with a trailing slash; this site serves them without one, so a client must follow the redirect.
+                taxii2-client and OpenCTI do; with curl, pass <code className="font-mono text-[13px]">-L</code>. The server is
+                read-only: there is no write endpoint and no key.
               </p>
               </li>
               <li className="py-3">
