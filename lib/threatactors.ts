@@ -45,7 +45,7 @@ export type ThreatActor = {
   // render nothing rather than a row of zeroes.
   /** Rolling 30-day counts recomputed daily from actor_events. */
   activity_30d?: ActorActivity | null;
-  /** CVEs our own dispatches named alongside this actor. */
+  /** CVEs tied to this actor: named alongside it on our wire, or cited by a report. */
   cves?: ActorCve[] | null;
   /** Newest-first log of what the tracker saw change. */
   changes?: ActorChange[] | null;
@@ -64,7 +64,18 @@ export type ActorActivity = {
   computed_at?: string | null;
 };
 
-export type ActorCve = { cve: string; kev?: boolean; epss?: number | null; item?: string | null; date?: string | null };
+// source/evidence/url (2026-10-17): rows mined from a report carry the verbatim
+// quote and the report link; older rows carry only `item`, the story id.
+export type ActorCve = {
+  cve: string;
+  kev?: boolean;
+  epss?: number | null;
+  item?: string | null;
+  date?: string | null;
+  source?: string | null;
+  evidence?: string | null;
+  url?: string | null;
+};
 
 export type ActorChange = { at: string; kind: string; detail: string };
 
