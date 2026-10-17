@@ -183,6 +183,24 @@ export const getStoryBySlug = cache(async (slug: string): Promise<Story | null> 
   return toStory([...docs].sort((a, b) => score(b) - score(a))[0]);
 });
 
+// Exact _id → canonical slug for the stories a dossier quotes (2026-10-17).
+// A 12-char /news/<key> link is a prefix, not an identity ("CVE-2026-202"
+// matches a hundred CVE ids), so a link to one of our dispatches is built from
+// the story's full slug, the same one getStoryBySlug matches exactly. Only
+// published stories come back; an unknown or retracted id gets no link.
+export async function getStorySlugsByIds(ids: string[]): Promise<Map<string, string>> {
+  const out = new Map<string, string>();
+  const want = [...new Set(ids.filter((id) => typeof id === "string" && id))].slice(0, 200);
+  if (!want.length) return out;
+  const col = await items();
+  const docs = await col
+    .find({ ...PUBLISHED_FILTER, _id: { $in: want } })
+    .project<Pick<StoryDoc, "_id" | "title" | "az_title">>({ _id: 1, title: 1, az_title: 1 })
+    .toArray();
+  for (const d of docs) out.set(d._id, slugify(d._id, d.title || d.az_title || "news"));
+  return out;
+}
+
 export async function getStats() {
   const col = await items();
   const total = await col.countDocuments(PUBLISHED_FILTER);
