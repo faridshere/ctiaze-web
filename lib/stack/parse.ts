@@ -1,5 +1,6 @@
 import type { Component } from "./types";
 import { parseCpe23, parsePurl } from "./ids";
+import { vendorForNamespace } from "./resolve";
 
 // Turning what a user has into Component rows: pasted lines, a CycloneDX JSON
 // SBOM, an SPDX JSON SBOM, or an API body. Everything here is pure and runs
@@ -30,11 +31,11 @@ export function parseLine(raw: string): Component | null {
   if (!line) return null;
   if (/^pkg:/i.test(line)) {
     const p = parsePurl(line);
-    return p ? { name: p.name, version: p.version, purl: line.slice(0, MAX_FIELD), vendor: null } : null;
+    return p ? { name: p.name, version: p.version, purl: line.slice(0, MAX_FIELD), vendor: null, origin: "paste" } : null;
   }
   if (/^cpe:2\.3:/i.test(line)) {
     const c = parseCpe23(line);
-    return c ? { name: c.product, version: c.version, cpe: line.slice(0, MAX_FIELD), vendor: c.vendor } : null;
+    return c ? { name: c.product, version: c.version, cpe: line.slice(0, MAX_FIELD), vendor: c.vendor, origin: "paste" } : null;
   }
   const words = line.replace(/[/@,]/g, " ").split(/\s+/).filter(Boolean).slice(0, 12);
   let version: string | null = null;
@@ -42,7 +43,7 @@ export function parseLine(raw: string): Component | null {
   if (!words.length) return null;
   const vendor = words.length >= 2 ? words[0] : null;
   const name = (vendor ? words.slice(1) : words).join(" ");
-  return { name: name.slice(0, MAX_FIELD), version, vendor };
+  return { name: name.slice(0, MAX_FIELD), version, vendor, origin: "paste" };
 }
 
 export function parsePaste(text: string): Component[] {
@@ -64,7 +65,13 @@ function walkCdx(list: unknown, out: Component[], depth = 0) {
     if (!raw || typeof raw !== "object") continue;
     const name = clip(raw.name);
     if (name) {
-      out.push({ name, version: clip(raw.version), purl: clip(raw.purl), cpe: clip(raw.cpe), vendor: clip(raw.group) });
+      const cpe = clip(raw.cpe);
+      const purl = clip(raw.purl);
+      const group = clip(raw.group);
+      // A group is a Maven groupId or npm scope, not an NVD vendor: the vendor
+      // comes from the CPE, else from a known namespace (org.apache.* → apache).
+      const vendor = (cpe && parseCpe23(cpe)?.vendor) || vendorForNamespace(group ?? (purl ? parsePurl(purl)?.namespace ?? null : null));
+      out.push({ name, version: clip(raw.version), purl, cpe, vendor, namespace: group, origin: "sbom" });
     }
     walkCdx(raw.components, out, depth + 1);
   }
@@ -110,7 +117,7 @@ export function parseSbom(doc: unknown): SbomParse {
         if ((t === "cpe23type" || t === "cpe23") && !cpe) cpe = clip(r.referenceLocator);
       }
       const version = clip(p.versionInfo);
-      out.push({ name, version: version && !/^NOASSERTION$/i.test(version) ? version : null, purl, cpe, vendor: spdxSupplier(p.supplier) });
+      out.push({ name, version: version && !/^NOASSERTION$/i.test(version) ? version : null, purl, cpe, vendor: spdxSupplier(p.supplier), origin: "sbom" });
     }
     return { format: "spdx", components: dedupe(out) };
   }
@@ -121,7 +128,7 @@ function dedupe(list: Component[]): Component[] {
   const seen = new Set<string>();
   const out: Component[] = [];
   for (const c of list) {
-    const k = `${(c.vendor ?? "").toLowerCase()}|${c.name.toLowerCase()}|${c.version ?? ""}|${c.purl ?? ""}|${c.cpe ?? ""}`;
+    const k = `${(c.vendor ?? "").toLowerCase()}|${(c.namespace ?? "").toLowerCase()}|${c.name.toLowerCase()}|${c.version ?? ""}|${c.purl ?? ""}|${c.cpe ?? ""}`;
     if (seen.has(k)) continue;
     seen.add(k);
     out.push(c);
@@ -131,7 +138,7 @@ function dedupe(list: Component[]): Component[] {
 
 export type BodyParse = { ok: true; components: Component[] } | { ok: false; error: string };
 
-/** Validate the API body { components: [{ name, version, purl?, cpe?, vendor? }] }. */
+/** Validate the API body { components: [{ name, version, purl?, cpe?, vendor?, namespace?, origin? }] }. */
 export function parseApiBody(body: unknown): BodyParse {
   const list = (body as { components?: unknown } | null)?.components;
   if (!Array.isArray(list)) return { ok: false, error: "Send JSON { components: [{ name, version, purl?, cpe? }] }." };
@@ -145,6 +152,8 @@ export function parseApiBody(body: unknown): BodyParse {
     let vendor = clip(r.vendor);
     const purl = clip(r.purl);
     const cpe = clip(r.cpe);
+    const namespace = clip(r.namespace);
+    const origin = r.origin === "paste" || r.origin === "sbom" ? r.origin : null;
     if (!name && purl) {
       const p = parsePurl(purl);
       name = p?.name ?? null;
@@ -157,7 +166,7 @@ export function parseApiBody(body: unknown): BodyParse {
       vendor = vendor ?? c?.vendor ?? null;
     }
     if (!name) return { ok: false, error: `components[${i}] needs a name, purl or cpe.` };
-    out.push({ name, version, purl, cpe, vendor });
+    out.push({ name, version, purl, cpe, vendor, namespace, origin });
   }
   return { ok: true, components: dedupe(out) };
 }

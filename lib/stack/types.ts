@@ -7,8 +7,16 @@ export type Component = {
   version: string | null;
   purl?: string | null;
   cpe?: string | null;
-  /** The vendor, when the input states one (paste "vendor product version", CycloneDX group, CPE). */
+  /** The vendor, when the input states one (paste "vendor product version", CPE, or derived from a known namespace). */
   vendor?: string | null;
+  /** A package namespace (CycloneDX group, Maven groupId, npm scope). Never an NVD vendor as-is. */
+  namespace?: string | null;
+  /**
+   * Where the row came from. Only free-text paste is matched word by word
+   * ("apache-tomcat 9.0" is Tomcat); SBOM and API rows name a package, and a
+   * library named after a server ("spring-boot-starter-log4j2") is not it.
+   */
+  origin?: "paste" | "sbom" | null;
 };
 
 /**

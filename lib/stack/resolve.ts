@@ -31,6 +31,8 @@ const ALIAS: Record<string, Alias> = {
   log4j2: C("apache", "log4j", "a"),
   log4jcore: C("apache", "log4j", "a"),
   openssh: C("openbsd", "openssh", "a"),
+  opensshserver: C("openbsd", "openssh", "a"),
+  opensshclient: C("openbsd", "openssh", "a"),
   httpd: C("apache", "http_server", "a"),
   httpserver: C("apache", "http_server", "a"),
   apachehttpserver: C("apache", "http_server", "a"),
@@ -79,6 +81,7 @@ const ALIAS: Record<string, Alias> = {
   xzutils: C("tukaani", "xz", "a"),
   php: C("php", "php", "a"),
   redis: C("redis", "redis", "a"),
+  redisserver: C("redis", "redis", "a"),
   postgresql: C("postgresql", "postgresql", "a"),
   mysql: C("oracle", "mysql", "a"),
 };
@@ -105,13 +108,53 @@ const PURL: Record<string, Alias> = {
 /** A vendor/product pair from the CISA KEV catalog (vendorProject, product). */
 export type KevName = { vendor: string; product: string };
 
+// purl types whose package names are the upstream software's own (distro
+// packages, container images): "openssh-server" on Debian IS OpenSSH. Every
+// other type (npm, maven, pypi, cargo, gem, golang, nuget…) names a library,
+// and a library called "redis" or "openssl-sys" is a client or a binding, not
+// the server NVD files under that name.
+const UPSTREAM_TYPES = new Set(["deb", "rpm", "apk", "alpm", "ebuild", "generic", "conda", "docker", "oci"]);
+
+// Namespaces (Maven groupIds) → NVD vendor, where the obvious reading is wrong.
+const NS_VENDOR: [string, string][] = [
+  ["org.springframework", "vmware"],
+  ["io.undertow", "redhat"],
+  ["org.jboss", "redhat"],
+  ["org.keycloak", "redhat"],
+  ["org.jenkins-ci", "jenkins"],
+];
+// Reverse-DNS namespaces whose second label is a code host, not the vendor.
+const HOSTS = new Set(["github", "gitlab", "bitbucket", "sourceforge", "googlecode", "java", "javax"]);
+
+/**
+ * The NVD vendor a package namespace implies, or null. "org.apache.ofbiz" →
+ * "apache", "com.fasterxml.jackson.core" → "fasterxml". Never the raw
+ * namespace: a groupId is not a CPE vendor and matches nothing in KEV.
+ */
+export function vendorForNamespace(ns: string | null | undefined): string | null {
+  const n = (ns ?? "").trim().toLowerCase();
+  if (!n) return null;
+  for (const [prefix, v] of NS_VENDOR) if (n === prefix || n.startsWith(prefix + ".")) return v;
+  const m = n.match(/^(?:org|com|net|io|dev|edu|gov|info|biz|co|me|eu|de|fr|nl|ch|uk|jp|cn|be|at|se|no|fi|dk|pl|it|es|us|ca|au|in|br|ru)\.([a-z0-9-]+)(?:\.|$)/);
+  return m && !HOSTS.has(m[1]) ? m[1] : null;
+}
+
+/** A stated vendor that is really a reverse-DNS namespace ("org.apache.ofbiz") becomes the vendor it implies. */
+function cleanVendor(v: string | null | undefined): string | null {
+  if (!v) return null;
+  return /^[a-z0-9-]+(\.[a-z0-9-]+)+$/i.test(v) ? vendorForNamespace(v) : v;
+}
+
+const words = (s: string) => s.split(/[\s_\-/.]+/).map(key).filter(Boolean);
+
 export function resolveComponent(c: Component, kevNames: KevName[] = []): Resolved | null {
   if (c.cpe) {
     const p = parseCpe23(c.cpe);
     if (p) return { vendor: p.vendor, product: p.product, part: p.part as CpePart, via: "cpe" };
   }
   let name = c.name;
-  const vendor = c.vendor ?? null;
+  let ns = c.namespace ?? null;
+  let type: string | null = null;
   if (c.purl) {
     const p = parsePurl(c.purl);
     if (p) {
@@ -119,21 +162,45 @@ export function resolveComponent(c: Component, kevNames: KevName[] = []): Resolv
       const hit = PURL[k];
       if (hit) return { ...hit, via: "purl" };
       name = p.name;
-      // A maven groupId or npm scope is not an NVD vendor; keep any vendor the caller stated.
+      ns = p.namespace ?? ns;
+      type = p.type;
     }
   }
+  if (!type && ns) {
+    // A namespaced SBOM row without a purl: the curated table by namespace/name.
+    const tail = `/${ns}/${name}`.toLowerCase();
+    const hit = Object.entries(PURL).find(([k]) => k.endsWith(tail));
+    if (hit) return { ...hit[1], via: "alias" };
+  }
+  const vendor = cleanVendor(c.vendor) ?? vendorForNamespace(ns);
 
-  // Curated aliases: the name alone first, then vendor + name, then each name word.
-  const candidates = [key(name), vendor ? key(`${vendor} ${name}`) : "", ...name.split(/[\s_\-/]+/).map(key)];
-  for (const k of candidates) if (k && ALIAS[k]) return { ...ALIAS[k], via: "alias" };
+  // What kind of name is this?
+  //   paste   — free text: any word may be the product ("apache-tomcat 9.0").
+  //   package — a language-ecosystem library (non-distro purl, or a namespaced
+  //             SBOM row): it is a known product only if its vendor agrees.
+  //   plain   — a distro package or a bare SBOM/API name: matched whole.
+  const kind = type ? (UPSTREAM_TYPES.has(type) ? "plain" : "package") : ns ? "package" : c.origin === "paste" ? "paste" : "plain";
+  const vk = vendor ? key(vendor) : null;
+  const vendorAgrees = (v: string) => kind !== "package" || (!!vk && vendorKeyEq(key(v), vk));
+
+  // Curated aliases: the name alone first, then vendor + name, then (paste only) each name word.
+  const candidates = [key(name), vendor ? key(`${vendor} ${name}`) : "", ...(kind === "paste" ? words(name) : [])];
+  for (const k of candidates) if (k && ALIAS[k] && vendorAgrees(ALIAS[k].vendor)) return { ...ALIAS[k], via: "alias" };
 
   // The KEV catalog as a dictionary of exploited products' real names.
   const nk = key(name);
-  const vk = vendor ? key(vendor) : null;
-  const kevHits = kevNames.filter((n) => productKeyEq(key(n.product), nk) && (!vk || vendorKeyEq(key(n.vendor), vk)));
+  const kevHits = kevNames.filter((n) => productKeyEq(key(n.product), nk) && (vk ? vendorKeyEq(key(n.vendor), vk) : kind !== "package"));
   const vendors = new Set(kevHits.map((n) => key(n.vendor)));
   if (kevHits.length && vendors.size === 1) {
     return { vendor: snake(kevHits[0].vendor), product: snake(kevHits[0].product), via: "kev" };
+  }
+
+  // A library whose name (or a word of it) is a known server product's, with
+  // no vendor to tell them apart: a guess would pull the server's CVEs and
+  // check the library's version against them. Say we cannot tell instead.
+  if (kind === "package") {
+    const collides = [nk, ...words(name)].some((k) => ALIAS[k]) || kevNames.some((n) => productKeyEq(key(n.product), nk));
+    if (collides) return null;
   }
 
   const prod = snake(name);

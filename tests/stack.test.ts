@@ -110,10 +110,10 @@ test("parsePurl and parseCpe23 follow the public specs", () => {
 });
 
 test("parseLine accepts 'vendor product version' and the shapes people actually paste", () => {
-  assert.deepEqual(parseLine("apache http_server 2.4.49"), { name: "http_server", version: "2.4.49", vendor: "apache" });
-  assert.deepEqual(parseLine("log4j 2.14.1"), { name: "log4j", version: "2.14.1", vendor: null });
-  assert.deepEqual(parseLine("microsoft exchange server 2019"), { name: "exchange server", version: "2019", vendor: "microsoft" });
-  assert.deepEqual(parseLine("nginx/1.25.3"), { name: "nginx", version: "1.25.3", vendor: null });
+  assert.deepEqual(parseLine("apache http_server 2.4.49"), { name: "http_server", version: "2.4.49", vendor: "apache", origin: "paste" });
+  assert.deepEqual(parseLine("log4j 2.14.1"), { name: "log4j", version: "2.14.1", vendor: null, origin: "paste" });
+  assert.deepEqual(parseLine("microsoft exchange server 2019"), { name: "exchange server", version: "2019", vendor: "microsoft", origin: "paste" });
+  assert.deepEqual(parseLine("nginx/1.25.3"), { name: "nginx", version: "1.25.3", vendor: null, origin: "paste" });
   assert.equal(parseLine("openssh@v9.6p1")?.version, "9.6p1");
   assert.equal(parseLine("jenkins")?.version, null);
   assert.equal(parseLine("   # a comment"), null);
@@ -129,7 +129,9 @@ test("parseSbom reads CycloneDX (nested components, metadata) and dedupes", () =
     r.components.map((c) => `${c.name}@${c.version}`),
     ["shop-backend@3.2.0", "log4j-core@2.14.1", "log4j-api@2.14.1", "http_server@2.4.49", "left-pad@1.3.0"],
   );
-  assert.equal(r.components[1].vendor, "org.apache.logging.log4j");
+  // the group is kept as the namespace; the vendor is what it implies, never the raw groupId
+  assert.equal(r.components[1].namespace, "org.apache.logging.log4j");
+  assert.equal(r.components[1].vendor, "apache");
   assert.equal(r.components[3].cpe, "cpe:2.3:a:apache:http_server:2.4.49:*:*:*:*:*:*:*");
 });
 
@@ -368,4 +370,58 @@ test("#3 escaped CPE characters: a product matches its own NVD rows, and the NVD
   assert.equal(cpeName("a", "nodejs", "node.js"), "cpe:2.3:a:nodejs:node.js");
   // an escaped colon inside a product name does not shift the vendor/product fields
   assert.equal(matchesFor([{ criteria: "cpe:2.3:a:acme:a\\:b:*:*:*:*:*:*:*:*" }], "acme", "a:b").length, 1);
+});
+
+// Apache OFBiz as CISA KEV lists it (CVE-2024-38856, CVE-2024-32113, CVE-2020-9496)
+const OFBIZ_KEV: KevEntry[] = ["CVE-2024-38856", "CVE-2024-32113", "CVE-2020-9496"].map((cve) => ({ cve, vendor: "Apache", product: "OFBiz", dateAdded: null, ransomware: false }));
+const OFBIZ_NAMES = [...KEV_NAMES, { vendor: "Apache", product: "OFBiz" }];
+
+test("#5 a CycloneDX group is a namespace, not the vendor: an OFBiz SBOM finds what pasting 'ofbiz 18.12' finds", () => {
+  const sbom = parseSbom({
+    bomFormat: "CycloneDX",
+    components: [
+      { group: "org.apache.ofbiz", name: "ofbiz", version: "18.12.10", purl: "pkg:maven/org.apache.ofbiz/ofbiz@18.12.10" },
+      { group: "org.apache.ofbiz", name: "ofbiz-framework", version: "18.12.10" },
+    ],
+  });
+  const [withPurl, noPurl] = sbom.components;
+  assert.equal(withPurl.namespace, "org.apache.ofbiz");
+  assert.equal(withPurl.vendor, "apache");
+  assert.equal(noPurl.vendor, "apache");
+  const pasted = parseLine("ofbiz 18.12")!;
+  const want = kevByName(resolveComponent(pasted, OFBIZ_NAMES)!, pasted, OFBIZ_KEV).map((k) => k.cve).sort();
+  assert.equal(want.length, 3);
+  const r = resolveComponent(withPurl, OFBIZ_NAMES)!;
+  assert.deepEqual([r.vendor, r.product], ["apache", "ofbiz"]);
+  assert.deepEqual(kevByName(r, withPurl, OFBIZ_KEV).map((k) => k.cve).sort(), want);
+  // an API caller who sends the raw groupId as the vendor gets the same answer
+  const api = { name: "ofbiz", version: "18.12.10", vendor: "org.apache.ofbiz" };
+  assert.deepEqual(kevByName(resolveComponent(api, OFBIZ_NAMES)!, api, OFBIZ_KEV).map((k) => k.cve).sort(), want);
+  // the SBOM row carries its namespace through the API
+  const body = parseApiBody({ components: [{ name: "ofbiz", version: "18.12.10", namespace: "org.apache.ofbiz", origin: "sbom" }] });
+  assert.ok(body.ok && body.components[0].namespace === "org.apache.ofbiz" && body.components[0].origin === "sbom");
+});
+
+test("#2 a library named after a server product is not that product; word aliases are for free-text paste only", () => {
+  const boot = { name: "spring-boot-starter-log4j2", version: "2.6.1", namespace: "org.springframework.boot", purl: "pkg:maven/org.springframework.boot/spring-boot-starter-log4j2@2.6.1", origin: "sbom" as const };
+  const rb = resolveComponent(boot, KEV_NAMES);
+  assert.notEqual(rb?.product, "log4j");
+  const res = assessComponent(boot, rb, { status: "ok", cves: NVD }, rb ? kevByName(rb, boot, KEV) : [], facts());
+  assert.equal(res.findings.some((f) => f.cve === "CVE-2021-44228"), false);
+  // the same starter without a purl, as a CycloneDX row with only its group
+  const bootNoPurl = { name: "spring-boot-starter-log4j2", version: "2.6.1", namespace: "org.springframework.boot", origin: "sbom" as const };
+  assert.notEqual(resolveComponent(bootNoPurl, KEV_NAMES)?.product, "log4j");
+  // the npm redis client and the openssl-sys crate are not the Redis server / OpenSSL
+  const redis = resolveComponent({ name: "redis", version: "4.6.0", purl: "pkg:npm/redis@4.6.0", origin: "sbom" }, KEV_NAMES);
+  assert.ok(!redis || (redis.via === "name" && redis.vendor !== "redis"), JSON.stringify(redis));
+  const sys = resolveComponent({ name: "openssl-sys", version: "0.9.80", purl: "pkg:cargo/openssl-sys@0.9.80", origin: "sbom" }, KEV_NAMES);
+  assert.ok(!sys || sys.product !== "openssl", JSON.stringify(sys));
+  // a structured SBOM name is matched whole, never word by word
+  assert.notEqual(resolveComponent({ name: "php-redis-session", version: "1.0", origin: "sbom" })?.product, "php");
+  // what still resolves: curated purls, distro packages named after upstream, groupIds of the product's own vendor, and paste words
+  assert.equal(resolveComponent({ name: "log4j-core", version: "2.14.1", namespace: "org.apache.logging.log4j", origin: "sbom" })?.product, "log4j");
+  assert.equal(resolveComponent({ name: "openssh-server", version: "9.6p1", purl: "pkg:deb/debian/openssh-server@9.6p1", origin: "sbom" })?.product, "openssh");
+  assert.equal(resolveComponent({ name: "redis", version: "7.0.1", purl: "pkg:deb/debian/redis@7.0.1", origin: "sbom" })?.product, "redis");
+  assert.equal(resolveComponent({ name: "tomcat", version: "9.0.1", purl: "pkg:maven/org.apache.tomcat/tomcat@9.0.1", origin: "sbom" })?.product, "tomcat");
+  assert.equal(resolveComponent(parseLine("apache-tomcat 9.0.1")!)?.product, "tomcat");
 });
