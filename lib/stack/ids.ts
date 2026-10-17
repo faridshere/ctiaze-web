@@ -34,8 +34,8 @@ export function parsePurl(raw: string): Purl | null {
 
 export type Cpe23 = { part: string; vendor: string; product: string; version: string | null };
 
-/** Split on colons that are not backslash-escaped. */
-function splitCpe(s: string): string[] {
+/** Split a CPE 2.3 formatted string on colons that are not backslash-escaped, unescaping each field. */
+export function splitCpe(s: string): string[] {
   const out: string[] = [];
   let cur = "";
   for (let i = 0; i < s.length; i++) {

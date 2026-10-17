@@ -334,3 +334,21 @@ test("#1 cmpVersion: missing segments are 0, pre-releases sort before the releas
   // and a 2.15.0 pre-release is still inside Log4Shell's [2.13.0, 2.15.0)
   assert.equal(evalRanges("2.15.0-rc1", log4shell).verdict, "in-range");
 });
+
+test("#4 exact-version rows compare version and CPE update together", () => {
+  // OpenSSH 7.2p2 is filed as version 7.2, update p2
+  const ssh = [{ criteria: "cpe:2.3:a:openbsd:openssh:7.2:p2:*:*:*:*:*:*", vulnerable: true }];
+  assert.equal(evalRanges("7.2p2", ssh).verdict, "in-range");
+  assert.equal(evalRanges("7.2p1", ssh).verdict, "not-affected");
+  assert.equal(evalRanges("7.2", ssh).verdict, "not-affected");
+  // a beta-only log4j row does not flag the 2.0 release
+  const beta = [{ criteria: "cpe:2.3:a:apache:log4j:2.0:beta9:*:*:*:*:*:*", vulnerable: true }];
+  assert.equal(evalRanges("2.0", beta).verdict, "not-affected");
+  assert.equal(evalRanges("2.0-beta9", beta).verdict, "in-range");
+  // update "-" is the plain release; update "*" is any update of that version
+  assert.equal(evalRanges("2.0", [{ criteria: "cpe:2.3:a:apache:log4j:2.0:-:*:*:*:*:*:*", vulnerable: true }]).verdict, "in-range");
+  assert.equal(evalRanges("2.0-beta9", [{ criteria: "cpe:2.3:a:apache:log4j:2.0:-:*:*:*:*:*:*", vulnerable: true }]).verdict, "not-affected");
+  assert.equal(evalRanges("7.2p2", [{ criteria: "cpe:2.3:a:openbsd:openssh:7.2:*:*:*:*:*:*:*", vulnerable: true }]).verdict, "in-range");
+  // the real Log4Shell rows: 2.0 (the release row) in range, a beta listed by its own row
+  assert.equal(evalRanges("2.0-beta9", log4shell).verdict, "in-range");
+});

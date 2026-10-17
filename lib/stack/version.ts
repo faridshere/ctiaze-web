@@ -1,4 +1,5 @@
 import type { CpeMatch, VersionVerdict } from "./types";
+import { splitCpe } from "./ids";
 
 // Version comparison and NVD range evaluation, lifted from the shelved
 // stacknix matcher (lib/_disabled/stacknix.ts), where it was acid-tested:
@@ -73,10 +74,29 @@ export type RangeResult = { verdict: VersionVerdict; detail: string | null; fixe
 const hasBounds = (m: CpeMatch) =>
   !!(m.versionStartIncluding || m.versionStartExcluding || m.versionEndIncluding || m.versionEndExcluding);
 
-/** The CPE's own version field (index 5 of cpe:2.3:part:vendor:product:version:…). */
-function cpeVersion(criteria: string): string | null {
-  const v = criteria.split(":")[5];
-  return v && v !== "*" && v !== "-" ? v.replace(/\\/g, "") : null;
+/**
+ * The CPE's own version and update fields (indexes 5 and 6 of
+ * cpe:2.3:part:vendor:product:version:update:…). NVD files OpenSSH 7.2p2 as
+ * 7.2:p2 and log4j 2.0-beta9 as 2.0:beta9, so the two are only meaningful
+ * together. update: null = any ("*"), "" = none ("-").
+ */
+function cpeExact(criteria: string): { version: string; update: string | null } | null {
+  const f = splitCpe(criteria);
+  const v = f[5];
+  if (!v || v === "*" || v === "-") return null;
+  const u = f[6];
+  return { version: v, update: !u || u === "*" ? null : u === "-" ? "" : u };
+}
+
+/** Compare a caller's version with one listed CPE version+update. */
+function cmpExact(version: string, exact: { version: string; update: string | null }): number | null {
+  if (exact.update) return cmpVersion(version, `${exact.version}-${exact.update}`);
+  const c = cmpVersion(version, exact.version);
+  if (c === 0 || exact.update === "") return c;
+  // Any update of a plain numeric version: "7.2p2" is one of 7.2's updates.
+  const base = version.match(/^v?\d+(?:\.\d+)*/)?.[0];
+  if (base && base !== version && /^\d+(?:\.\d+)*$/.test(exact.version) && cmpVersion(base, exact.version) === 0) return 0;
+  return c;
 }
 
 /**
@@ -133,7 +153,7 @@ export function evalRanges(version: string | null, matches: CpeMatch[]): RangeRe
         return { verdict: "in-range", detail: `${version} ∈ ${lo}, ${hi}`, fixedIn };
       }
     } else {
-      const exact = cpeVersion(m.criteria);
+      const exact = cpeExact(m.criteria);
       if (!exact) {
         // A wildcard version with no bounds: NVD sometimes means "every
         // release", sometimes "not analysed yet". Neither is a confirmation.
@@ -141,8 +161,9 @@ export function evalRanges(version: string | null, matches: CpeMatch[]): RangeRe
         continue;
       }
       sawRule = true;
-      const c = cmpVersion(version, exact);
-      if (c === 0) return { verdict: "in-range", detail: `${version} = ${exact} (listed version)`, fixedIn: fixAbove };
+      const c = cmpExact(version, exact);
+      const listed = exact.update ? `${exact.version} ${exact.update}` : exact.version;
+      if (c === 0) return { verdict: "in-range", detail: `${version} = ${listed} (listed version)`, fixedIn: fixAbove };
       if (c === null) ambiguous = true;
     }
   }
