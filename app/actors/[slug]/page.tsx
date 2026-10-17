@@ -31,7 +31,7 @@ import { getActorReports, type AptReport } from "@/lib/aptnotes";
 import { getCitationsForActor } from "@/lib/citations-db";
 import { storyIdsNeedingSlugs, type CveActorCitationDoc } from "@/lib/citations";
 import { getStorySlugsByIds } from "@/lib/stories";
-import { paragraphs, jsonLdSafe } from "@/lib/format";
+import { clipWords, paragraphs, jsonLdSafe } from "@/lib/format";
 import { absoluteUrl, SITE_NAME, SITE_URL } from "@/lib/site";
 
 export const revalidate = 86400;
@@ -46,12 +46,12 @@ export async function generateStaticParams() {
 const EMPTY_WIRE: WireMentions = { byActor: {}, recent: [], generatedAt: "" };
 
 // The share/search description: the engine's own analyst brief when we have
-// one, the source's own description otherwise — first 200 characters, nothing
-// invented to pad it out.
+// one, the source's own description otherwise — at most 200 characters, ended
+// on a whole word or sentence, nothing invented to pad it out.
 function briefText(a: Pick<ThreatActor, "description_en" | "name">, intel: string | null, max = 200): string {
   const t = (intel || a.description_en || "").trim().replace(/\s+/g, " ");
   if (!t) return "";
-  return t.length > max ? t.slice(0, max - 1).trimEnd() + "…" : t;
+  return clipWords(t, max);
 }
 
 function pickNotes(ids: Ttp[], ref: TechniqueRef): Record<string, TechniqueNote> {

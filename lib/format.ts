@@ -206,14 +206,22 @@ export function wholeTitle(title: string, body = ""): string {
   return endWhole(t, { next: flat.startsWith(t) ? flat.slice(t.length, t.length + 1) : undefined });
 }
 
+/** Cap a text at `max` characters on whole words: the last full sentence with
+ *  an ellipsis, or the last whole word without one. Under the cap it is
+ *  returned as it is. */
+export function clipWords(text: string, max: number, min = 60): string {
+  const t = (text || "").replace(/\s+/g, " ").trim();
+  const chars = [...t];
+  return chars.length > max ? endWhole(chars.slice(0, max).join(""), { next: chars[max], min }) : t;
+}
+
 /** A quote for the page: whole words always. Cut where it runs past `max`, and
  *  ended cleanly where the engine already cut it at ENGINE_QUOTE_CUT. */
 export function wholeQuote(quote: string, max = Infinity): string {
   // The engine slices the stored string, so its length is measured before any tidying.
   const engineCut = cpLength(quote || "") === ENGINE_QUOTE_CUT;
   const q = (quote || "").replace(/\s+/g, " ").trim();
-  const chars = [...q];
-  if (chars.length > max) return endWhole(chars.slice(0, max).join(""), { next: chars[max], min: 60 });
+  if ([...q].length > max) return clipWords(q, max);
   if (engineCut) return endWhole(q, { min: 60 });
   return q;
 }

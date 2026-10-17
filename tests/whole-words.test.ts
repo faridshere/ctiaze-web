@@ -6,7 +6,7 @@ import { register } from "node:module";
 // and an ellipsis only after a full stop. The three titles are real dispatches
 // as stored on 2026-10-17 (wire no. 1100 is the first).
 register("./ts-ext-loader.mjs", import.meta.url);
-const { endWhole, titleWasCut, wholeQuote, wholeTitle } = await import("../lib/format.ts");
+const { clipWords, endWhole, titleWasCut, wholeQuote, wholeTitle } = await import("../lib/format.ts");
 const { cleanQuote } = await import("../lib/citations.ts");
 const { toStory } = await import("../lib/types.ts");
 
@@ -107,4 +107,14 @@ test("cleanQuote: the page cap ends on whole words, the API (no cap) keeps the s
 
 test("endWhole never returns an ellipsis after a fragment", () => {
   for (const s of [VERIFIE, DIGEST, GHSA, "One. Two three fo", "No stop at all in this cut tex"]) ellipsisOnlyAfterStop(endWhole(s));
+});
+
+test("clipWords caps share text and OG titles on whole words", () => {
+  const brief = "APT28 is a Russian state-sponsored group attributed to GRU unit 26165. It has targeted governments, militaries and security organisations across Europe and the Caucasus since at least 2004";
+  const out = clipWords(brief, 120);
+  assert.equal(out, "APT28 is a Russian state-sponsored group attributed to GRU unit 26165. …");
+  const long = "Ransomware crew lists a regional logistics operator and posts what it says are internal invoices and payroll exports from the breach";
+  const og = clipWords(long, 100, 40);
+  assert.ok(long.startsWith(og) && long[og.length] === " " && !og.includes("…"), og);
+  assert.equal(clipWords("Short and whole", 140), "Short and whole");
 });
