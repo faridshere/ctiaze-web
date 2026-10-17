@@ -1,24 +1,24 @@
 import type { Metadata } from "next";
-import { SiteHeader } from "@/components/site/SiteHeader";
+import { FrontMasthead } from "@/components/site/Masthead";
 import { SiteFooter } from "@/components/site/SiteFooter";
-import { AuroraField } from "@/components/site/AuroraField";
-import { Kicker } from "@/components/site/Kicker";
-import { CtaBand, FollowLinks } from "@/components/site/CtaBand";
-import { WirePanel } from "@/components/home/WirePanel";
-import { Pillars } from "@/components/home/Pillars";
-import { ExposureCensus } from "@/components/home/ExposureCensus";
-import { StatGrid } from "@/components/home/StatGrid";
-import { RelativeTime } from "@/components/home/RelativeTime";
-import { LocalTime, ZoneLabel } from "@/components/site/LocalTime";
+import { Lead } from "@/components/home/Lead";
+import { Wire } from "@/components/home/Wire";
+import { IndexStrip } from "@/components/home/IndexStrip";
+import { Standfirst } from "@/components/home/Standfirst";
+import { Census } from "@/components/home/Census";
+import { Roster } from "@/components/home/Roster";
+import { Yesterday } from "@/components/home/Yesterday";
+import { Classifieds } from "@/components/home/Classifieds";
+import { WireLive } from "@/components/home/WireLive";
 import { jsonLdSafe } from "@/lib/format";
 import { getExposureCensus, EMPTY_CENSUS } from "@/lib/exposure";
 import { getHomeData, EMPTY_HOME_DATA } from "@/lib/home-data";
+import { getActorsPageData } from "@/lib/threatactors";
 import { SAME_AS, SITE_NAME, SITE_TAGLINE, SITE_URL } from "@/lib/site";
 
-// The landing page. Its whole job is an email — everything else on it is
-// evidence that the wire is real: the live panel, the fortnight of dispatches,
-// the archive total, the weekly counts. Hourly ISR from one cached data blob;
-// no per-visit invocation, no Mongo read on the request path.
+// The front page of the paper. The lead is the newest actively-exploited
+// story, the wire runs beside it, and every number on the page is a count the
+// engine made. Hourly ISR from cached blobs; no Mongo read on the request path.
 export const revalidate = 3600;
 
 export const metadata: Metadata = {
@@ -33,27 +33,14 @@ export const metadata: Metadata = {
   },
 };
 
-// The server's own string for "as of". <LocalTime> re-formats it into the
-// reader's zone after hydration and <ZoneLabel> names that zone, so this line
-// no longer asserts UTC next to a wire rendered in local time.
-function utcHHMM(iso: string): string {
-  const d = new Date(iso);
-  const p = (n: number) => String(n).padStart(2, "0");
-  return `${p(d.getUTCHours())}:${p(d.getUTCMinutes())}`;
-}
-
 export default async function LandingPage() {
-  // Never let the data layer take the landing page down: no data → quiet page.
-  const data = await getHomeData().catch(() => EMPTY_HOME_DATA);
-  // The census the footer has been claiming since this morning. Its own
-  // failure is silence: an unreadable snapshot renders no panel rather than
-  // an empty one.
-  const census = await getExposureCensus().catch(() => EMPTY_CENSUS);
-  // Two graphs, on purpose. Organization is the entity ("what is skopnix?") and
-  // WebSite carries the name a search engine prints under the result. `logo` must
-  // be a raster Google can index — it pointed at icon.svg, and an SVG is not a
-  // safe choice for the logo property. `sameAs` is the entity-resolution signal
-  // that was missing entirely.
+  // Never let the data layer take the front page down: no data, quiet page.
+  const [data, census, actors] = await Promise.all([
+    getHomeData().catch(() => EMPTY_HOME_DATA),
+    getExposureCensus().catch(() => EMPTY_CENSUS),
+    getActorsPageData().catch(() => null),
+  ]);
+
   const orgLd = {
     "@context": "https://schema.org",
     "@type": "Organization",
@@ -67,12 +54,7 @@ export default async function LandingPage() {
       "verifies each item against its original source, and publishes it as a free " +
       "global threat wire with worldwide internet-exposure figures.",
     slogan: SITE_TAGLINE,
-    logo: {
-      "@type": "ImageObject",
-      url: `${SITE_URL}/icon-512.png`,
-      width: 512,
-      height: 512,
-    },
+    logo: { "@type": "ImageObject", url: `${SITE_URL}/icon-512.png`, width: 512, height: 512 },
     image: `${SITE_URL}/icon-512.png`,
     knowsAbout: [
       "cyber threat intelligence",
@@ -96,97 +78,51 @@ export default async function LandingPage() {
     publisher: { "@id": `${SITE_URL}/#organization` },
   };
 
+  const tapeRow = data.wire[0] ?? data.lead ?? null;
+
   return (
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLdSafe(orgLd) }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLdSafe(siteLd) }} />
-      <SiteHeader />
+      <FrontMasthead total={data.total} tapeRow={tapeRow} last24h={data.last24h} serverIso={data.generatedAt} />
       <main id="main">
-        {/* ---- hero: the ask, over the globe ---- */}
-        <section className="relative isolate overflow-hidden bg-void">
-          <AuroraField />
-          {/* the globe dissolves into the page ground under the wire panel */}
-          <div aria-hidden className="pointer-events-none absolute inset-x-0 bottom-0 h-72 bg-gradient-to-b from-transparent to-surface" />
-          <div className="relative z-10 mx-auto flex min-h-[calc(100svh-3.5rem)] w-full max-w-[46rem] flex-col items-center justify-center px-6 pb-28 pt-20 text-center sm:pb-36">
-            <Kicker live className="fade-up">
-              {data.week.dispatches > 0
-                ? `${data.week.dispatches.toLocaleString("en-US")} dispatches this week`
-                : "live · around the clock"}
-            </Kicker>
-            <h1 className="mt-8 font-display text-[clamp(3rem,9vw,6.2rem)] font-semibold leading-[0.96] tracking-[-0.04em] text-ink-primary">
-              <span className="hl"><span>See it.</span></span>
-              <span className="hl"><span>Nix it.</span></span>
-            </h1>
-            <p data-sc className="mt-6 max-w-[30rem] text-[length:var(--t-body)] leading-relaxed text-ink-secondary">
-              {SITE_TAGLINE} Exploited CVEs, adversary dossiers and a free JSON API, around the clock.
-            </p>
-            {/* Follow, not wait (2026-10-10): the API and feeds are live, so the
-                hero offers them. The email form lives in the CtaBand below,
-                for the alerts that are not built yet. */}
-            <div data-sc="2" className="mt-9 flex w-full justify-center">
-              <FollowLinks className="justify-center" />
+        <WireLive />
+        {/* ---- the front page: lead left, the wire right ---- */}
+        <section className="sheet pt-8 sm:pt-10" aria-label="Front page">
+          <div className="grid gap-10 md:grid-cols-12 md:gap-6">
+            <div className="md:col-span-7 md:pr-6">
+              {data.lead ? (
+                <Lead lead={data.lead} />
+              ) : (
+                <div>
+                  <h1 className="headline text-[clamp(2.5rem,6vw,5.5rem)] text-ink">
+                    <span className="hl"><span>See it.</span></span>
+                    <span className="hl"><span>Nix it.</span></span>
+                  </h1>
+                  <p className="deck mt-6 max-w-[48ch]">{SITE_TAGLINE}</p>
+                </div>
+              )}
             </div>
-            {data.latestAt && (
-              <p data-sc="3" className="mt-8 font-mono text-[11px] uppercase tracking-[0.16em] text-ink-muted">
-                last dispatch <RelativeTime iso={data.latestAt} /> · as of{" "}
-                <LocalTime iso={data.generatedAt} shape="time" fallback={utcHHMM(data.generatedAt)} />{" "}
-                <ZoneLabel />
-              </p>
-            )}
+            <div className="md:col-span-5 md:row-span-2 md:border-l md:border-ink md:pl-6 lg:col-span-4 lg:col-start-9">
+              <Wire rows={data.wire} total={data.total} />
+            </div>
+            <div className="md:col-span-7 md:pr-6">
+              <IndexStrip week={data.week} daily={data.daily} />
+            </div>
           </div>
         </section>
 
-        {/* ---- the seam: the wire panel rides over the hero's bottom edge ---- */}
-        <div className="relative z-10 -mt-32 px-[var(--sp-gutter)] sm:-mt-36">
-          <WirePanel rows={data.wire} total={data.total} />
-        </div>
+        <Standfirst data={data} />
 
-        {/* ---- pillars ---- */}
-        <section className="mx-auto w-full max-w-[80rem] px-[var(--sp-gutter)] pt-[var(--sp-section)]">
-          <div data-sc>
-            <Kicker>What this is</Kicker>
-            <h2 className="mt-5 max-w-[40rem] font-display text-[clamp(1.8rem,4vw,3rem)] font-semibold leading-[1.05] tracking-[-0.03em] text-ink-primary">
-              The world&apos;s threat reporting, read for you, filed where you can find it.
-            </h2>
-          </div>
-          <div data-sc="2" className="mt-10">
-            <Pillars data={data} />
-          </div>
-        </section>
+        <Census rows={census.rows} measuredAt={census.measuredAt} previousAt={census.previousAt} />
 
-        {/* ---- the census: the one number here we measured ourselves ---- */}
-        {census.rows.length > 0 && (
-          <section className="mx-auto w-full max-w-[80rem] px-[var(--sp-gutter)] pt-[var(--sp-section)]">
-            <div data-sc>
-              <ExposureCensus rows={census.rows} measuredAt={census.measuredAt} previousAt={census.previousAt} />
-            </div>
-          </section>
-        )}
+        {actors && <Roster data={actors} />}
 
-        {/* ---- the numbers ---- */}
-        <section className="mx-auto w-full max-w-[80rem] px-[var(--sp-gutter)] pt-[var(--sp-section)]">
-          <div data-sc className="mb-10 flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
-            <div>
-              <Kicker>Last seven days</Kicker>
-              <h2 className="mt-5 max-w-[34rem] font-display text-[clamp(1.6rem,3.4vw,2.4rem)] font-semibold leading-[1.08] tracking-[-0.03em] text-ink-primary">
-                Everything on the wire is grounded to its source. Nothing is invented.
-              </h2>
-            </div>
-            <p className="max-w-[22rem] text-[14px] leading-relaxed text-ink-secondary">
-              Counts over the same published-story gate the pipeline uses before a dispatch reaches Telegram. Refreshed hourly.
-            </p>
-          </div>
-          <div data-sc="2">
-            <StatGrid week={data.week} />
-          </div>
-        </section>
+        <Yesterday rows={data.yesterday} dayKey={data.yesterdayKey} />
 
-        {/* ---- the ask, again, for the reader who scrolled ---- */}
-        <div className="pt-[var(--sp-section)]" data-sc>
-          <CtaBand source="skopnix-landing:band" />
-        </div>
+        <Classifieds />
       </main>
-      <SiteFooter />
+      <SiteFooter total={data.total} />
     </>
   );
 }

@@ -1,10 +1,11 @@
 import { COUNTRIES } from "@/lib/geo";
 import { LAND_ROWS, LAND_W, LAND_H } from "@/lib/data/landmask";
 
-// The targeting map: the world as a dotted land mask, the assessed origin as
-// one orange node with a slow ping, every observed target country as a cyan
-// node. Server-rendered SVG. Each row of land is one dashed stroke (round caps
-// + a 0/1 dash make dots), so the whole world is a few hundred elements, not
+// The targeting map: the world as a dotted land mask in the soft rule, every
+// observed target country as a dot in the stamp red, the assessed origin as
+// an ink node with a slow orange ping — the one orange on the dossier.
+// Server-rendered SVG. Each row of land is one dashed stroke (round caps +
+// a 0/1 dash make dots), so the whole world is a few hundred elements, not
 // seven thousand circles. Cropped to 84°N…56°S: no Antarctic block, no Arctic
 // ice read as land.
 const LAT_TOP = 84, LAT_BOTTOM = -56;
@@ -53,15 +54,15 @@ export function DotMap({
       role="img"
       aria-label={`Targeting map: ${o ? `assessed origin ${o.name}; ` : ""}${ts.length} observed target countries`}
     >
-      <g stroke="var(--ink-muted)" strokeOpacity="0.28" strokeWidth="0.62" strokeLinecap="round" strokeDasharray="0 1" fill="none">
+      <g stroke="var(--rule-soft)" strokeWidth="0.72" strokeLinecap="round" strokeDasharray="0 1" fill="none">
         {RUNS.map((r, i) => (
           <path key={i} d={`M${r.x + 0.5} ${r.y - ROW0 + 0.5}h${r.len - 1}`} />
         ))}
       </g>
       {ts.map((p, i) => (
         <g key={`t${i}`} className="map-target" style={{ "--i": i } as React.CSSProperties}>
-          <circle cx={p.x} cy={p.y} r="2.2" fill="var(--limb)" fillOpacity="0.14" />
-          <circle cx={p.x} cy={p.y} r="0.9" fill="var(--limb)">
+          <circle cx={p.x} cy={p.y} r="2.2" fill="var(--stamp)" fillOpacity="0.16" />
+          <circle cx={p.x} cy={p.y} r="0.95" fill="var(--stamp)">
             <title>{p.name}</title>
           </circle>
         </g>
@@ -69,7 +70,8 @@ export function DotMap({
       {o && (
         <g>
           <circle cx={o.x} cy={o.y} r="1.2" className="map-ping" fill="none" stroke="var(--brand)" strokeWidth="0.35" />
-          <circle cx={o.x} cy={o.y} r="1.25" fill="var(--brand)">
+          <circle cx={o.x} cy={o.y} r="1.5" fill="var(--paper-deep)" stroke="var(--ink)" strokeWidth="0.5" />
+          <circle cx={o.x} cy={o.y} r="0.7" fill="var(--brand)">
             <title>{`Assessed origin: ${o.name}`}</title>
           </circle>
         </g>

@@ -28,9 +28,14 @@ export default async function Image({ params }: { params: Promise<{ slug: string
   const origin = originLabel(a);
   const alias = (a.aliases || []).filter((x) => x && x !== a.name)[0];
   const title = alias ? `${a.name} (${alias})` : a.name;
-  return ogCard(title, origin ? `Threat actor · ${origin}` : "Threat actor dossier", {
-    category: a.type === "nation-state" ? "state-sponsored APT" : a.type === "crime" ? "cybercrime group" : "threat actor",
-    critical: a.type === "nation-state",
+  // The label line states only what the sources state: the type word and the
+  // assessed origin when there is one. No "critical" tone: a dossier is not a
+  // severity, and the stamp red stays for KEV on the dispatch cards.
+  const type = a.type === "nation-state" ? "Nation-state" : a.type === "crime" ? "Crime" : null;
+  const category = [type, origin ? `assessed origin ${origin}` : null].filter(Boolean).join("  ·  ") || "Threat actor";
+  return ogCard(title, "Adversary dossier", {
+    category,
     verified: true,
+    section: "Adversary dossier",
   });
 }

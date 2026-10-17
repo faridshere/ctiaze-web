@@ -1,7 +1,6 @@
 // Priority flags — rendered ONLY when true. At the archive's real rates
 // (KEV ~1%, CVE ~15%, AZ ~6%), most rows carry none, so a lit flag is loud and
-// the page's color density literally tracks the feed's threat density. Severity
-// is never shown (null across the archive) — there is no severity flag.
+// the page's density of red literally tracks the feed's threat density.
 export function FlagChips({
   kev,
   cveIds,
@@ -20,29 +19,11 @@ export function FlagChips({
   const hasCve = cveIds.length > 0;
   if (!kev && !hasCve && !region && !epssLabel) return null;
   return (
-    <span
-      className={`inline-flex flex-wrap items-center gap-1 font-mono text-[length:var(--t-micro)] uppercase tracking-[0.06em] ${className}`}
-    >
-      {kev && (
-        <span className="rounded-[var(--radius-chip)] bg-accent-critical px-1 py-px font-semibold text-surface">
-          KEV
-        </span>
-      )}
-      {epssLabel && (
-        <span className="rounded-[var(--radius-chip)] border border-accent-warning px-1 py-px font-semibold text-accent-warning">
-          {epssLabel}
-        </span>
-      )}
-      {hasCve && (
-        <span className="rounded-[var(--radius-chip)] border border-ink-secondary px-1 py-px text-ink-secondary">
-          {cveIds.length === 1 ? cveIds[0] : `${cveIds.length} CVE`}
-        </span>
-      )}
-      {region && (
-        <span className="rounded-[var(--radius-chip)] bg-brand px-1 py-px font-semibold text-surface">
-          AZ
-        </span>
-      )}
+    <span className={`inline-flex flex-wrap items-center gap-1.5 ${className}`}>
+      {kev && <span className="stamp">Actively exploited</span>}
+      {epssLabel && <span className="tag text-caution">{epssLabel}</span>}
+      {hasCve && <span className="tag text-ink-2">{cveIds.length === 1 ? cveIds[0] : `${cveIds.length} CVE`}</span>}
+      {region && <span className="tag text-ink">AZ</span>}
     </span>
   );
 }

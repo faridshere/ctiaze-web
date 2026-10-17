@@ -1,18 +1,24 @@
 "use client";
 
 import { useSyncExternalStore } from "react";
-import { LocalTime } from "@/components/site/LocalTime";
 import Link from "next/link";
+import { LocalTime } from "@/components/site/LocalTime";
+import { GlyphChip } from "@/components/GlyphChip";
 
-// One archive row — enough to scan a slug, its title and its priority flags
-// without opening it. `at` is an ISO-8601 UTC instant (Mongo's effective_at:
-// when the SOURCE published the story, not when we dispatched it).
+// One archive row — enough to scan a dispatch, its place in the paper and its
+// priority flags without opening it. `at` is an ISO-8601 UTC instant (Mongo's
+// effective_at: when the SOURCE published the story, not when we dispatched
+// it). `ordinal` is the story's running number in the archive, computed by the
+// page from the total and the page offset.
 export type ArchiveRow = {
   slug: string;
   title: string;
   kev: boolean;
   cve: string | null;
   at: string;
+  category: string;
+  severity: string | null;
+  ordinal: number;
 };
 
 const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
@@ -48,60 +54,106 @@ function dayLabel(iso: string, local: boolean): string {
   return `${WEEKDAYS[wd]} ${String(day).padStart(2, "0")} ${MONTHS[mon]} ${year}`;
 }
 
+// The pipeline caps a title at 131 characters and cuts mid-word ("on DB r",
+// "rate limi"). Until the cap is raised upstream, a title at the cap that does
+// not end on a sentence is closed with an ellipsis so the cut reads as
+// deliberate, not as the layout clipping it. Backtick spans (`href`) are set
+// in mono the way the story deck sets them; the backticks themselves never
+// print.
+const TITLE_CAP = 131;
+
+function titleParts(raw: string): React.ReactNode[] {
+  const capped = raw.length >= TITLE_CAP && !/[.!?)\]"'”’]$/.test(raw);
+  const text = capped ? `${raw.replace(/[\s,;:—–-]+$/, "")}…` : raw;
+  const parts = text.split(/(`[^`]+`)/g);
+  return parts.map((p, i) =>
+    p.length > 2 && p.startsWith("`") && p.endsWith("`") ? (
+      <code key={i} className="font-mono text-[0.88em] text-ink">
+        {p.slice(1, -1)}
+      </code>
+    ) : (
+      p.replace(/`/g, "")
+    )
+  );
+}
+
 function utcTime(iso: string): string {
   const d = new Date(iso);
   return `${String(d.getUTCHours()).padStart(2, "0")}:${String(d.getUTCMinutes()).padStart(2, "0")}`;
 }
 
-// The full archive as a dated ledger: a sticky day divider (so the header always
-// tells you which day you're scrolled into) over rows of [time | title | flags].
+// The bottom rule of a row is a data channel (globals.css .row[data-sev]):
+// 1px soft by default, 2px ink for high severity, a 3px double rule in stamp
+// red for anything actively exploited. Same weights as the front page's wire.
+function sevOf(row: { kev: boolean; severity: string | null }): string | undefined {
+  if (row.kev) return "kev";
+  if (row.severity === "critical") return "critical";
+  if (row.severity === "high") return "high";
+  return undefined;
+}
+
+// The full archive as every edition's ledger: a dateline for each day set INTO
+// a 2px rule (the label, then the rule filling the rest, like the "Earlier
+// edition" head on the front page), over rows of № | HH:MM | title | tags in
+// the wire's row language. The dateline stays pinned under the header while
+// its day scrolls, on solid paper, so the reader always knows the edition.
 export function ArchiveList({ rows }: { rows: ArchiveRow[] }) {
   // Precomputed once, then read by index — reassigning a "last seen day" variable
   // inside the .map callback trips the purity lint (mutation escaping render), so
   // "is this the first row of a new day" is derived purely from position instead.
   const local = useSyncExternalStore(subscribe, onClient, onServer);
   const dayKeys = rows.map((r) => dayKey(r.at, local));
+  const dayCounts = new Map<string, number>();
+  for (const k of dayKeys) dayCounts.set(k, (dayCounts.get(k) ?? 0) + 1);
+
+  if (rows.length === 0) {
+    return (
+      <div className="sheet mt-10">
+        <p className="label py-6 text-ink-3">Nothing filed on this page.</p>
+      </div>
+    );
+  }
+
   return (
-    <div className="mx-auto mt-10 w-full max-w-[80rem] px-[var(--sp-gutter)]">
+    <div className="sheet mt-8">
       <ol>
         {rows.map((r, i) => {
           const isNewDay = i === 0 || dayKeys[i] !== dayKeys[i - 1];
+          const n = dayCounts.get(dayKeys[i]) ?? 0;
           return (
             <li key={r.slug}>
               {isNewDay && (
-                <div className={`sticky top-14 z-10 flex items-center gap-3 bg-surface/95 py-2.5 backdrop-blur-sm ${i === 0 ? "" : "mt-8"}`}>
-                  <span className="whitespace-nowrap font-mono text-[10px] uppercase tracking-[0.18em] text-ink-muted">
-                    {dayLabel(r.at, local)}
+                <div className={`sticky top-[78px] z-10 flex items-center gap-4 bg-paper pt-3 pb-2 ${i === 0 ? "" : "mt-8"}`}>
+                  <h2 className="label whitespace-nowrap text-ink">{dayLabel(r.at, local)}</h2>
+                  <span aria-hidden className="h-[2px] flex-1 bg-ink" />
+                  <span className="label whitespace-nowrap text-ink-3">
+                    {n} dispatch{n === 1 ? "" : "es"}
                   </span>
-                  <span aria-hidden className="limb-line h-px flex-1" />
                 </div>
               )}
-              <Link
-                href={`/news/${r.slug}`}
-                className="group grid grid-cols-[3.25rem_1fr_auto] items-baseline gap-4 border-b border-hairline py-3.5 transition-colors hover:bg-surface-hover sm:grid-cols-[3.75rem_1fr_auto]"
-              >
-                <LocalTime
-                  iso={r.at}
-                  shape="time"
-                  className="whitespace-nowrap font-mono text-[11px] tabular-nums text-ink-muted"
-                  fallback={utcTime(r.at)}
-                />
-                <span className="text-[15px] leading-snug text-ink-primary transition-colors group-hover:text-brand sm:text-[16px]">
-                  {r.title}
-                </span>
-                <span className="flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-wider">
-                  {r.kev && (
-                    <span className="rounded-[var(--radius-chip)] bg-accent-critical px-1 py-px font-semibold text-surface">
-                      KEV
-                    </span>
-                  )}
-                  {r.cve && (
-                    <span className="rounded-[var(--radius-chip)] border border-hairline px-1 py-px text-ink-muted">
-                      {r.cve}
-                    </span>
-                  )}
-                </span>
-              </Link>
+              <div className="row" data-sev={sevOf(r)}>
+                <Link
+                  href={`/news/${r.slug}`}
+                  className="group grid min-h-[44px] grid-cols-[auto_1fr_auto] items-center gap-x-3 py-2.5 sm:grid-cols-[auto_auto_1fr_auto] sm:gap-x-4"
+                >
+                  <span className="num hidden w-[7.5ch] whitespace-nowrap font-mono text-[11px] text-ink-3 sm:inline">
+                    № {r.ordinal.toLocaleString("en-US")}
+                  </span>
+                  <LocalTime iso={r.at} shape="time" className="num whitespace-nowrap font-mono text-[11px] text-ink-3" fallback={utcTime(r.at)} />
+                  <span className="text-[15px] leading-[1.3] text-ink underline-offset-[3px] group-hover:underline sm:text-[16px]">{titleParts(r.title)}</span>
+                  <span className="flex items-center gap-1.5">
+                    {/* `.tag` sets its own display in globals.css (unlayered), so
+                        `hidden` cannot switch it off: the breakpoint lives on a
+                        plain wrapper instead, and the chip stays off phones. */}
+                    {r.cve && (
+                      <span className="hidden sm:inline-flex">
+                        <span className="tag text-ink-2">{r.cve}</span>
+                      </span>
+                    )}
+                    {r.kev ? <span className="stamp">KEV</span> : <GlyphChip category={r.category} />}
+                  </span>
+                </Link>
+              </div>
             </li>
           );
         })}

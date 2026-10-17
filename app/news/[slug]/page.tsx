@@ -1,4 +1,5 @@
 import { Suspense } from "react";
+import { unstable_cache } from "next/cache";
 import { notFound, permanentRedirect } from "next/navigation";
 import type { Metadata } from "next";
 import { SiteHeader } from "@/components/site/SiteHeader";
@@ -10,14 +11,14 @@ import { StoryBody } from "@/components/story/StoryBody";
 import { StoryCves } from "@/components/story/StoryCves";
 import { StorySources } from "@/components/story/StorySources";
 import { StoryRelated } from "@/components/story/StoryRelated";
-import { IntelInset, IntelFallback } from "@/components/story/IntelInset";
+import { IntelInset, IntelFallback, validIndicators } from "@/components/story/IntelInset";
+import { StoryFacts } from "@/components/story/StoryFacts";
 import { jsonLdSafe } from "@/lib/format";
-import { epssBadge } from "@/lib/storysignal";
-import { getStoryBySlug, getStories } from "@/lib/stories";
+import { getStoryBySlug, getStats } from "@/lib/stories";
 import { extractIocs } from "@/lib/ioc";
 import { detectActors, specificPivots } from "@/lib/actors";
 import { outletCode, outletHost } from "@/lib/outlets";
-import { cveBadges } from "@/lib/cveintel";
+import { cveBadges, kevMeta, type KevRow } from "@/lib/cveintel";
 import { SITE_NAME, SITE_URL, storyUrl } from "@/lib/site";
 
 export const revalidate = 86400; // a published dispatch never changes; this was 180s,
@@ -31,6 +32,11 @@ export async function generateStaticParams() {
 }
 
 type Params = { slug: string };
+
+// The edition number for the colophon, so a dispatch carries the same footer
+// as the archive. One cached count shared by every story page for an hour,
+// not a count per story render.
+const getTotal = unstable_cache(async () => (await getStats()).total, ["news-total-v1"], { revalidate: 3600 });
 
 export async function generateMetadata({
   params,
@@ -72,9 +78,13 @@ export default async function StoryPage({ params }: { params: Promise<Params> })
   // next 16.3.6 now answers 308 with a Location header (checked 2026-09-24).
   if (slug !== story.slug) permanentRedirect(`/news/${story.slug}`);
 
-  const [recent, badges] = await Promise.all([
-    getStories(60).catch(() => []),
+  // KEV dates for the data box come from the same in-memory CISA catalogue
+  // cveBadges reads (one download, cached 24h in lib/cveintel): no extra
+  // network round-trip, and nothing per request against the database.
+  const [total, badges, kevRows] = await Promise.all([
+    getTotal().catch(() => null),
     cveBadges(story.cveIds).catch(() => new Map()),
+    story.cveIds.length ? kevMeta().catch(() => new Map<string, KevRow>()) : Promise.resolve(new Map<string, KevRow>()),
   ]);
 
   const host = outletHost(story.sourceUrl);
@@ -84,7 +94,6 @@ export default async function StoryPage({ params }: { params: Promise<Params> })
   // (href absent) with a meaningless code — so gate every source link on a real
   // http(s) URL.
   const hasSource = /^https?:\/\//i.test(story.sourceUrl || "");
-  const epssLabel = epssBadge(story);
 
   // Threat intelligence derived from THIS story: indicators lifted from its text
   // (genuinely tied to this news), the actor(s) it names, and — only when it names
@@ -93,7 +102,9 @@ export default async function StoryPage({ params }: { params: Promise<Params> })
   // behind Suspense (below) so a cold abuse.ch index (~15s) can never block the
   // article text — the story streams first, the intel fills in.
   const iocText = [story.titleAz, story.titleEn, story.bodyAz];
-  const extracted = extractIocs(...iocText);
+  // Only names with a real top-level domain count: a config key the summary
+  // quotes ("cors.origins") must never print as an indicator.
+  const extracted = validIndicators(extractIocs(...iocText));
   const actors = detectActors(...iocText);
   const pivots = specificPivots(...iocText);
   const maybeIntel = extracted.length > 0 || actors.length > 0 || pivots.length > 0;
@@ -123,40 +134,57 @@ export default async function StoryPage({ params }: { params: Promise<Params> })
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: jsonLdSafe(jsonLd) }}
       />
-      <SiteHeader />
+      <SiteHeader section="Section C · The archive · Dispatch" />
       <main id="main" className="flex-1">
-        <StoryHead story={story} epssLabel={epssLabel} hasSource={hasSource} host={host} code={code} />
+        <StoryHead story={story} hasSource={hasSource} host={host} code={code} />
 
-        <div className="mx-auto w-full max-w-[46rem] px-[var(--sp-gutter)] pb-[var(--sp-section)]">
-          <StorySignals story={story} />
-          <StoryBody story={story} recent={recent} />
-          <StoryCves cveIds={story.cveIds} badges={badges} />
-          <StorySources story={story} hasSource={hasSource} host={host} code={code} />
+        {/* The story page as a broadsheet: the deck and every ruled section in
+            columns 1-8, the data box ("Facts on file") in 9-12 behind a column
+            rule on a desk. On a phone the grid collapses to one column and the
+            same box prints once, under the deck, before the signals: explicit
+            grid placement, not a second render. The column opens with words
+            (the deck, then the signals); the wire-wide category spectrum that
+            used to sit between them described the whole wire, not this
+            dispatch, and was removed. */}
+        <div className="sheet pb-[var(--sp-section)]">
+          <div className="grid gap-x-[var(--col-gap)] md:grid-cols-12">
+            <div className="md:col-span-8">
+              <StoryBody story={story} kevRows={kevRows} hasSource={hasSource} host={host} />
+            </div>
+            <aside className="mt-8 md:col-span-4 md:col-start-9 md:row-span-2 md:row-start-1 md:mt-6 md:border-l md:border-rule-soft md:pl-6">
+              <div className="md:sticky md:top-[92px]">
+                <StoryFacts story={story} kevRows={kevRows} hasSource={hasSource} host={host} code={code} />
+              </div>
+            </aside>
+            <div className="min-w-0 md:col-span-8 md:col-start-1 md:row-start-2">
+              <StorySignals story={story} />
+              <StoryCves cveIds={story.cveIds} badges={badges} />
+              <StorySources story={story} hasSource={hasSource} host={host} code={code} />
 
-          {/* threat-intelligence inset — actor dossier + indicators (extracted + live).
-              Streamed behind Suspense: the ThreatFox lookups inside can take seconds
-              on a cold index, and the article must never wait on them. */}
-          {maybeIntel && (
-            <Suspense fallback={<IntelFallback />}>
-              <IntelInset extracted={extracted} actors={actors} pivots={pivots} />
-            </Suspense>
-          )}
+              {/* threat-intelligence inset — actor dossier + indicators (extracted + live).
+                  Streamed behind Suspense: the ThreatFox lookups inside can take seconds
+                  on a cold index, and the article must never wait on them. */}
+              {maybeIntel && (
+                <Suspense fallback={<IntelFallback />}>
+                  <IntelInset extracted={extracted} actors={actors} pivots={pivots} />
+                </Suspense>
+              )}
 
-          {/* Related stories — precomputed semantic neighbours (ops/embed_related.py).
-              Real internal links: keeps readers on-site and feeds crawlers a dense
-              topic graph. No live inference, no extra query. */}
-          <StoryRelated related={story.related} />
+              {/* Related stories — precomputed semantic neighbours (ops/embed_related.py).
+                  Real internal links: keeps readers on-site and feeds crawlers a dense
+                  topic graph. No live inference, no extra query. */}
+              <StoryRelated related={story.related} />
+            </div>
+          </div>
         </div>
 
-        <div className="mt-16">
-          <CtaBand
-            source="story:inline"
-            heading="Get the next one first."
-            blurb="Every dispatch goes to Telegram and RSS the moment it is published, and the whole wire is a keyless JSON API."
-          />
-        </div>
+        <CtaBand
+          source="story:inline"
+          heading="Get the next one first."
+          blurb="Every dispatch goes to Telegram and RSS the moment it is published, and the whole wire is a keyless JSON API."
+        />
       </main>
-      <SiteFooter />
+      <SiteFooter total={total} />
     </div>
   );
 }

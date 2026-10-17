@@ -1,5 +1,5 @@
-import { Kicker } from "@/components/site/Kicker";
 import type { AptReport } from "@/lib/aptnotes";
+import { DOSSIER_SECTION, SectionHead } from "./ActorHeader";
 
 // Outbound links to primary-source analyst reports (Mandiant, Unit42,
 // CrowdStrike…) that name this actor or one of its aliases, indexed from the
@@ -7,26 +7,26 @@ import type { AptReport } from "@/lib/aptnotes";
 export function ActorReports({ reports }: { reports: AptReport[] }) {
   if (reports.length === 0) return null;
   return (
-    <section className="mx-auto mt-[var(--sp-section)] w-full max-w-[80rem] px-[var(--sp-gutter)]">
-      <Kicker>Primary-source reports</Kicker>
-      <ul className="mt-5 space-y-2.5">
+    <section className={DOSSIER_SECTION} aria-labelledby="reports-head">
+      <SectionHead id="reports-head" aside="via APTnotes · linked, never re-hosted">
+        Primary-source reports
+      </SectionHead>
+      <ol>
         {reports.map((r) => (
-          <li key={r.url}>
+          <li key={r.url} className="row">
             <a
               href={r.url}
               target="_blank"
               rel="noopener noreferrer"
-              className="group flex flex-wrap items-baseline gap-x-3 gap-y-1 border-b border-hairline pb-2.5 hover:opacity-90"
+              className="group grid grid-cols-[auto_1fr] items-baseline gap-x-3 gap-y-0.5 py-2.5 sm:grid-cols-[5ch_1fr_auto]"
             >
-              <span className="whitespace-nowrap font-mono text-[11px] tabular-nums text-ink-muted">{r.year}</span>
-              <span className="text-[14px] leading-snug text-ink-primary transition-colors group-hover:text-brand">
-                {r.title}
-              </span>
-              {r.source && <span className="font-mono text-[11px] text-ink-muted">{r.source} ↗</span>}
+              <span className="num font-mono text-[11px] text-ink-3">{r.year}</span>
+              <span className="text-[14px] leading-snug text-ink underline-offset-[3px] group-hover:underline">{r.title}</span>
+              {r.source && <span className="label col-start-2 text-ink-3 sm:col-start-3">{r.source} ↗</span>}
             </a>
           </li>
         ))}
-      </ul>
+      </ol>
     </section>
   );
 }

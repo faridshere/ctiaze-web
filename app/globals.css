@@ -1,192 +1,203 @@
 @import "tailwindcss";
 
 /* ---------------------------------------------------------------------------
-   skopnix — "orbital wire" (v3, 2026-09). See DESIGN.md for the contract.
+   skopnix — "Late Edition" (v4, 2026-10-16). See DESIGN.md for the contract.
 
-   One register on screen: deep ink, cool starlight text, ONE signal-orange
-   accent for interaction and "live", cyan for structure lines only. The light
-   "day-print" values exist for print alone (a forwarded briefing comes out as
-   newsprint, not asphalt). Hex values live once in --d-* / --l-* so the two
-   registers can never drift; the applied tokens below map to --d-* by default.
+   The site is a broadsheet that is wired into the feed. One token set prints
+   two editions of the same paper: DAY on warm newsprint, NIGHT on warm black
+   stock. The edition follows prefers-color-scheme unless the masthead toggle
+   has set data-edition on <html> (an inline script in the root layout does
+   that before first paint, from localStorage, so there is no flash and no
+   cookie, which keeps every page ISR). Hierarchy is rules, widths and type:
+   no cards, no shadows, no glow, no gradients. Orange is reserved for the
+   logo's lit node, "nix", and the one live dot; the stamp red carries KEV.
    ------------------------------------------------------------------------- */
 :root {
-  /* --- DARK register — SINGLE SOURCE (--d-*) --- */
-  --d-void: #05060a;
-  --d-surface: #0a0b0d;
-  --d-surface-raised: #10131a;
-  --d-surface-hover: #171b24;
-  --d-ink-primary: #eef3f8; /* cool starlight ~16:1 */
-  --d-ink-secondary: #a3adbb; /* ~8:1 */
-  --d-ink-muted: #8791a0; /* ~6:1 on surface, ~5.7:1 on raised — AA with margin for 11px mono meta */
-  --d-hairline: #1f2430;
-  --d-border: rgba(238, 243, 248, 0.08);
-  --d-limb: #35c9d6; /* structure lines ONLY — never text */
-  --d-brand: #ff5a1f; /* signal orange — interaction + live ONLY */
-  --d-brand-wash: rgba(255, 90, 31, 0.09);
-  --d-accent-critical: #ff4d5e;
-  --d-accent-serious: #ff8a4d;
-  --d-accent-warning: #e0b94a;
-  --d-accent-good: #6cc98a;
-  --d-cat-vuln: #7ea4cf;
-  --d-cat-exploit: #c98a5a;
-  --d-cat-malware: #b08fd0;
-  --d-cat-ransomware: #e0729a;
-  --d-cat-apt: #57b6a6;
-  --d-cat-breach: #bc9062;
-  --d-cat-research: #8db98a;
-  --d-cat-supply-chain: #a5a7ae;
-  --d-cat-policy: #94a0b4;
-  --d-cat-other: #82858f;
+  /* --- DAY edition (default) --- */
+  --paper: #f4f0e6;
+  --paper-deep: #eae4d6;
+  --ink: #15130f;
+  --ink-2: #4a463e;
+  --ink-3: #726d62;
+  --rule-soft: #d3ccbb;
+  --tape: #0b0a08;
+  --tape-ink: #e9e3d3;
+  --brand: #ff5a1f;
+  --brand-wash: rgba(255, 90, 31, 0.1);
+  --stamp: #c8102e;
+  --worse: #b42318;
+  --better: #1e7a4a;
+  --caution: #8f6a00;
+  --cat-vuln: #3e6285;
+  --cat-exploit: #8a4f37;
+  --cat-malware: #64518a;
+  --cat-ransomware: #8a4a68;
+  --cat-apt: #2f6e5f;
+  --cat-breach: #7d5a2d;
+  --cat-research: #4c7049;
+  --cat-supply-chain: #6b655c;
+  --cat-policy: #565e68;
+  --cat-other: #5d584f;
+  color-scheme: light;
 
-  /* --- LIGHT "day-print" register — PRINT ONLY (--l-*) --- */
-  --l-void: #e6e4de;
-  --l-surface: #efede7;
-  --l-surface-raised: #f7f5f0;
-  --l-surface-hover: #e8e5de;
-  --l-ink-primary: #1a1814;
-  --l-ink-secondary: #57524a;
-  --l-ink-muted: #6e675c;
-  --l-hairline: #d8d4ca;
-  --l-border: rgba(26, 24, 20, 0.1);
-  --l-limb: #1f7f88;
-  --l-brand: #a03d0e;
-  --l-brand-wash: #f4e2d6;
-  --l-accent-critical: #b3382f;
-  --l-accent-serious: #a54a0e;
-  --l-accent-warning: #8f6a00;
-  --l-accent-good: #22703b;
-  --l-cat-vuln: #3e6285;
-  --l-cat-exploit: #8a4f37;
-  --l-cat-malware: #64518a;
-  --l-cat-ransomware: #8a4a68;
-  --l-cat-apt: #2f6e5f;
-  --l-cat-breach: #7d5a2d;
-  --l-cat-research: #4c7049;
-  --l-cat-supply-chain: #6b655c;
-  --l-cat-policy: #565e68;
-  --l-cat-other: #5d584f;
+  /* --- Type --- */
+  --font-display: var(--font-hepta);
+  --font-headline: var(--font-hepta);
+  --font-body: var(--font-archivo);
+  --font-mono: var(--font-plex);
+  --font-wordmark: var(--font-schibsted);
 
-  /* --- APPLIED tokens — dark by default --- */
-  --void: var(--d-void);
-  --surface: var(--d-surface);
-  --surface-raised: var(--d-surface-raised);
-  --surface-hover: var(--d-surface-hover);
-  --ink-primary: var(--d-ink-primary);
-  --ink-secondary: var(--d-ink-secondary);
-  --ink-muted: var(--d-ink-muted);
-  --hairline: var(--d-hairline);
-  --border: var(--d-border);
-  --limb: var(--d-limb);
-  --brand: var(--d-brand);
-  --brand-wash: var(--d-brand-wash);
-  --accent-critical: var(--d-accent-critical);
-  --accent-serious: var(--d-accent-serious);
-  --accent-warning: var(--d-accent-warning);
-  --accent-good: var(--d-accent-good);
-  --cat-vuln: var(--d-cat-vuln);
-  --cat-exploit: var(--d-cat-exploit);
-  --cat-malware: var(--d-cat-malware);
-  --cat-ransomware: var(--d-cat-ransomware);
-  --cat-apt: var(--d-cat-apt);
-  --cat-breach: var(--d-cat-breach);
-  --cat-research: var(--d-cat-research);
-  --cat-supply-chain: var(--d-cat-supply-chain);
-  --cat-policy: var(--d-cat-policy);
-  --cat-other: var(--d-cat-other);
+  /* --- Measure, grid, spacing (4 / 8 / 12 / 16 / 24 / 40 / 64 / 96) --- */
+  --gutter: 16px;
+  --col-gap: 24px;
+  --sheet: 1360px;
+  --sp-section: 64px;
+  --sp-gutter: var(--gutter);
 
-  /* --- Fluid type scale + spacing --- */
+  /* --- Motion --- */
+  --ease-out: cubic-bezier(0.2, 0.7, 0.2, 1);
+
+  /* --- Compatibility aliases: the v3 names, mapped onto the paper. Pages
+     not yet re-set in v4 degrade into the new palette instead of breaking;
+     new work uses the names above. --- */
+  --void: var(--paper-deep);
+  --surface: var(--paper);
+  --surface-raised: var(--paper-deep);
+  --surface-hover: color-mix(in srgb, var(--ink) 6%, var(--paper));
+  --ink-primary: var(--ink);
+  --ink-secondary: var(--ink-2);
+  --ink-muted: var(--ink-3);
+  --hairline: var(--rule-soft);
+  --border: var(--rule-soft);
+  --limb: var(--ink-3);
+  --accent-critical: var(--stamp);
+  --accent-serious: var(--worse);
+  --accent-warning: var(--caution);
+  --accent-good: var(--better);
+  --radius-chip: 0px;
+  --radius-btn: 0px;
+  --radius-panel: 0px;
   --t-display: clamp(1.875rem, 1.1rem + 3.2vw, 3rem);
   --t-h2: clamp(1.375rem, 1.15rem + 1.1vw, 1.75rem);
   --t-row: clamp(1.0625rem, 0.98rem + 0.4vw, 1.25rem);
   --t-body: clamp(0.9375rem, 0.9rem + 0.25vw, 1.0625rem);
   --t-meta: clamp(0.6875rem, 0.65rem + 0.18vw, 0.78125rem);
   --t-micro: 0.65625rem;
-  --sp-gutter: clamp(1rem, 3.5vw, 2rem);
-  --sp-section: clamp(3rem, 8vw, 6.5rem);
   --sp-row: clamp(0.875rem, 2vw, 1.25rem);
-
-  /* --- Radius scale: chips stay sharp, panels and buttons are soft (xintra) --- */
-  --radius-chip: 2px;
-  --radius-btn: 6px;
-  --radius-panel: 12px;
-
-  /* --- Motion --- */
-  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
-
-  /* One grotesque for every role; next/font defines --font-schibsted/--font-mono on <html>. */
-  --font-display: var(--font-schibsted);
-  --font-headline: var(--font-schibsted);
-  --font-body: var(--font-schibsted);
 }
 
-@media print {
+@media (min-width: 768px) {
   :root {
-    --void: var(--l-void);
-    --surface: var(--l-surface);
-    --surface-raised: var(--l-surface-raised);
-    --surface-hover: var(--l-surface-hover);
-    --ink-primary: var(--l-ink-primary);
-    --ink-secondary: var(--l-ink-secondary);
-    --ink-muted: var(--l-ink-muted);
-    --hairline: var(--l-hairline);
-    --border: var(--l-border);
-    --limb: var(--l-limb);
-    --brand: var(--l-brand);
-    --brand-wash: var(--l-brand-wash);
-    --accent-critical: var(--l-accent-critical);
-    --accent-serious: var(--l-accent-serious);
-    --accent-warning: var(--l-accent-warning);
-    --accent-good: var(--l-accent-good);
-    --cat-vuln: var(--l-cat-vuln);
-    --cat-exploit: var(--l-cat-exploit);
-    --cat-malware: var(--l-cat-malware);
-    --cat-ransomware: var(--l-cat-ransomware);
-    --cat-apt: var(--l-cat-apt);
-    --cat-breach: var(--l-cat-breach);
-    --cat-research: var(--l-cat-research);
-    --cat-supply-chain: var(--l-cat-supply-chain);
-    --cat-policy: var(--l-cat-policy);
-    --cat-other: var(--l-cat-other);
+    --gutter: 32px;
+    --sp-section: 96px;
+  }
+}
+
+/* --- NIGHT edition: the same paper on warm black stock --- */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-edition="day"]) {
+    --tape: #000000;
+    --paper: #0b0a08;
+    --paper-deep: #141210;
+    --ink: #e9e3d3;
+    --ink-2: #b8b2a2;
+    --ink-3: #9a9384;
+    --rule-soft: #2a2721;
+    --stamp: #ff3b4e;
+    --worse: #ff6b5e;
+    --better: #6cc98a;
+    --caution: #e0b94a;
+    --cat-vuln: #7ea4cf;
+    --cat-exploit: #c98a5a;
+    --cat-malware: #b08fd0;
+    --cat-ransomware: #e0729a;
+    --cat-apt: #57b6a6;
+    --cat-breach: #bc9062;
+    --cat-research: #8db98a;
+    --cat-supply-chain: #a5a7ae;
+    --cat-policy: #94a0b4;
+    --cat-other: #82858f;
+    color-scheme: dark;
+  }
+}
+:root[data-edition="night"] {
+  --tape: #000000;
+  --paper: #0b0a08;
+  --paper-deep: #141210;
+  --ink: #e9e3d3;
+  --ink-2: #b8b2a2;
+  --ink-3: #9a9384;
+  --rule-soft: #2a2721;
+  --stamp: #ff3b4e;
+  --worse: #ff6b5e;
+  --better: #6cc98a;
+  --caution: #e0b94a;
+  --cat-vuln: #7ea4cf;
+  --cat-exploit: #c98a5a;
+  --cat-malware: #b08fd0;
+  --cat-ransomware: #e0729a;
+  --cat-apt: #57b6a6;
+  --cat-breach: #bc9062;
+  --cat-research: #8db98a;
+  --cat-supply-chain: #a5a7ae;
+  --cat-policy: #94a0b4;
+  --cat-other: #82858f;
+  color-scheme: dark;
+}
+
+/* Print is always the day edition: a forwarded briefing comes out as newsprint. */
+@media print {
+  :root,
+  :root[data-edition="night"] {
+    --paper: #ffffff;
+    --paper-deep: #f1ede4;
+    --ink: #15130f;
+    --ink-2: #4a463e;
+    --ink-3: #6a655a;
+    --rule-soft: #cfc8b8;
+    --stamp: #c8102e;
+    --worse: #b42318;
+    --better: #1e7a4a;
+    --caution: #8f6a00;
     color-scheme: light;
   }
 }
 
-/* Dark insets (.darkroom) and tool pages (.ops, shelved) force the dark register
-   for their subtree — including the category map — even when printing. */
+/* Shelved dark insets keep working: they are simply the night stock. */
 .ops,
 .darkroom {
-  --void: var(--d-void);
-  --surface: var(--d-surface);
-  --surface-raised: var(--d-surface-raised);
-  --surface-hover: var(--d-surface-hover);
-  --ink-primary: var(--d-ink-primary);
-  --ink-secondary: var(--d-ink-secondary);
-  --ink-muted: var(--d-ink-muted);
-  --hairline: var(--d-hairline);
-  --border: var(--d-border);
-  --limb: var(--d-limb);
-  --brand: var(--d-brand);
-  --brand-wash: var(--d-brand-wash);
-  --accent-critical: var(--d-accent-critical);
-  --accent-serious: var(--d-accent-serious);
-  --accent-warning: var(--d-accent-warning);
-  --accent-good: var(--d-accent-good);
-  --cat-vuln: var(--d-cat-vuln);
-  --cat-exploit: var(--d-cat-exploit);
-  --cat-malware: var(--d-cat-malware);
-  --cat-ransomware: var(--d-cat-ransomware);
-  --cat-apt: var(--d-cat-apt);
-  --cat-breach: var(--d-cat-breach);
-  --cat-research: var(--d-cat-research);
-  --cat-supply-chain: var(--d-cat-supply-chain);
-  --cat-policy: var(--d-cat-policy);
-  --cat-other: var(--d-cat-other);
+  --paper: #0b0a08;
+  --paper-deep: #141210;
+  --ink: #e9e3d3;
+  --ink-2: #b8b2a2;
+  --ink-3: #9a9384;
+  --rule-soft: #2a2721;
+  --stamp: #ff3b4e;
+  --worse: #ff6b5e;
+  --better: #6cc98a;
+  --caution: #e0b94a;
   color-scheme: dark;
-  background: var(--surface);
-  color: var(--ink-primary);
+  background: var(--paper);
+  color: var(--ink);
 }
 
 @theme inline {
+  --color-paper: var(--paper);
+  --color-paper-deep: var(--paper-deep);
+  --color-ink: var(--ink);
+  --color-ink-2: var(--ink-2);
+  --color-ink-3: var(--ink-3);
+  --color-rule-soft: var(--rule-soft);
+  --color-tape: var(--tape);
+  --color-tape-ink: var(--tape-ink);
+  --color-brand: var(--brand);
+  --color-brand-wash: var(--brand-wash);
+  --color-stamp: var(--stamp);
+  --color-worse: var(--worse);
+  --color-better: var(--better);
+  --color-caution: var(--caution);
+
+  /* v3 names, see the aliases above */
   --color-void: var(--void);
   --color-surface: var(--surface);
   --color-surface-raised: var(--surface-raised);
@@ -197,8 +208,6 @@
   --color-hairline: var(--hairline);
   --color-border: var(--border);
   --color-limb: var(--limb);
-  --color-brand: var(--brand);
-  --color-brand-wash: var(--brand-wash);
   --color-accent-critical: var(--accent-critical);
   --color-accent-serious: var(--accent-serious);
   --color-accent-warning: var(--accent-warning);
@@ -219,123 +228,388 @@
   --font-headline: var(--font-headline);
   --font-body: var(--font-body);
   --font-mono: var(--font-mono);
+  --font-wordmark: var(--font-wordmark);
 }
 
+/* ---------------------------------------------------------------------------
+   Browser surfaces: the parts nobody draws still carry the paper.
+   ------------------------------------------------------------------------- */
 * {
-  border-color: var(--border);
-}
-
-::selection {
-  background: var(--brand);
-  color: var(--surface);
+  border-color: var(--rule-soft);
 }
 
 html {
-  color-scheme: dark;
   -webkit-text-size-adjust: 100%;
   text-size-adjust: 100%;
+  scrollbar-color: var(--ink-3) var(--paper);
+  scrollbar-width: thin;
 }
 
 body {
-  background-color: var(--surface);
-  color: var(--ink-primary);
+  background-color: var(--paper);
+  color: var(--ink);
+  caret-color: var(--brand);
+  font-family: var(--font-body);
+  font-stretch: 100%;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
 }
 
-body:has(.ops) {
-  background-color: var(--d-surface);
+::selection {
+  background: var(--ink);
+  color: var(--paper);
 }
 
-/* Visible keyboard focus everywhere — the `*{border-color}` reset defeats
-   focus:border, so use an outline (unaffected by border-color). */
-:where(a, button, input, select, textarea, [tabindex]):focus-visible {
+a {
+  text-underline-offset: 3px;
+  text-decoration-thickness: 1px;
+}
+
+:where(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
   outline: 2px solid var(--brand);
-  outline-offset: 2px;
-  border-radius: var(--radius-chip);
+  outline-offset: 3px;
 }
 
 a,
 button,
 input,
 select,
+summary,
 [role="button"] {
   touch-action: manipulation;
 }
 
-/* Anchored sections sit below the sticky header when jumped to. */
 [id] {
-  scroll-margin-top: 4.5rem;
+  scroll-margin-top: 4rem;
 }
 
-/* ---------------------------------------------------------------------------
-   Structure — the cyan "limb": an atmospheric-horizon hairline used where a
-   flat divider would be. Cyan is a line here, never a word.
-   ------------------------------------------------------------------------- */
-.limb-line {
-  height: 1px;
-  background: linear-gradient(90deg, transparent, var(--limb) 28%, var(--limb) 72%, transparent);
-  opacity: 0.55;
-  box-shadow: 0 0 14px rgba(53, 201, 214, 0.35);
-}
-
-/* Crosshair grid: a `+` at every interior intersection (the stat grid). */
-.crosshair {
-  position: relative;
-}
-.crosshair::before,
-.crosshair::after {
-  content: "";
-  position: absolute;
-  background: var(--limb);
-  opacity: 0.6;
-  pointer-events: none;
-}
-.crosshair::before { width: 11px; height: 1px; left: -6px; top: -1px; }
-.crosshair::after { width: 1px; height: 11px; left: -1px; top: -6px; }
-
-/* ---------------------------------------------------------------------------
-   Motion — instrument, not screensaver. All scroll-purposeful, all killed by
-   prefers-reduced-motion. Elements opt in with data-sc (revealed by the
-   MotionRoot observer stamping data-in) — no per-element JS.
-   ------------------------------------------------------------------------- */
-html.motion-ok [data-sc] {
-  opacity: 0;
-  transform: translateY(22px);
-  transition:
-    opacity 0.65s var(--ease-out),
-    transform 0.65s var(--ease-out);
-}
-html.motion-ok [data-sc][data-in] {
+input::placeholder {
+  color: var(--ink-3);
   opacity: 1;
-  transform: none;
 }
-html.motion-ok [data-sc="2"] { transition-delay: 0.1s; }
-html.motion-ok [data-sc="3"] { transition-delay: 0.2s; }
-html.motion-ok [data-sc="4"] { transition-delay: 0.3s; }
 
-/* Headline line-lift (hero) */
-.hl { display: block; overflow: hidden; }
+/* Every figure on the paper lines up: tabular, slashed zero. */
+.font-mono,
+.num,
+time,
+td,
+th {
+  font-variant-numeric: tabular-nums slashed-zero;
+}
+
+/* ---------------------------------------------------------------------------
+   Type roles. Archivo carries two voices from one file: the body at 100% and
+   the condensed label at 75% (the newspaper secret). Hepta Slab is the
+   headline voice; its weight axis is the only type that moves.
+   ------------------------------------------------------------------------- */
+.label {
+  font-family: var(--font-body);
+  font-stretch: 75%;
+  font-weight: 600;
+  font-size: 11.5px;
+  line-height: 1.2;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+.condensed {
+  font-stretch: 75%;
+}
+.wide {
+  font-stretch: 112%;
+}
+.deck {
+  font-family: var(--font-body);
+  font-size: 19px;
+  line-height: 1.4;
+  color: var(--ink-2);
+}
+.prose-paper {
+  max-width: 64ch;
+  font-size: 17px;
+  line-height: 1.55;
+  color: var(--ink-2);
+}
+.headline {
+  font-family: var(--font-display);
+  font-weight: 700;
+  line-height: 0.98;
+  letter-spacing: -0.02em;
+  text-wrap: pretty;
+  text-wrap: balance;
+}
+.headline-light {
+  font-family: var(--font-display);
+  font-weight: 300;
+  line-height: 0.95;
+  letter-spacing: -0.015em;
+}
+.dropcap::first-letter {
+  float: left;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 3.1em;
+  line-height: 0.78;
+  padding-right: 0.1em;
+  padding-top: 0.08em;
+}
+@supports (initial-letter: 2) or (-webkit-initial-letter: 2) {
+  .dropcap::first-letter {
+    float: none;
+    font-size: unset;
+    line-height: unset;
+    padding-top: 0;
+    -webkit-initial-letter: 2.4 2;
+    initial-letter: 2.4 2;
+    margin-right: 0.12em;
+  }
+}
+
+/* Adversary names: on hover the ink presses harder into the paper. */
+.pressed {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-variation-settings: "wght" 400;
+  transition: font-variation-settings 0.25s var(--ease-out);
+}
+@media (hover: hover) {
+  a:hover .pressed,
+  .pressed:hover {
+    font-variation-settings: "wght" 800;
+  }
+}
+.pressed-once {
+  animation: press-once 0.9s var(--ease-out) 0.2s both;
+}
+@keyframes press-once {
+  from { font-variation-settings: "wght" 200; }
+  to { font-variation-settings: "wght" 700; }
+}
+
+/* ---------------------------------------------------------------------------
+   The sheet: a 12-column grid at 1360px with column rules painted on the
+   container, so hairlines run the full height of a section. Hidden under 768px.
+   ------------------------------------------------------------------------- */
+.sheet {
+  width: 100%;
+  max-width: var(--sheet);
+  margin-inline: auto;
+  padding-inline: var(--gutter);
+}
+.broadsheet {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  column-gap: var(--col-gap);
+}
+@media (min-width: 768px) {
+  .col-rules {
+    background-image: linear-gradient(
+      90deg,
+      transparent 0,
+      transparent calc(100% - var(--col-gap) / 2 - 1px),
+      var(--rule-soft) calc(100% - var(--col-gap) / 2 - 1px),
+      var(--rule-soft) calc(100% - var(--col-gap) / 2),
+      transparent calc(100% - var(--col-gap) / 2)
+    );
+    background-size: calc((100% + var(--col-gap)) / var(--cols, 12)) 100%;
+    background-origin: content-box;
+    background-clip: content-box;
+    background-repeat: repeat-x;
+  }
+}
+
+/* Rules: 1px ink, 2px ink for section fronts, the Oxford rule in stamp red. */
+.rule { border-top: 1px solid var(--ink); }
+.rule-2 { border-top: 2px solid var(--ink); }
+.rule-soft { border-top: 1px solid var(--rule-soft); }
+.rule-b { border-bottom: 1px solid var(--ink); }
+.rule-b-2 { border-bottom: 2px solid var(--ink); }
+.oxford { border-bottom: 3px double var(--stamp); }
+.ink-box { border: 1px solid var(--ink); }
+.double-box { border: 3px double var(--ink); }
+
+/* Cells: 1px ink rules between grid children, crisp at any DPR. */
+.cells {
+  display: grid;
+  gap: 1px;
+  background: var(--ink);
+}
+.cells > * {
+  background: var(--paper);
+  min-width: 0;
+}
+.cells.on-deep > * {
+  background: var(--paper-deep);
+}
+
+/* Rows whose bottom rule is a data channel: weight encodes severity. */
+.row {
+  border-bottom: 1px solid var(--rule-soft);
+}
+.row[data-sev="high"] {
+  border-bottom: 2px solid var(--ink);
+}
+.row[data-sev="critical"],
+.row[data-sev="kev"] {
+  border-bottom: 3px double var(--stamp);
+}
+
+/* The tape keeps an edge in both editions (at night the paper is nearly as black). */
+[data-tape] {
+  border-bottom: 1px solid var(--rule-soft);
+}
+
+/* The edition toggle's label is chosen by CSS, so it is right before hydration
+   and without JavaScript: day shows "Night edition"? No: it names the edition
+   that is printing, and the square is filled at night. */
+.ed-night { display: none; }
+.ed-box { background: transparent; }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-edition="day"]) .ed-day { display: none; }
+  :root:not([data-edition="day"]) .ed-night { display: inline; }
+  :root:not([data-edition="day"]) .ed-box { background: currentColor; }
+}
+:root[data-edition="night"] .ed-day { display: none; }
+:root[data-edition="night"] .ed-night { display: inline; }
+:root[data-edition="night"] .ed-box { background: currentColor; }
+
+/* The LATE tag beside the edition number: printed only once a dispatch has
+   landed while the paper was open (WireLive sets data-on). */
+[data-late-tag]:not([data-on]) {
+  display: none;
+}
+
+/* The flat stamp. One style, never rotated, never textured. */
+.stamp {
+  display: inline-block;
+  font-family: var(--font-body);
+  font-stretch: 75%;
+  font-weight: 600;
+  font-size: 10.5px;
+  line-height: 1;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--stamp);
+  border: 1.5px solid var(--stamp);
+  padding: 3px 5px 2px;
+  white-space: nowrap;
+}
+.stamp-ink {
+  color: var(--ink);
+  border-color: var(--ink);
+}
+
+/* Category tag: two to four mono letters in the category's own ink. */
+.tag {
+  display: inline-block;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  line-height: 1;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 3px 5px 2px;
+  background: color-mix(in srgb, currentColor 11%, transparent);
+  white-space: nowrap;
+}
+
+/* The one live dot. */
+.live-dot {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--brand);
+  animation: live-pulse 2s ease-in-out infinite;
+}
+@keyframes live-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.35; }
+}
+
+/* Ruled input: a 2px ink bottom rule only, like a form in the classifieds. */
+.ruled-input {
+  width: 100%;
+  background: transparent;
+  border: 0;
+  border-bottom: 2px solid var(--ink);
+  padding: 10px 0;
+  font-family: var(--font-mono);
+  font-size: 14px;
+  color: var(--ink);
+  border-radius: 0;
+}
+.ruled-input:focus {
+  outline: none;
+  border-bottom-color: var(--brand);
+}
+
+/* Underlined link in running text and ledgers. */
+.ulink {
+  text-decoration: underline;
+  text-decoration-color: var(--rule-soft);
+  text-underline-offset: 3px;
+  transition: text-decoration-color 0.15s;
+}
+.ulink:hover {
+  text-decoration-color: var(--ink);
+}
+
+/* ---------------------------------------------------------------------------
+   Motion. One authored load sequence (rules draw, the mark ignites, the lead
+   rises, the wire fills), scroll reveals that draw rules, and the live parts.
+   Elements opt in with data-sc; MotionRoot stamps data-in when they enter.
+   Everything is visible without JS and under reduced motion.
+   ------------------------------------------------------------------------- */
+/* data-sc marks a block whose authored draw (column rules, census bars, the
+   fourteen-day bars) waits for the block to enter view. The block itself is
+   never hidden: no section fades in, the paper is simply there. */
+
+/* Column rules draw downward as a section enters. */
+html.motion-ok [data-sc].col-rules {
+  background-size: calc((100% + var(--col-gap)) / var(--cols, 12)) 0%;
+  transition: background-size 0.9s var(--ease-out) 0.15s;
+}
+html.motion-ok [data-sc][data-in].col-rules {
+  background-size: calc((100% + var(--col-gap)) / var(--cols, 12)) 100%;
+}
+
+/* Masthead rules draw from the centre on load. */
+.m-rule {
+  transform-origin: 50% 50%;
+  animation: rule-draw 0.5s var(--ease-out) both;
+}
+@keyframes rule-draw {
+  from { transform: scaleX(0); }
+  to { transform: none; }
+}
+
+/* The lead headline rises line by line. */
+.hl { display: block; overflow: hidden; padding-bottom: 0.1em; margin-bottom: -0.1em; }
 .hl > span {
   display: block;
   transform: translateY(110%);
-  /* tight, decisive landing (no bounce) — the aurora's load sweep crosses as it locks */
-  animation: hl-lift 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.2s forwards;
+  animation: hl-lift 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.25s forwards;
 }
-.hl:nth-child(2) > span { animation-delay: 0.3s; }
-.hl:nth-child(3) > span { animation-delay: 0.4s; }
+.hl:nth-child(2) > span { animation-delay: 0.32s; }
+.hl:nth-child(3) > span { animation-delay: 0.39s; }
+.hl:nth-child(4) > span { animation-delay: 0.46s; }
 @keyframes hl-lift { to { transform: none; } }
 
-/* The first thing on the page: the kicker settles before the headline lifts. */
 .fade-up { animation: fade-up 0.6s var(--ease-out) both; }
 @keyframes fade-up {
   from { opacity: 0; transform: translateY(8px); }
   to { opacity: 1; transform: none; }
 }
 
-/* The triad's top node ignites once on load — the grid coming online. */
+/* The triad's top node ignites once on load (the grid coming online) and
+   again when a dispatch lands while the page is open. */
 .mark-ignite {
   transform-box: fill-box;
   transform-origin: center;
   animation: mark-ignite 1.4s var(--ease-out) 0.35s both;
+}
+.reignite .mark-ignite {
+  animation: mark-ignite 1.2s var(--ease-out) 0s both;
 }
 @keyframes mark-ignite {
   0% { opacity: 0.2; transform: scale(0.9); }
@@ -343,7 +617,43 @@ html.motion-ok [data-sc="4"] { transition-delay: 0.3s; }
   100% { opacity: 1; transform: scale(1); }
 }
 
-/* Sparkline bars grow from the baseline as their section reveals. */
+/* Wire rows fill top to bottom, capped so the panel never waits on itself. */
+html.motion-ok .wire-row {
+  opacity: 0;
+  animation: wire-in 0.4s var(--ease-out) forwards;
+  animation-delay: calc(0.45s + min(var(--i, 0), 10) * 0.04s);
+}
+@keyframes wire-in { to { opacity: 1; } }
+
+/* A dispatch landing while the paper is open: the row unfolds from the rule. */
+.row-land {
+  clip-path: inset(0 0 100% 0);
+  animation: row-land 0.32s var(--ease-out) forwards;
+}
+@keyframes row-land { to { clip-path: inset(0); } }
+
+/* The edition number rolls one digit at a time. */
+.odometer {
+  display: inline-block;
+  height: 1em;
+  overflow: hidden;
+  vertical-align: bottom;
+}
+.odometer > span {
+  display: block;
+  transition: transform 0.4s var(--ease-out);
+}
+
+/* Census bars draw once when the table enters view. */
+html.motion-ok .bar-draw {
+  transform-box: fill-box;
+  transform-origin: left;
+  transition: transform 0.7s var(--ease-out);
+  transition-delay: calc(0.1s + var(--i, 0) * 45ms);
+}
+html.motion-ok [data-sc]:not([data-in]) .bar-draw { transform: scaleX(0); }
+
+/* Sparkline bars grow from the baseline. */
 html.motion-ok .spark-bar {
   transform-box: fill-box;
   transform-origin: bottom;
@@ -352,35 +662,22 @@ html.motion-ok .spark-bar {
 }
 html.motion-ok [data-sc]:not([data-in]) .spark-bar { transform: scaleY(0); }
 
-/* Wire rows arrive one after another, like a feed catching up.
-   The stagger is CAPPED: with 12 rows the old formula put the last one at
-   1.12 s, so a visitor (and a design reviewer, and a screenshot) saw a panel
-   that announced "12 adversaries" above ~700 px of nothing. The effect is
-   worth ~0.4 s total, not more. */
-html.motion-ok .wire-row {
-  opacity: 0;
-  transform: translateY(6px);
-  animation: wire-in 0.4s var(--ease-out) forwards;
-  animation-delay: calc(0.1s + min(var(--i, 0), 6) * 0.045s);
+/* The tape swaps its line with a wipe when a new dispatch lands. */
+.tape-swap {
+  animation: tape-swap 0.3s var(--ease-out) both;
 }
-@keyframes wire-in { to { opacity: 1; transform: none; } }
-
-/* Signal pulse (the one live dot per view) */
-@keyframes signal-beat {
-  0% { box-shadow: 0 0 0 0 rgba(255, 90, 31, 0.5); }
-  70% { box-shadow: 0 0 0 8px rgba(255, 90, 31, 0); }
-  100% { box-shadow: 0 0 0 0 rgba(255, 90, 31, 0); }
-}
-.signal-dot { animation: signal-beat 2.4s ease-out infinite; }
-
-/* Aurora silk streaks (hero): slow lateral drift. */
-.aurora-streak { animation: aurora-drift 26s ease-in-out infinite alternate; }
-@keyframes aurora-drift {
-  from { translate: -40px 0; }
-  to { translate: 40px 0; }
+@keyframes tape-swap {
+  from { clip-path: inset(0 100% 0 0); }
+  to { clip-path: inset(0); }
 }
 
-/* Targeting map: the assessed-origin node pings; target nodes arrive in turn. */
+/* ---- kept for the actor and story components ---- */
+.limb-line {
+  height: 1px;
+  background: var(--ink);
+  opacity: 0.9;
+}
+.signal-dot { animation: live-pulse 2s ease-in-out infinite; }
 .map-ping {
   transform-box: fill-box;
   transform-origin: center;
@@ -397,21 +694,6 @@ html.motion-ok .map-target {
   animation-delay: calc(0.3s + var(--i, 0) * 45ms);
 }
 @keyframes map-target-in { to { opacity: 1; } }
-
-/* Orbital wireframe (CTA band): a very slow roll so the grid reads as live. */
-.orbital { animation: orbital-roll 90s linear infinite; transform-origin: 50% 50%; }
-@keyframes orbital-roll { to { transform: rotate(360deg); } }
-
-/* ---- motion used only by shelved sections (app/_disabled) — keep for un-shelving ---- */
-.rsweep { transform-box: view-box; transform-origin: 50% 50%; animation: rsweep-spin 5.5s linear infinite; }
-@keyframes rsweep-spin { to { transform: rotate(360deg); } }
-.sweepable { position: relative; overflow: hidden; }
-.sweepable::after {
-  content: ""; position: absolute; top: 0; bottom: 0; left: -60%; width: 40%;
-  background: linear-gradient(100deg, transparent, var(--brand-wash), transparent);
-  transform: skewX(-18deg); transition: transform 0.45s var(--ease-out); pointer-events: none;
-}
-.sweepable:hover::after { transform: translateX(450%) skewX(-18deg); }
 .sigil-pulse { offset-rotate: 0deg; animation-name: sigil-travel; animation-timing-function: var(--ease-out); animation-iteration-count: infinite; opacity: 0; }
 @keyframes sigil-travel {
   0% { offset-distance: 0%; opacity: 0; }
@@ -419,10 +701,32 @@ html.motion-ok .map-target {
   58% { offset-distance: 100%; opacity: 0.9; }
   70%, 100% { offset-distance: 100%; opacity: 0; }
 }
+.orbital { animation: orbital-roll 90s linear infinite; transform-origin: 50% 50%; }
+@keyframes orbital-roll { to { transform: rotate(360deg); } }
+.aurora-streak { animation: aurora-drift 26s ease-in-out infinite alternate; }
+@keyframes aurora-drift { from { translate: -40px 0; } to { translate: 40px 0; } }
+.crosshair { position: relative; }
+.rsweep { transform-box: view-box; transform-origin: 50% 50%; animation: rsweep-spin 5.5s linear infinite; }
+@keyframes rsweep-spin { to { transform: rotate(360deg); } }
+.sweepable { position: relative; overflow: hidden; }
 .triad-ambient { animation: triad-drift 16s ease-in-out infinite alternate; }
 @keyframes triad-drift { from { transform: translateY(calc(-50% - 7px)); } to { transform: translateY(calc(-50% + 7px)); } }
 .triad-pulse { transform-box: fill-box; transform-origin: center; animation: triad-node 3.4s var(--ease-out) infinite; }
 @keyframes triad-node { 0%, 100% { transform: scale(1); opacity: 0.75; } 45% { transform: scale(1.3); opacity: 1; } }
+
+/* Roster rows on /actors: 1,400 anchors, one short class each. */
+.roster-link {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  padding: 0.125rem 0;
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  color: var(--ink-2);
+  transition: color 150ms;
+}
+.roster-link:hover { color: var(--ink); text-decoration: underline; text-underline-offset: 3px; }
 
 @media (prefers-reduced-motion: reduce) {
   *,
@@ -432,30 +736,20 @@ html.motion-ok .map-target {
     animation-iteration-count: 1 !important;
     transition-duration: 0.001ms !important;
   }
-  html.motion-ok [data-sc] { opacity: 1; transform: none; }
-  html.motion-ok .wire-row { opacity: 1; transform: none; animation: none; }
-  html.motion-ok .spark-bar { transform: none; transition: none; }
+  html.motion-ok [data-sc].col-rules { background-size: calc((100% + var(--col-gap)) / var(--cols, 12)) 100%; }
+  html.motion-ok .wire-row { opacity: 1; animation: none; }
+  html.motion-ok .spark-bar,
+  html.motion-ok .bar-draw { transform: none; transition: none; }
   html.motion-ok .map-target { opacity: 1; animation: none; }
   .map-ping { animation: none; opacity: 0; }
   .hl > span { transform: none; }
-  .fade-up, .mark-ignite { animation: none; opacity: 1; transform: none; }
+  .fade-up, .mark-ignite, .m-rule, .row-land, .tape-swap { animation: none; opacity: 1; transform: none; clip-path: none; }
+  .live-dot { animation: none; }
+  .pressed { transition: none; }
+  .pressed-once { animation: none; font-variation-settings: "wght" 700; }
+  .odometer > span { transition: none; }
 }
 
 @media (prefers-reduced-motion: no-preference) {
   html { scroll-behavior: smooth; }
 }
-
-/* Roster rows on /actors: 1,300 anchors. One short class instead of a 90-char
-   utility string per row took the page from 1 MB to a fraction of it. */
-.roster-link {
-  display: block;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  padding: 0.125rem 0;
-  font-size: 0.875rem;
-  line-height: 1.25rem;
-  color: var(--ink-secondary);
-  transition: color 150ms;
-}
-.roster-link:hover { color: var(--brand); }

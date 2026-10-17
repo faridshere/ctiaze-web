@@ -4,27 +4,30 @@ import type { ThreatActor } from "@/lib/threatactors";
 // structural subset so lean teasers can render it without full dossiers.
 export type SigilSeed = { _id: string; type: string; techniques?: readonly unknown[] | null };
 
-// Every actor gets its own motion signature: a small sensor-constellation seeded
-// deterministically from the actor's id and real data — spoke count from its
-// documented ATT&CK depth, hue from its type, a signal pulse traveling each
-// spoke (CSS offset-path; the global reduced-motion kill silences it). Pure
-// server-rendered SVG — no client JS, no hydration surface, unique per actor.
+// Every actor gets its own mark: a small constellation seeded deterministically
+// from the actor's id and real data — spoke count from its documented ATT&CK
+// depth, the accent from its type, a pulse traveling each spoke (CSS
+// offset-path; the global reduced-motion kill silences it). Pure server-
+// rendered SVG — no client JS, no hydration surface, unique per actor.
+//
+// Inked for the paper: strokes in currentColor, the accent node in the stamp
+// red for a nation-state, the second ink for crime, the third otherwise.
 function hash(s: string): number {
   let h = 2166136261;
   for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); }
   return h >>> 0;
 }
 
-const TYPE_STROKE: Record<string, string> = {
-  "nation-state": "#FF5A4D",
-  crime: "#F6B44A",
+const TYPE_ACCENT: Record<string, string> = {
+  "nation-state": "var(--stamp)",
+  crime: "var(--ink-2)",
 };
 
 export function ActorSigil({ a, size = 40 }: { a: SigilSeed; size?: number }) {
   const seed = hash(a._id);
   const spokes = 3 + (Math.min(a.techniques?.length ?? 0, 9) > 0 ? Math.min(2 + Math.floor((a.techniques!.length - 1) / 4), 3) : (seed % 2)); // 3–6, data-driven
   const rot = (seed % 360);
-  const accent = TYPE_STROKE[a.type] ?? "#6FD3E6";
+  const accent = TYPE_ACCENT[a.type] ?? "var(--ink-3)";
   const cx = 20, cy = 20, r = 13;
   const pts = Array.from({ length: spokes }, (_, i) => {
     const jitter = ((hash(a._id + i) % 100) / 100 - 0.5) * (360 / spokes) * 0.45;
@@ -35,12 +38,12 @@ export function ActorSigil({ a, size = 40 }: { a: SigilSeed; size?: number }) {
   const dur = 2.6 + ((seed >> 4) % 14) / 10; // 2.6–4.0s, per-actor cadence
   return (
     <svg viewBox="0 0 40 40" width={size} height={size} aria-hidden="true" className="shrink-0">
-      <g stroke="currentColor" strokeWidth="1.1" opacity="0.5">
+      <g stroke="currentColor" strokeWidth="1.1" opacity="0.6">
         {pts.map(([x, y], i) => (<path key={i} d={`M${cx} ${cy} L${x.toFixed(1)} ${y.toFixed(1)}`} />))}
       </g>
-      <circle cx={cx} cy={cy} r="2.4" fill="currentColor" opacity="0.9" />
+      <circle cx={cx} cy={cy} r="2.4" fill="currentColor" />
       {pts.map(([x, y], i) => (
-        <circle key={`n${i}`} cx={x.toFixed(1)} cy={y.toFixed(1)} r={i === 0 ? 2.6 : 2.1} fill={i === 0 ? accent : "currentColor"} opacity={i === 0 ? 1 : 0.75} />
+        <circle key={`n${i}`} cx={x.toFixed(1)} cy={y.toFixed(1)} r={i === 0 ? 2.6 : 2.1} fill={i === 0 ? accent : "currentColor"} opacity={i === 0 ? 1 : 0.8} />
       ))}
       {pts.map(([x, y], i) => (
         <circle

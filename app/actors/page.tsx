@@ -2,11 +2,10 @@ import type { Metadata } from "next";
 import { SiteHeader } from "@/components/site/SiteHeader";
 import { SiteFooter } from "@/components/site/SiteFooter";
 import { PageHead } from "@/components/site/PageHead";
-import { Kicker } from "@/components/site/Kicker";
 import { CtaBand } from "@/components/site/CtaBand";
 import { ActorSearch } from "@/components/actors/ActorSearch";
 import { OnTheWire } from "@/components/actors/OnTheWire";
-import { ActorLedgerRow } from "@/components/actors/ActorLedgerRow";
+import { ActorLedger } from "@/components/actors/ActorLedgerRow";
 import { OriginStrip } from "@/components/actors/OriginStrip";
 import { RosterLetter } from "@/components/actors/RosterLetter";
 import { getActorsPageData } from "@/lib/threatactors";
@@ -17,6 +16,12 @@ import { absoluteUrl } from "@/lib/site";
 // best-documented actors, the assessed-origin breakdown and the full A–Z. No
 // per-request Mongo read; no searchParams read here (that would force this
 // page dynamic) — the origin filter lives entirely client-side in ActorSearch.
+//
+// Set as Section B of the paper: the page head, the index line (search), the
+// adversaries named on the wire as ruled rows, the ledger of leading
+// adversaries, the by-origin table, and the A–Z as index columns. Every
+// section head is the same system: a 2px rule, the head in the slab, one
+// label line to its right.
 export const revalidate = 3600;
 export const maxDuration = 60;
 
@@ -27,8 +32,28 @@ export const metadata: Metadata = {
   alternates: { canonical: absoluteUrl("/actors") },
 };
 
+const n = (x: number) => x.toLocaleString("en-US");
+
+// Height of the compact masthead strip (48px bar + 1px rule + 1px rule +
+// 28px section line). The two sticky elements on this page (the ledger head
+// and the A–Z letter nav) sit under it via --strip-h, declared once on <main>
+// so a change to the strip is a one-line change here until the header
+// exposes the variable itself.
+const STRIP_H = "78px";
+
+// A stat on the page head: the figure in mono, the words in the label voice
+// (the front page's IndexStrip pattern), never a whole phrase set in mono.
+function Stat({ value, children }: { value: number; children: React.ReactNode }) {
+  return (
+    <span className="label text-ink-3">
+      <span className="num font-mono text-[12px] tracking-normal text-ink">{n(value)}</span> {children}
+    </span>
+  );
+}
+
 export default async function ActorsPage() {
   const data = await getActorsPageData();
+  const s = data.stats;
 
   // A few hundred names read as an A–Z a visitor can jump through, not a wall
   // of tiny text: group by first letter, "#" catches anything non-alphabetic.
@@ -44,76 +69,82 @@ export default async function ActorsPage() {
 
   return (
     <>
-      <SiteHeader />
-      <main id="main">
+      <SiteHeader section="Section B · Adversaries" />
+      <main id="main" style={{ ["--strip-h" as string]: STRIP_H } as React.CSSProperties}>
         <PageHead
-          kicker={`${data.stats.total.toLocaleString("en-US")} dossiers · ${data.stats.onWire90d.toLocaleString("en-US")} on the wire`}
-          live
+          kicker={s.lastRefreshed ? `The index · roster refreshed ${s.lastRefreshed.slice(0, 10)}` : "The index"}
           title="Adversaries."
           meta={
             <>
-              {data.stats.nationState.toLocaleString("en-US")} state-sponsored
-              {" · "}
-              {data.stats.crime.toLocaleString("en-US")} crime crews
-              {" · "}
-              {data.stats.withTtps.toLocaleString("en-US")} with ATT&amp;CK data
-              {data.stats.lastRefreshed && (
-                <>
-                  {" · "}roster refreshed {data.stats.lastRefreshed.slice(0, 10)}
-                </>
-              )}
+              <Stat value={s.total}>dossiers</Stat>
+              <Stat value={s.nationState}>state-sponsored</Stat>
+              <Stat value={s.crime}>crime crews</Stat>
+              <Stat value={s.withTtps}>with ATT&amp;CK data</Stat>
+              <Stat value={s.onWire90d}>named on the wire in 90 days</Stat>
             </>
           }
-        />
+        >
+          <p className="mt-5 max-w-[64ch] text-[15px] leading-relaxed text-ink-2">
+            Every field is what a source states: MISP galaxy, MITRE ATT&amp;CK, ransomware leak sites, APTnotes. Assessed origin,
+            observed targets, techniques by tactic, with the report that says so. A field no source states is left blank.
+          </p>
+        </PageHead>
 
-        <section className="mx-auto mt-10 w-full max-w-[80rem] px-[var(--sp-gutter)]">
+        <section className="sheet mt-8 sm:mt-10" aria-label="Search the roster">
           <ActorSearch origins={data.origins} />
         </section>
 
         {data.onTheWire.length > 0 && (
-          <section className="mx-auto mt-14 w-full max-w-[80rem] px-[var(--sp-gutter)]">
+          <section className="sheet mt-[var(--sp-section)]">
             <OnTheWire rows={data.onTheWire} />
           </section>
         )}
 
-        <section className="mx-auto mt-16 w-full max-w-[80rem] px-[var(--sp-gutter)]">
-          <div className="flex flex-wrap items-baseline justify-between gap-3">
-            <Kicker>Leading adversaries</Kicker>
-            <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-ink-muted">
-              ranked by documentation depth, not by fear
+        <section className="sheet mt-[var(--sp-section)]" aria-labelledby="leading-head">
+          <div className="rule-2" />
+          <div className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-2 pt-5">
+            <h2 id="leading-head" className="headline text-[clamp(1.6rem,3vw,2.4rem)] text-ink">
+              Leading adversaries
+            </h2>
+            <p className="label text-ink-3">
+              ranked by documentation depth, not by fear · <span className="num font-mono tracking-normal">{n(data.leading.length)}</span> listed
             </p>
           </div>
           {data.leading.length > 0 ? (
-            <div className="mt-4">
-              {data.leading.map((a, i) => (
-                <ActorLedgerRow key={a.id} a={a} i={i} />
-              ))}
+            <div className="mt-5">
+              <ActorLedger rows={data.leading} />
             </div>
           ) : (
-            <p className="mt-6 font-mono text-[12px] text-ink-muted">no dossiers meet the bar yet.</p>
+            <p className="label mt-6 text-ink-3">no dossiers meet the bar yet.</p>
           )}
+          <p className="mt-3 text-[12.5px] leading-relaxed text-ink-3">
+            Techniques are the ATT&amp;CK techniques the sources attribute; victims are the leak-site victims the pipeline holds. A blank is a
+            field no source states.
+          </p>
         </section>
 
-        <div className="mx-auto w-full max-w-[80rem] px-[var(--sp-gutter)]">
+        <section className="sheet mt-[var(--sp-section)]">
           <OriginStrip origins={data.origins} />
-        </div>
+        </section>
 
         {data.index.length > 0 && (
-          <section className="mx-auto mt-16 w-full max-w-[80rem] px-[var(--sp-gutter)]">
-            <div className="flex items-baseline justify-between gap-3">
-              <Kicker>All adversaries</Kicker>
-              <span className="font-mono text-[11px] text-ink-muted">{data.index.length.toLocaleString("en-US")}</span>
+          <section className="sheet mt-[var(--sp-section)]" aria-labelledby="az-head">
+            <div className="rule-2" />
+            <div className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-2 pt-5">
+              <h2 id="az-head" className="headline text-[clamp(1.6rem,3vw,2.4rem)] text-ink">
+                All adversaries, A to Z
+              </h2>
+              <p className="label text-ink-3">
+                <span className="num font-mono tracking-normal">{n(data.index.length)}</span> dossiers · open a letter to read it
+              </p>
             </div>
-            <nav
-              aria-label="Jump to letter"
-              className="sticky top-14 z-10 mt-4 overflow-x-auto border-y border-hairline bg-surface py-2"
-            >
-              <ul className="flex gap-1 font-mono text-[11px]">
+            <nav aria-label="Jump to letter" className="sticky top-[var(--strip-h)] z-10 mt-5 border-y border-ink bg-paper">
+              <ul className="flex flex-wrap gap-x-1 py-1.5">
                 {letters.map((L) => (
                   <li key={L}>
                     <a
                       href={`#actor-${L === "#" ? "num" : L}`}
-                      className="block rounded-sm px-2 py-1 uppercase text-ink-muted transition-colors hover:bg-brand-wash hover:text-brand"
+                      className="label block px-1.5 py-1 text-ink-3 underline-offset-4 transition-colors hover:text-ink hover:underline sm:px-2"
                     >
                       {L}
                     </a>

@@ -1,4 +1,5 @@
 import { unstable_cache } from "next/cache";
+import { withSnapshot } from "./snapshot";
 import { getDb } from "./db";
 import { countryName, resolveCountry } from "./geo";
 import { isAliasActorId } from "./actor-aliases";
@@ -308,7 +309,12 @@ async function computeActorsPageData(): Promise<ActorsPageData> {
   };
 }
 
-export const getActorsPageData = unstable_cache(computeActorsPageData, ["actors-page-v4"], { revalidate: 3600 });
+// v5 (2026-10-16): last-good file fallback, see lib/snapshot.ts.
+export const getActorsPageData = unstable_cache(
+  () => withSnapshot("actors-page", computeActorsPageData),
+  ["actors-page-v5"],
+  { revalidate: 3600 },
+);
 
 // A dossier with no ATT&CK techniques that our wire has never named is a thin
 // copy of a MISP galaxy entry (~1,300 of them, 2026-10-10 audit). It stays

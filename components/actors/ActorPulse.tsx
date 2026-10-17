@@ -1,12 +1,13 @@
-import { Kicker } from "@/components/site/Kicker";
-import { Panel } from "@/components/site/Panel";
 import type { ActorActivity, ActorChange } from "@/lib/threatactors";
+import { DOSSIER_SECTION, SectionHead } from "./ActorHeader";
 
 // What this adversary has actually been doing lately, and what the tracker saw
 // change. Both come from the engine's daily pass over `actor_events` — no LLM,
-// no estimate, just counts of things that happened.
+// no estimate, just counts of things that happened. Set as the dossier's index
+// strip (three figures in ruled cells, like the front page's) and a dated
+// ledger of changes beneath.
 //
-// Renders NOTHING when there is nothing to say. A panel reading "0 dispatches ·
+// Renders NOTHING when there is nothing to say. A strip reading "0 dispatches ·
 // 0 victims · 0 new CVEs" claims we looked and found silence, when usually it
 // means the tracker has not reached this actor yet — and this site's whole
 // argument is that it does not present absence as a finding.
@@ -36,15 +37,17 @@ function ago(iso: string | null | undefined, now: number): string | null {
   return months < 12 ? `${months} mo ago` : `${Math.round(days / 365)} y ago`;
 }
 
-function Stat({ n, one, many }: { n: number; one: string; many: string }) {
+function isoDay(at: unknown): string | null {
+  if (typeof at !== "string") return null;
+  const t = new Date(at);
+  return Number.isNaN(t.getTime()) ? null : t.toISOString().slice(0, 10);
+}
+
+function Cell({ n, one, many }: { n: number; one: string; many: string }) {
   return (
-    <div>
-      <div className="font-display text-3xl font-semibold leading-none text-ink-primary tabular-nums">
-        {n.toLocaleString("en-US")}
-      </div>
-      <div className="mt-1.5 font-mono text-[11px] uppercase tracking-[0.14em] text-ink-muted">
-        {n === 1 ? one : many}
-      </div>
+    <div className="flex flex-col justify-between gap-3 py-4 pr-4 md:pl-4 md:first:pl-0">
+      <span className="label text-ink-3">{n === 1 ? one : many}</span>
+      <span className="num font-mono text-[2.25rem] leading-none text-ink md:text-[2.75rem]">{n.toLocaleString("en-US")}</span>
     </div>
   );
 }
@@ -68,66 +71,68 @@ export function ActorPulse({
   const sectors = (activity?.top_sectors ?? []).slice(0, 5);
 
   return (
-    <section className="mx-auto mt-[var(--sp-section)] w-full max-w-[80rem] px-[var(--sp-gutter)]">
-      <Panel limb className="p-6 sm:p-7">
-        <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-2">
-          <Kicker live>Last 30 days</Kicker>
-          <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-ink-muted">
-            {seen ? `last seen ${seen}` : "tracked automatically, daily"}
-          </p>
-        </div>
+    <section className={DOSSIER_SECTION} aria-labelledby="pulse-head">
+      {/* Without a live strip the ledger is the whole section, so it takes the
+          section head itself rather than printing two label heads in a row. */}
+      <SectionHead id="pulse-head" aside={live ? (seen ? `last seen ${seen}` : "tracked automatically, daily") : "ledger · newest first"}>
+        {live ? "Last 30 days" : "What changed"}
+      </SectionHead>
 
-        {live && (
-          <div className="mt-6 grid grid-cols-3 gap-6 sm:max-w-md">
-            <Stat n={activity!.stories} one="dispatch" many="dispatches" />
-            <Stat n={activity!.victims} one="victim" many="victims" />
-            <Stat n={activity!.cves_new} one="CVE seen" many="CVEs seen" />
-          </div>
-        )}
+      {live && (
+        <>
+          <dl className="cells grid-cols-3">
+            <Cell n={activity!.stories} one="dispatch" many="dispatches" />
+            <Cell n={activity!.victims} one="victim" many="victims" />
+            <Cell n={activity!.cves_new} one="CVE seen" many="CVEs seen" />
+          </dl>
+          <div className="rule-soft" />
+        </>
+      )}
 
-        {/* "CVEs seen" counts every CVE that appeared in a dispatch naming this
-            actor. The list further down the page is the smaller, evidence-gated
-            set — the ones where a sentence actually ties the group to the flaw —
-            so the two numbers differ on purpose and neither means "exploits". */}
-        {(countries.length > 0 || sectors.length > 0) && (
-          <div className="mt-6 space-y-2 text-[13px] leading-relaxed text-ink-secondary">
-            {countries.length > 0 && (
-              <p>
-                <span className="font-mono text-[11px] uppercase tracking-[0.14em] text-ink-muted">seen against </span>
-                {countries.join(" · ")}
-              </p>
-            )}
-            {sectors.length > 0 && (
-              <p>
-                <span className="font-mono text-[11px] uppercase tracking-[0.14em] text-ink-muted">sectors </span>
-                {sectors.join(" · ")}
-              </p>
-            )}
-          </div>
-        )}
+      {/* "CVEs seen" counts every CVE that appeared in a dispatch naming this
+          actor. The list further down the page is the smaller, evidence-gated
+          set — the ones where a sentence actually ties the group to the flaw —
+          so the two numbers differ on purpose and neither means "exploits". */}
+      {(countries.length > 0 || sectors.length > 0) && (
+        <dl className="mt-3 grid gap-x-8 gap-y-1 text-[13.5px] leading-relaxed text-ink-2 sm:grid-cols-[auto_1fr]">
+          {countries.length > 0 && (
+            <>
+              <dt className="label pt-1 text-ink-3">seen against</dt>
+              <dd>{countries.join(" · ")}</dd>
+            </>
+          )}
+          {sectors.length > 0 && (
+            <>
+              <dt className="label pt-1 text-ink-3">sectors</dt>
+              <dd>{sectors.join(" · ")}</dd>
+            </>
+          )}
+        </dl>
+      )}
 
-        {recent.length > 0 && (
-          <div className="mt-7 border-t border-hairline pt-5">
-            <Kicker>What changed</Kicker>
-            <ul className="mt-4 space-y-2.5">
-              {recent.map((c, i) => (
-                <li key={`${c.at}-${c.kind}-${i}`} className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-                  <span className="whitespace-nowrap font-mono text-[11px] tabular-nums text-ink-muted">
-                    {/* ago() already rejects a missing or unparseable date; the
-                        fallback must too, or a change written without `at`
-                        takes the whole dossier down. */}
-                    {ago(c.at, renderedAt) ?? (typeof c.at === "string" ? c.at.slice(0, 10) : "—")}
-                  </span>
-                  <span className="rounded-[var(--radius-chip)] border border-brand/40 px-1.5 py-px font-mono text-[10px] uppercase tracking-[0.12em] text-brand">
-                    {KIND_LABEL[c.kind] ?? c.kind}
-                  </span>
-                  <span className="min-w-0 flex-1 text-[14px] leading-snug text-ink-secondary">{c.detail}</span>
+      {recent.length > 0 && (
+        <div className={live ? "mt-8" : ""}>
+          {live && (
+            <div className="rule-b flex items-baseline justify-between pb-2">
+              <h3 className="label text-ink">What changed</h3>
+              <span className="label text-ink-3">ledger · newest first</span>
+            </div>
+          )}
+          <ol>
+            {recent.map((c, i) => {
+              const day = isoDay(c.at);
+              return (
+                <li key={`${c.at}-${c.kind}-${i}`} className="row grid grid-cols-[auto_1fr] items-baseline gap-x-3 gap-y-1 py-2.5 sm:grid-cols-[9ch_8ch_auto_1fr]">
+                  <span className="num font-mono text-[11.5px] text-ink">{day ?? "—"}</span>
+                  <span className="num font-mono text-[11px] text-ink-3 sm:order-2">{ago(c.at, renderedAt) ?? ""}</span>
+                  <span className="tag col-span-2 w-fit text-ink-3 sm:col-span-1 sm:order-3">{KIND_LABEL[c.kind] ?? c.kind}</span>
+                  <span className="col-span-2 min-w-0 text-[14px] leading-snug text-ink-2 sm:col-span-1 sm:order-4">{c.detail}</span>
                 </li>
-              ))}
-            </ul>
-          </div>
-        )}
-      </Panel>
+              );
+            })}
+          </ol>
+        </div>
+      )}
     </section>
   );
 }

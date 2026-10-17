@@ -1,4 +1,5 @@
 import { unstable_cache } from "next/cache";
+import { withSnapshot } from "./snapshot";
 import { getDb } from "./db";
 
 // The weekly internet-exposure census, read for the website.
@@ -82,6 +83,11 @@ async function computeCensus(): Promise<ExposureCensus> {
   };
 }
 
-export const getExposureCensus = unstable_cache(computeCensus, ["exposure-census-v1"], { revalidate: 3600 });
+// v2 (2026-10-16): last-good file fallback, see lib/snapshot.ts.
+export const getExposureCensus = unstable_cache(
+  () => withSnapshot("exposure-census", computeCensus),
+  ["exposure-census-v2"],
+  { revalidate: 3600 },
+);
 
 export const EMPTY_CENSUS: ExposureCensus = { rows: [], measuredAt: null, previousAt: null };

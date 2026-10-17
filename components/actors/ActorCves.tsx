@@ -1,6 +1,6 @@
 import Link from "next/link";
-import { Kicker } from "@/components/site/Kicker";
 import type { ActorCve } from "@/lib/threatactors";
+import { DOSSIER_SECTION, SectionHead } from "./ActorHeader";
 
 // CVEs our own dispatches named in the same reporting as this adversary.
 //
@@ -31,35 +31,44 @@ export function ActorCves({ cves, actorName }: { cves: ActorCve[] | null | undef
   const kevCount = rows.filter((r) => r.kev).length;
 
   return (
-    <section className="mx-auto mt-[var(--sp-section)] w-full max-w-[80rem] px-[var(--sp-gutter)]">
-      <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-2">
-        <Kicker>CVEs named alongside {actorName}</Kicker>
-        <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-ink-muted">
-          {kevCount > 0 ? `${kevCount} on CISA KEV` : "none on KEV"}
-        </p>
-      </div>
-      <div className="mt-4 flex flex-wrap gap-2">
-        {rows.map((c) => (
-          <Link
-            key={c.cve}
-            href={`/cve/${c.cve.toUpperCase()}`}
-            className="group inline-flex items-center gap-2 rounded-[var(--radius-chip)] border border-hairline px-2.5 py-1.5 transition-colors hover:border-brand"
-          >
-            <span className="font-mono text-[12px] text-ink-primary transition-colors group-hover:text-brand">
-              {c.cve.toUpperCase()}
-            </span>
-            {c.kev && (
-              <span className="rounded-[var(--radius-chip)] bg-accent-critical px-1 py-px font-mono text-[9px] font-semibold uppercase tracking-[0.1em] text-surface">
-                KEV
-              </span>
-            )}
-            {!c.kev && c.epss != null && c.epss >= 0.1 && (
-              <span className="font-mono text-[10px] text-ink-muted">EPSS {Math.round(c.epss * 100)}%</span>
-            )}
-          </Link>
-        ))}
-      </div>
-      <p className="mt-4 max-w-[52rem] text-[13px] leading-relaxed text-ink-muted">
+    <section className={DOSSIER_SECTION} aria-labelledby="cves-head">
+      <SectionHead id="cves-head" aside={kevCount > 0 ? `${kevCount} on CISA KEV` : "none on KEV"}>
+        CVEs named alongside {actorName}
+      </SectionHead>
+      <table className="w-full border-collapse">
+        <caption className="sr-only">CVEs named in the same dispatches as {actorName}</caption>
+        <thead>
+          <tr>
+            <th scope="col" className="label border-b border-rule-soft py-1.5 text-left text-ink-3">
+              CVE
+            </th>
+            <th scope="col" className="label border-b border-rule-soft py-1.5 text-left text-ink-3">
+              Status
+            </th>
+            <th scope="col" className="label border-b border-rule-soft py-1.5 text-right text-ink-3">
+              EPSS
+            </th>
+            <th scope="col" className="label hidden border-b border-rule-soft py-1.5 text-right text-ink-3 sm:table-cell">
+              Named
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((c) => (
+            <tr key={c.cve} className="row" data-sev={c.kev ? "kev" : undefined}>
+              <td className="py-2 pr-3">
+                <Link href={`/cve/${c.cve.toUpperCase()}`} className="num font-mono text-[13px] text-ink underline-offset-[3px] hover:underline">
+                  {c.cve.toUpperCase()}
+                </Link>
+              </td>
+              <td className="py-2 pr-3">{c.kev ? <span className="stamp">Actively exploited</span> : <span className="label text-ink-3">named</span>}</td>
+              <td className="num py-2 text-right font-mono text-[12px] text-ink-3">{c.epss != null ? `${(c.epss * 100).toFixed(c.epss >= 0.1 ? 0 : 1)}%` : ""}</td>
+              <td className="num hidden py-2 text-right font-mono text-[12px] text-ink-3 sm:table-cell">{c.date ? String(c.date).slice(0, 10) : ""}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      <p className="mt-3 max-w-[64ch] text-[13px] leading-relaxed text-ink-3">
         These CVEs appeared in the same dispatches as {actorName}. That is an association in reporting, not a claim
         that this group used them — read the dispatch, then the vendor advisory, before you treat it as either.
       </p>

@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { ActorSigil } from "@/components/actors/ActorSigil";
 import type { IndexEntry, OriginGroup } from "@/lib/threatactors";
 
 type TypeFilter = "" | "nation-state" | "crime";
@@ -12,6 +11,8 @@ const TYPE_CHIPS: { value: TypeFilter; label: string }[] = [
   { value: "nation-state", label: "State-sponsored" },
   { value: "crime", label: "Crime" },
 ];
+
+const TYPE_WORD: Record<string, string> = { "nation-state": "State-sponsored", crime: "Crime" };
 
 const MAX_RESULTS = 30;
 
@@ -40,6 +41,11 @@ function initialOriginFromUrl(): string {
 // first interaction, then filtered entirely in the browser. Supports a
 // starting `?origin=` (a click in from OriginStrip) by seeding state from the
 // URL and scrolling itself into view on mount.
+//
+// Set as an index line: the query on a 2px ink rule, the origin select on the
+// same rule beside it, the type filters as label-voice toggles underlined in
+// ink when active, and the results as ruled rows with the name in the slab,
+// aliases in the body face and only the match count in mono.
 export function ActorSearch({ origins }: { origins: OriginGroup[] }) {
   const rootRef = useRef<HTMLDivElement | null>(null);
   const firstResultRef = useRef<HTMLAnchorElement | null>(null);
@@ -73,6 +79,9 @@ export function ActorSearch({ origins }: { origins: OriginGroup[] }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // ISO → country name for the ten listed origins; anything else prints its code.
+  const originName = useMemo(() => new Map(origins.map((o) => [o.iso, o.name])), [origins]);
+
   const results = useMemo(() => {
     if (!actors) return [];
     const q = query.trim().toLowerCase();
@@ -84,11 +93,17 @@ export function ActorSearch({ origins }: { origins: OriginGroup[] }) {
       .map(({ a }) => a);
   }, [actors, query, type, origin]);
 
+  const matched = useMemo(() => {
+    if (!actors) return 0;
+    const q = query.trim().toLowerCase();
+    return actors.filter((a) => rankOf(a, q) >= 0 && (!type || a.type === type) && (!origin || a.origin === origin)).length;
+  }, [actors, query, type, origin]);
+
   return (
     <div ref={rootRef} className="scroll-mt-24">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-        <label className="flex-1">
-          <span className="block font-mono text-[11px] uppercase tracking-[0.16em] text-ink-muted">Search adversaries</span>
+      <div className="grid gap-x-8 gap-y-5 sm:grid-cols-[minmax(0,1fr)_14rem] sm:items-end">
+        <label className="block min-w-0">
+          <span className="label block text-ink-3">Search the roster</span>
           <input
             ref={inputRef}
             type="text"
@@ -104,16 +119,20 @@ export function ActorSearch({ origins }: { origins: OriginGroup[] }) {
             placeholder="APT28, Lazarus, Qilin, FANCY BEAR…"
             autoComplete="off"
             spellCheck={false}
-            className="mt-2 h-12 w-full rounded-[var(--radius-btn)] border border-hairline bg-surface px-4 font-mono text-sm text-ink-primary placeholder:text-ink-muted focus:border-brand focus:outline-none"
+            className="ruled-input mt-1 text-[16px]"
           />
         </label>
-        <label className="shrink-0">
-          <span className="block font-mono text-[11px] uppercase tracking-[0.16em] text-ink-muted">Origin</span>
+        <label className="block min-w-0">
+          <span className="label block text-ink-3">Assessed origin</span>
+          <span className="relative block">
           <select
             value={origin}
             onFocus={load}
             onChange={(e) => setOrigin(e.target.value)}
-            className="mt-2 h-12 w-full rounded-[var(--radius-btn)] border border-hairline bg-surface px-3 font-mono text-[12px] uppercase tracking-[0.08em] text-ink-primary focus:border-brand focus:outline-none sm:w-auto"
+            // Words, not figures: the label face on the same 2px rule as the
+            // query (.ruled-input sets mono, so the face is set inline).
+            style={{ fontFamily: "var(--font-body)", fontStretch: "75%", fontWeight: 600, fontSize: "12.5px", letterSpacing: "0.12em" }}
+            className="ruled-input mt-1 cursor-pointer appearance-none pr-6 uppercase"
           >
             <option value="">All origins</option>
             {origins.map((o) => (
@@ -121,11 +140,15 @@ export function ActorSearch({ origins }: { origins: OriginGroup[] }) {
                 {o.name}
               </option>
             ))}
+            {/* a ?origin= that is not one of the ten listed still reads back */}
+            {origin && !originName.has(origin) && <option value={origin}>{origin}</option>}
           </select>
+          <span aria-hidden className="pointer-events-none absolute right-0 top-1/2 -translate-y-1/2 font-mono text-[12px] text-ink-3">↓</span>
+          </span>
         </label>
       </div>
 
-      <div className="mt-3 flex flex-wrap gap-2">
+      <div className="mt-4 flex flex-wrap items-baseline gap-x-6 gap-y-2 border-b border-rule-soft">
         {TYPE_CHIPS.map((c) => {
           const active = type === c.value;
           return (
@@ -137,52 +160,55 @@ export function ActorSearch({ origins }: { origins: OriginGroup[] }) {
                 load();
                 setType(c.value);
               }}
-              className={`rounded-full border px-3 py-1.5 font-mono text-[11px] uppercase tracking-[0.1em] transition-colors ${
-                active ? "border-brand bg-brand-wash text-brand" : "border-hairline text-ink-secondary hover:border-ink-muted hover:text-ink-primary"
-              }`}
+              className={`label -mb-px border-b-2 pb-2 transition-colors ${active ? "border-ink text-ink" : "border-transparent text-ink-3 hover:text-ink"}`}
             >
               {c.label}
             </button>
           );
         })}
+        {actors !== null && !loading && (
+          <span className="label ml-auto pb-2 text-ink-3">
+            <span className="num font-mono tracking-normal">{matched.toLocaleString("en-US")}</span> {matched === 1 ? "match" : "matches"}
+            {matched > MAX_RESULTS ? (
+              <>
+                {" "}· first <span className="num font-mono tracking-normal">{MAX_RESULTS}</span> shown
+              </>
+            ) : null}
+          </span>
+        )}
       </div>
 
-      {loading && <p className="mt-6 font-mono text-[11px] uppercase tracking-[0.14em] text-ink-muted">loading roster…</p>}
+      {loading && <p className="label py-5 text-ink-3">loading roster…</p>}
 
-      {!loading && actors !== null && (
-        results.length > 0 ? (
-          <ul className="mt-6 divide-y divide-hairline border-y border-hairline">
-            {results.map((a, i) => (
-              <li key={a.id}>
-                <Link
-                  ref={i === 0 ? firstResultRef : undefined}
-                  href={`/actors/${a.id}`}
-                  className="group grid grid-cols-[auto_1fr_auto] items-center gap-3 py-2.5 transition-colors hover:bg-surface-hover"
-                >
-                  <ActorSigil a={{ _id: a.id, type: a.type, techniques: Array.from({ length: 0 }) }} size={28} />
-                  <span className="min-w-0">
-                    <span className="text-[14px] text-ink-primary transition-colors group-hover:text-brand">{a.name}</span>
-                    {a.aliases.slice(0, 2).map((al) => (
-                      <span key={al} className="ml-2 font-mono text-[10.5px] text-ink-muted">
-                        {al}
-                      </span>
-                    ))}
-                  </span>
-                  <span className="shrink-0 whitespace-nowrap font-mono text-[10.5px] uppercase tracking-[0.08em] text-ink-muted">
-                    {a.type !== "unknown" ? a.type : null}
-                    {a.type !== "unknown" && a.origin ? " · " : null}
-                    {a.origin}
-                  </span>
-                </Link>
-              </li>
-            ))}
-          </ul>
+      {!loading &&
+        actors !== null &&
+        (results.length > 0 ? (
+          <ol>
+            {results.map((a, i) => {
+              const typeWord = TYPE_WORD[a.type] ?? null;
+              const originLabel = a.origin ? (originName.get(a.origin) ?? a.origin) : null;
+              return (
+                <li key={a.id} className="row">
+                  <Link
+                    ref={i === 0 ? firstResultRef : undefined}
+                    href={`/actors/${a.id}`}
+                    className="grid grid-cols-1 items-baseline gap-x-4 gap-y-0.5 py-2.5 sm:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)_auto]"
+                  >
+                    <span className="pressed block truncate text-[22px] leading-tight text-ink">{a.name}</span>
+                    <span className="truncate text-[13px] text-ink-3">{a.aliases.slice(0, 3).join(" · ")}</span>
+                    <span className="label text-ink-3 sm:text-right">
+                      {typeWord}
+                      {typeWord && originLabel ? " · " : ""}
+                      {originLabel ? `assessed origin ${originLabel}` : ""}
+                    </span>
+                  </Link>
+                </li>
+              );
+            })}
+          </ol>
         ) : (
-          <p className="mt-6 font-mono text-[11px] uppercase tracking-[0.14em] text-ink-muted">
-            nothing stated for that — try an alias or a country
-          </p>
-        )
-      )}
+          <p className="label py-5 text-ink-3">nothing stated for that — try an alias or a country</p>
+        ))}
     </div>
   );
 }

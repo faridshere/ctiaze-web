@@ -1,32 +1,38 @@
-import { Button } from "@/components/site/Button";
+import Link from "next/link";
 
-// Archive pager: ghost buttons at each end, a mono "page / total" counter in the
-// middle. An end that has nowhere to go renders as a muted span, not a dead link
-// (a disabled Link would still be crawlable and clickable).
+// The archive pager, in the label voice: "← Later editions · page N / M ·
+// Earlier editions →" under a 1px ink rule. Later = newer (a lower page
+// number), earlier = older. An end that has nowhere to go renders as a struck
+// label in ink-3, not a dead link (a disabled Link would still be crawlable
+// and clickable) and not a faded one (opacity fell to 1.95:1 on both stocks).
 export function Pagination({ page, pages }: { page: number; pages: number }) {
-  const disabledCls = "font-mono text-[11px] uppercase tracking-[0.12em] text-ink-muted/40";
+  const off = "label text-ink-3 line-through decoration-1";
+  const on = "label ulink text-ink";
   return (
-    <nav
-      aria-label="Archive pages"
-      className="mx-auto mt-2 flex w-full max-w-[80rem] items-center justify-between px-[var(--sp-gutter)] pb-16"
-    >
-      {page > 1 ? (
-        <Button href={`/news?p=${page - 1}`} variant="ghost" size="sm">
-          ← newer
-        </Button>
-      ) : (
-        <span className={disabledCls}>← newer</span>
-      )}
-      <span className="font-mono text-[12px] uppercase tracking-[0.14em] text-ink-muted">
-        {page} / {pages}
-      </span>
-      {page < pages ? (
-        <Button href={`/news?p=${page + 1}`} variant="ghost" size="sm">
-          older →
-        </Button>
-      ) : (
-        <span className={disabledCls}>older →</span>
-      )}
+    <nav aria-label="Archive pages" className="sheet mt-10 pb-4">
+      <div className="rule flex items-center justify-between gap-4 pt-3">
+        {page > 1 ? (
+          <Link href={page - 1 === 1 ? "/news" : `/news?p=${page - 1}`} className={on} rel="prev">
+            ← Later editions
+          </Link>
+        ) : (
+          <span className={off} aria-disabled="true">
+            ← Later editions
+          </span>
+        )}
+        <span className="num font-mono text-[11px] uppercase tracking-[0.1em] text-ink-3">
+          page {page} / {pages}
+        </span>
+        {page < pages ? (
+          <Link href={`/news?p=${page + 1}`} className={on} rel="next">
+            Earlier editions →
+          </Link>
+        ) : (
+          <span className={off} aria-disabled="true">
+            Earlier editions →
+          </span>
+        )}
+      </div>
     </nav>
   );
 }

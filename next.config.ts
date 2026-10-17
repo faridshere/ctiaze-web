@@ -11,7 +11,10 @@ import type { NextConfig } from "next";
 // Vercel, where /_vercel/insights does not exist).
 const CSP = [
   "default-src 'self'",
-  "script-src 'self' 'unsafe-inline'",
+  // React's development build needs eval for its stack-trace tooling; the
+  // production policy stays as it was (2026-10-16, found when no client
+  // component hydrated under Playwright against `next dev`).
+  `script-src 'self' 'unsafe-inline'${process.env.NODE_ENV === "production" ? "" : " 'unsafe-eval'"}`,
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' data:",
   "font-src 'self' data:",

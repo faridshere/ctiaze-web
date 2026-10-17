@@ -19,6 +19,52 @@ export const metadata: Metadata = {
   // only hid the product.
 };
 
+// Every route that exists under app/ today and answers a GET, nothing else.
+// Rate limits are the real values in each route file (limitCaller).
+const ENDPOINTS: { path: string; gives: string; limit: string; params: string }[] = [
+  { path: "/feed.json", gives: "JSON Feed 1.1 of the newest dispatches", limit: "cached, hourly", params: "none" },
+  { path: "/rss.xml", gives: "RSS 2.0, English by default", limit: "cached, hourly", params: "kev, region, cat, lang, q" },
+  { path: "/api/v1/items", gives: "dispatches as data, newest first, filterable over the whole archive", limit: "60/min", params: "kev, cve, category, since, before, limit" },
+  { path: "/api/v1/actors", gives: "the adversary roster, one lean row per dossier", limit: "60/min", params: "q, type, origin, limit" },
+  { path: "/api/v1/actors/{id}", gives: "one dossier as data", limit: "120/min", params: "none" },
+  { path: "/actors/{id}/stix.json", gives: "the dossier as a STIX 2.1 bundle", limit: "60/min", params: "none" },
+  { path: "/actors/{id}/navigator.json", gives: "the dossier as an ATT&CK Navigator layer", limit: "60/min", params: "none" },
+  { path: "/llms.txt", gives: "a map of the site for AI agents", limit: "cached", params: "none" },
+];
+
+const PARAMS: { route: string; items: { name: string; note: string }[] }[] = [
+  {
+    route: "/api/v1/items",
+    items: [
+      { name: "kev=1", note: "Only items on CISA's Known Exploited Vulnerabilities catalogue." },
+      { name: "cve=CVE-YYYY-NNNN", note: "Every dispatch that names that CVE." },
+      { name: "category=…", note: "One of exploit, vuln, apt, malware, ransomware, breach, supply-chain, research, policy. Anything else is a 400." },
+      { name: "since=…", note: "ISO 8601 date or datetime. A malformed one is a 400, not a silent empty list." },
+      { name: "before=…", note: "Everything strictly older than this instant. Each response carries next_before; feed it back to keep walking." },
+      { name: "limit=…", note: "1 to 200, default 50." },
+    ],
+  },
+  {
+    route: "/api/v1/actors",
+    items: [
+      { name: "q=…", note: "Case-insensitive substring over name and aliases." },
+      { name: "type=…", note: "nation-state, crime or unknown. Anything else is a 400." },
+      { name: "origin=…", note: "ISO-2 country code, as the source states it." },
+      { name: "limit=…", note: "1 to 500, default 100." },
+    ],
+  },
+  {
+    route: "/rss.xml",
+    items: [
+      { name: "kev=1", note: "Only actively-exploited (KEV) stories." },
+      { name: "region=1", note: "Only regional stories." },
+      { name: "cat=…", note: "One category." },
+      { name: "lang=az", note: "Azerbaijani titles and summaries; English is the default." },
+      { name: "q=a,b", note: "Up to ten comma-separated terms matched against titles, category and CVE ids: a feed for your own stack." },
+    ],
+  },
+];
+
 const EXAMPLES: { label: string; cmd: string; note: string }[] = [
   {
     label: "Everything actively exploited",
@@ -87,90 +133,181 @@ const FIELDS: { name: string; type: string; note: string }[] = [
   { name: "is_duplicate", type: "boolean", note: "true on the later members of a cluster; the first-seen member is false. Filter on false to see one item per event." },
 ];
 
+// A section front on the reference page: 2px rule, label head in the left
+// margin column, content on the right. The same shape three times.
+function Ref({ id, label, children }: { id: string; label: string; children: React.ReactNode }) {
+  return (
+    <section className="mt-[var(--sp-section)]" aria-labelledby={id}>
+      <div className="rule-2" />
+      <div className="grid gap-5 pt-5 md:grid-cols-[11rem_1fr] md:gap-6">
+        <h2 id={id} className="label text-ink">
+          {label}
+        </h2>
+        <div className="min-w-0">{children}</div>
+      </div>
+    </section>
+  );
+}
+
 export default function ApiDocsPage() {
   return (
     <>
-      <SiteHeader />
+      <SiteHeader section="Reference · Machine feeds" />
       <main id="main">
         <PageHead narrow kicker="Developers" title="API">
-          <p className="mt-6 max-w-[38rem] text-[length:var(--t-body)] leading-relaxed text-ink-secondary">
-            {INTRO}
-          </p>
+          <p className="prose-paper mt-6">{INTRO}</p>
         </PageHead>
 
-        <section className="mx-auto mt-[var(--sp-section)] w-full max-w-[46rem] px-5">
-          <h2 className="font-mono text-[11px] uppercase tracking-[0.14em] text-ink-muted">
-            <span aria-hidden className="mr-2 inline-block size-1.5 rounded-full bg-brand align-middle" />
-            Try it
-          </h2>
-          <div className="mt-6 space-y-6">
-            {EXAMPLES.map((e) => (
-              <div key={e.label}>
-                <div className="font-display text-[15px] font-semibold text-ink-primary">{e.label}</div>
-                <pre className="mt-2 overflow-x-auto rounded-[var(--radius-panel)] border border-hairline bg-surface-raised/50 px-4 py-3 font-mono text-[12.5px] leading-relaxed text-ink-secondary">
-                  <code>{e.cmd}</code>
-                </pre>
-                <p className="mt-1.5 text-[13px] leading-relaxed text-ink-muted">{e.note}</p>
-              </div>
-            ))}
-          </div>
+        <div className="sheet">
+          {/* The endpoints as a ruled table: every route that answers today. */}
+          <section className="mt-10 sm:mt-12" aria-labelledby="api-endpoints">
+            <h2 id="api-endpoints" className="label text-ink">
+              Endpoints
+            </h2>
+            {/* Under md the same list stacks: route, returns, then one mono
+                meta line (limit · parameters). From md up, the four-column table. */}
+            <ol className="mt-3 border-t border-ink md:hidden">
+              {ENDPOINTS.map((e) => (
+                <li key={e.path} className="border-b border-rule-soft py-3">
+                  <span className="num block font-mono text-[13px] text-ink">{e.path}</span>
+                  <span className="mt-1 block text-[14px] leading-snug text-ink-2">{e.gives}</span>
+                  <span className="num mt-1.5 block font-mono text-[12px] leading-snug text-ink-3">
+                    {e.limit} · {e.params}
+                  </span>
+                </li>
+              ))}
+            </ol>
+            <div className="mt-3 hidden md:block">
+              <table className="w-full border-collapse">
+                <caption className="sr-only">Every public endpoint, what it returns, its rate limit and its query parameters</caption>
+                <thead>
+                  <tr className="border-b border-ink">
+                    <th scope="col" className="label pb-2 pr-4 text-left text-ink-3">Route</th>
+                    <th scope="col" className="label pb-2 pr-4 text-left text-ink-3">Returns</th>
+                    <th scope="col" className="label pb-2 pr-4 text-left text-ink-3">Limit</th>
+                    <th scope="col" className="label pb-2 text-left text-ink-3">Parameters</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {ENDPOINTS.map((e) => (
+                    <tr key={e.path} className="border-b border-rule-soft align-top">
+                      <th scope="row" className="py-3 pr-4 text-left font-normal">
+                        <span className="num whitespace-nowrap font-mono text-[13px] text-ink">{e.path}</span>
+                      </th>
+                      <td className="py-3 pr-4 text-[14px] leading-snug text-ink-2">{e.gives}</td>
+                      <td className="num whitespace-nowrap py-3 pr-4 font-mono text-[12px] text-ink-3">{e.limit}</td>
+                      <td className="num py-3 font-mono text-[12px] text-ink-3">{e.params}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <p className="mt-3 max-w-[64ch] text-[12.5px] leading-relaxed text-ink-3">
+              Alias ids on the dossier routes 308 to the canonical actor. Every JSON route carries an ETag and answers 304 to a matching If-None-Match.
+            </p>
+          </section>
 
-          <h2 className="mt-[var(--sp-section)] font-mono text-[11px] uppercase tracking-[0.14em] text-ink-muted">
-            <span aria-hidden className="mr-2 inline-block size-1.5 rounded-full bg-brand align-middle" />
-            Fields
-          </h2>
-          <dl className="mt-6 divide-y divide-hairline border-y border-hairline">
-            {FIELDS.map((f) => (
-              <div key={f.name} className="py-3.5">
-                <dt className="font-mono text-[13px] text-ink-primary">
-                  {f.name} <span className="text-ink-muted">· {f.type}</span>
-                </dt>
-                <dd className="mt-1 max-w-[40rem] text-[13px] leading-relaxed text-ink-secondary">{f.note}</dd>
-              </div>
-            ))}
-          </dl>
+          <Ref id="api-try" label="Try it">
+            <ol className="divide-y divide-rule-soft">
+              {EXAMPLES.map((e) => (
+                <li key={e.label} className="py-5 first:pt-0">
+                  <div className="min-w-0">
+                    <h3 className="font-display text-[1.05rem] font-bold leading-tight text-ink">{e.label}</h3>
+                    <pre className="ink-box mt-2 whitespace-pre-wrap bg-paper-deep py-3 pl-[calc(1rem+5ch)] pr-4 font-mono text-[11.5px] leading-relaxed sm:text-[12px] text-ink [overflow-wrap:anywhere] [text-indent:-5ch]">
+                      <code>{e.cmd}</code>
+                    </pre>
+                    <p className="mt-2 max-w-[64ch] text-[13.5px] leading-relaxed text-ink-2">{e.note}</p>
+                  </div>
+                </li>
+              ))}
+            </ol>
+          </Ref>
 
-          <h2 className="mt-[var(--sp-section)] font-mono text-[11px] uppercase tracking-[0.14em] text-ink-muted">
-            <span aria-hidden className="mr-2 inline-block size-1.5 rounded-full bg-brand align-middle" />
-            Honesty notes
-          </h2>
-          <ul className="mt-5 space-y-3 text-[13.5px] leading-relaxed text-ink-secondary">
-            <li>
-              <strong className="text-ink-primary">null means unknown, never zero.</strong> A missing severity or CVSS
-              is a gap in the public record, not a low score.
-            </li>
-            <li>
-              <strong className="text-ink-primary">kev beats epss.</strong> EPSS predicts the next 30 days; KEV records
-              exploitation already seen. When they disagree, KEV is the one to act on.
-            </li>
-            <li>
-              <strong className="text-ink-primary">exposure is a scan count.</strong> It measures hosts reachable on the
-              internet on the date given — not hosts that are vulnerable, and not an inventory.
-            </li>
-            <li>
-              <strong className="text-ink-primary">The exports carry no scoring of ours.</strong> Every technique in a
-              Navigator layer scores the same, because we hold no per-technique confidence or frequency and a graded
-              heatmap would be invented. STIX object ids are deterministic (UUIDv5), so re-fetching a dossier diffs
-              against the last one instead of looking like a fresh set of objects.
-            </li>
-            <li>
-              <strong className="text-ink-primary">We are not the source.</strong> Every item links to the original
-              report. Cite that, not us.
-            </li>
-            <li>
-              <strong className="text-ink-primary">A failure is a 503, never an empty list.</strong> If the feed is
-              unavailable you get an error. A <code>200</code> with no items means nothing matched, and you can rely on
-              that difference.
-            </li>
-            <li>
-              <strong className="text-ink-primary">Filters cover the whole archive.</strong> <code>kev</code>,{" "}
-              <code>cve</code>, <code>category</code>, <code>since</code> and <code>before</code> run against every
-              published story, and <code>total_matching</code> is the exact count. One response reads at most{" "}
-              {"{"}window.size{"}"} matching stories; when <code>window.complete</code> is false, page on with{" "}
-              <code>next_before</code>.
-            </li>
-          </ul>
-        </section>
+          <Ref id="api-params" label="Parameters">
+            <div className="space-y-8">
+              {PARAMS.map((p) => (
+                <div key={p.route}>
+                  <h3 className="num rule-b inline-block pb-1 font-mono text-[13px] text-ink">{p.route}</h3>
+                  <dl className="mt-2 divide-y divide-rule-soft">
+                    {p.items.map((it) => (
+                      <div key={it.name} className="grid gap-x-5 gap-y-1 py-2.5 sm:grid-cols-[13rem_1fr]">
+                        <dt className="num font-mono text-[12.5px] text-ink">{it.name}</dt>
+                        <dd className="max-w-[60ch] text-[13.5px] leading-relaxed text-ink-2">{it.note}</dd>
+                      </div>
+                    ))}
+                  </dl>
+                </div>
+              ))}
+            </div>
+          </Ref>
+
+          <Ref id="api-fields" label="Item fields">
+            <dl className="divide-y divide-rule-soft">
+              {FIELDS.map((f) => (
+                <div key={f.name} className="grid gap-x-5 gap-y-1 py-3 sm:grid-cols-[13rem_1fr]">
+                  <dt className="num font-mono text-[12.5px] leading-snug text-ink">
+                    {f.name}
+                    <span className="block text-ink-3">{f.type}</span>
+                  </dt>
+                  <dd className="max-w-[60ch] text-[13.5px] leading-relaxed text-ink-2">{f.note}</dd>
+                </div>
+              ))}
+            </dl>
+          </Ref>
+
+          <Ref id="api-honesty" label="Honesty notes">
+            <ul className="divide-y divide-rule-soft">
+              <li className="py-3 first:pt-0">
+                <p className="max-w-[64ch] text-[14px] leading-relaxed text-ink-2">
+                <strong className="font-semibold text-ink">null means unknown, never zero.</strong> A missing severity or CVSS
+                is a gap in the public record, not a low score.
+              </p>
+              </li>
+              <li className="py-3">
+                <p className="max-w-[64ch] text-[14px] leading-relaxed text-ink-2">
+                <strong className="font-semibold text-ink">kev beats epss.</strong> EPSS predicts the next 30 days; KEV records
+                exploitation already seen. When they disagree, KEV is the one to act on.
+              </p>
+              </li>
+              <li className="py-3">
+                <p className="max-w-[64ch] text-[14px] leading-relaxed text-ink-2">
+                <strong className="font-semibold text-ink">exposure is a scan count.</strong> It measures hosts reachable on the
+                internet on the date given — not hosts that are vulnerable, and not an inventory.
+              </p>
+              </li>
+              <li className="py-3">
+                <p className="max-w-[64ch] text-[14px] leading-relaxed text-ink-2">
+                <strong className="font-semibold text-ink">The exports carry no scoring of ours.</strong> Every technique in a
+                Navigator layer scores the same, because we hold no per-technique confidence or frequency and a graded
+                heatmap would be invented. STIX object ids are deterministic (UUIDv5), so re-fetching a dossier diffs
+                against the last one instead of looking like a fresh set of objects.
+              </p>
+              </li>
+              <li className="py-3">
+                <p className="max-w-[64ch] text-[14px] leading-relaxed text-ink-2">
+                <strong className="font-semibold text-ink">We are not the source.</strong> Every item links to the original
+                report. Cite that, not us.
+              </p>
+              </li>
+              <li className="py-3">
+                <p className="max-w-[64ch] text-[14px] leading-relaxed text-ink-2">
+                <strong className="font-semibold text-ink">A failure is a 503, never an empty list.</strong> If the feed is
+                unavailable you get an error. A <code className="font-mono text-[13px]">200</code> with no items means nothing matched, and you can rely on
+                that difference.
+              </p>
+              </li>
+              <li className="py-3">
+                <p className="max-w-[64ch] text-[14px] leading-relaxed text-ink-2">
+                <strong className="font-semibold text-ink">Filters cover the whole archive.</strong> <code className="font-mono text-[13px]">kev</code>,{" "}
+                <code className="font-mono text-[13px]">cve</code>, <code className="font-mono text-[13px]">category</code>, <code className="font-mono text-[13px]">since</code> and <code className="font-mono text-[13px]">before</code> run against every
+                published story, and <code className="font-mono text-[13px]">total_matching</code> is the exact count. One response reads at most{" "}
+                <code className="font-mono text-[13px]">window.size</code> matching stories; when <code className="font-mono text-[13px]">window.complete</code> is false, page on with{" "}
+                <code className="font-mono text-[13px]">next_before</code>.
+              </p>
+              </li>
+            </ul>
+          </Ref>
+        </div>
 
         <div className="mt-[var(--sp-section)]">
           <CtaBand source="api-docs" />

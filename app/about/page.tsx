@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { SiteHeader } from "@/components/site/SiteHeader";
 import { SiteFooter } from "@/components/site/SiteFooter";
-import { PageHead } from "@/components/site/PageHead";
 import { CtaBand } from "@/components/site/CtaBand";
 import { absoluteUrl, SAME_AS, SITE_NAME, SITE_URL, SOURCE_COUNT } from "@/lib/site";
 import { jsonLdSafe } from "@/lib/format";
@@ -63,10 +62,14 @@ export const metadata: Metadata = {
 // site's biggest trust problem; that tradeoff is now deliberate, and the
 // accountability claim below is written so it stands WITHOUT a personal name —
 // "the method is published" is a checkable promise, "trust me" is not.
-const FACTS = [
-  `${SOURCE_COUNT} sources watched`,
-  "grounded to the original source",
-  "published to Telegram @skopnix and this site",
+//
+// v4: the three facts are set as a .cells strip. The one real figure (the
+// source count) is set in mono; the other two cells are claims, so they carry
+// a label and a line of running text, not a number dressed up as one.
+const FACTS: { figure: string | null; word: string | null; label: string; line: string }[] = [
+  { figure: String(SOURCE_COUNT), word: null, label: "sources watched", line: "Counted in the pipeline's source registry." },
+  { figure: null, word: "Every dispatch.", label: "grounded to the original source", line: "Each one links the report that broke it." },
+  { figure: null, word: "@skopnix", label: "published to Telegram and this site", line: "Plus the RSS and JSON feeds and the API." },
 ];
 
 export default function AboutPage() {
@@ -97,67 +100,85 @@ export default function AboutPage() {
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLdSafe(faqLd) }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLdSafe(aboutLd) }} />
-      <SiteHeader />
+      <SiteHeader section="About this paper" />
       <main id="main">
-        <PageHead narrow kicker="About" title="skopnix">
-          <p className="mt-6 max-w-[36rem] text-[length:var(--t-body)] leading-relaxed text-ink-primary">
-            {DEFINITION}
-          </p>
-          <ul className="mt-10 grid divide-y divide-hairline border-y border-hairline font-mono text-[12px] uppercase tracking-[0.12em] text-ink-secondary md:grid-cols-3 md:divide-x md:divide-y-0">
-            {FACTS.map((f) => (
-              <li key={f} className="flex items-center gap-2.5 py-3.5 md:px-4 md:first:pl-0">
-                <span aria-hidden className="size-1.5 shrink-0 rounded-full bg-ink-muted/60" />
-                {f}
-              </li>
-            ))}
-          </ul>
-        </PageHead>
-        {/* Who is behind it — stated as a method rather than a person, since the
-            byline came out on 2026-09-14. The trust signal a reader can act on is
-            that every claim is checkable, not who is making it. */}
-        <section className="mx-auto mt-[var(--sp-section)] w-full max-w-[46rem] px-5">
-          <h2 className="font-mono text-[11px] uppercase tracking-[0.14em] text-ink-muted">
-            <span aria-hidden className="mr-2 inline-block size-1.5 rounded-full bg-brand align-middle" />
-            How this is written
-          </h2>
-          <div className="mt-6 rounded-[var(--radius-panel)] border border-hairline bg-surface-raised/40 px-5 py-5">
-            <div className="font-display text-[19px] font-semibold text-ink-primary">
-              Independent, and built by practitioners
-            </div>
-            <div className="mt-0.5 font-mono text-[12px] uppercase tracking-[0.1em] text-ink-muted">
-              detection engineering · Caucasus &amp; Central Asia
-            </div>
-            <p className="mt-3 max-w-[40rem] text-[14px] leading-relaxed text-ink-secondary">
-              skopnix exists because the reporting a defender needs was scattered across sixty sites,
-              and almost none of it said whether the thing was actually being exploited. Everything
-              here links back to the original report, because you should check the work rather than
-              take it on trust.
-            </p>
-            <p className="mt-4 text-[13px] leading-relaxed text-ink-muted">
-              The pipeline is automated and no human reviews each item before it publishes — that is the point, it is
-              how the wire stays minutes behind the source instead of days. What is not automated is the
-              standard: an actor is only tied to a CVE when a named vendor or CERT report says so, and the source
-              is printed next to the claim so you can check it yourself.
-            </p>
-          </div>
-        </section>
+        {/* The head, set locally: the section line in the strip already names the
+            page, so no kicker here — a headline, then the 2px rule. */}
+        <header className="sheet max-w-[52rem] pt-8 sm:pt-12">
+          <h1 className="headline text-[clamp(1.75rem,4vw,2.75rem)] leading-[1.05] text-ink">A wire you can check.</h1>
+          <div className="rule-2 mt-6" />
+        </header>
 
-        {/* Rendered, not just in JSON-LD: structured data has to describe content
-            the reader can actually see, and these are the questions people ask. */}
-        <section className="mx-auto mt-[var(--sp-section)] w-full max-w-[46rem] px-5">
-          <h2 className="font-mono text-[11px] uppercase tracking-[0.14em] text-ink-muted">
-            <span aria-hidden className="mr-2 inline-block size-1.5 rounded-full bg-brand align-middle" />
-            Common questions
-          </h2>
-          <dl className="mt-6 divide-y divide-hairline border-y border-hairline">
-            {FAQ.map((f) => (
-              <div key={f.q} className="py-5">
-                <dt className="font-display text-[17px] font-semibold text-ink-primary">{f.q}</dt>
-                <dd className="mt-2 max-w-[40rem] text-[14px] leading-relaxed text-ink-secondary">{f.a}</dd>
+        {/* The running text: 17px/1.55 with a drop cap, the measure of an
+            article column. The definition sentence leads; nothing above it. */}
+        <article className="sheet max-w-[52rem] pt-8 sm:pt-10">
+          <p className="prose-paper text-ink">{DEFINITION}</p>
+
+          <dl className="cells mt-10 grid-cols-1 sm:grid-cols-3">
+            {FACTS.map((f) => (
+              <div key={f.label} className="flex flex-col gap-2 py-4 sm:pr-4 sm:pl-4 sm:first:pl-0">
+                <dt className="label text-ink-3">{f.label}</dt>
+                <dd>
+                  {f.figure ? (
+                    <span className="num block font-mono text-[1.75rem] leading-none text-ink">{f.figure}</span>
+                  ) : (
+                    <span className="block font-body text-[1.75rem] font-semibold leading-none tracking-[-0.01em] text-ink">{f.word}</span>
+                  )}
+                  <span className="mt-2 block text-[12.5px] leading-snug text-ink-3">{f.line}</span>
+                </dd>
               </div>
             ))}
           </dl>
-        </section>
+          <div className="rule-soft" />
+
+          {/* Who is behind it — stated as a method rather than a person, since the
+              byline came out on 2026-09-14. The trust signal a reader can act on is
+              that every claim is checkable, not who is making it. */}
+          <section className="mt-[var(--sp-section)]" aria-labelledby="about-method">
+            <div className="rule-2" />
+            <div className="grid gap-6 pt-5 md:grid-cols-[11rem_1fr]">
+              <h2 id="about-method" className="label text-ink">
+                How this is written
+              </h2>
+              <div>
+                <p className="headline text-[clamp(1.4rem,2.6vw,1.9rem)] text-ink">Independent, and built by practitioners.</p>
+                <p className="mt-3 text-[15px] leading-snug text-ink-3">Detection engineering, in the Caucasus and Central Asia.</p>
+                <p className="prose-paper mt-5">
+                  skopnix exists because the reporting a defender needs was scattered across sixty sites,
+                  and almost none of it said whether the thing was actually being exploited. Everything
+                  here links back to the original report, because you should check the work rather than
+                  take it on trust.
+                </p>
+                <p className="prose-paper mt-4">
+                  The pipeline is automated and no human reviews each item before it publishes — that is the point, it is
+                  how the wire stays minutes behind the source instead of days. What is not automated is the
+                  standard: an actor is only tied to a CVE when a named vendor or CERT report says so, and the source
+                  is printed next to the claim so you can check it yourself.
+                </p>
+              </div>
+            </div>
+          </section>
+
+          {/* Rendered, not just in JSON-LD: structured data has to describe content
+              the reader can actually see, and these are the questions people ask. */}
+          <section className="mt-[var(--sp-section)]" aria-labelledby="about-faq">
+            <div className="rule-2" />
+            <div className="grid gap-6 pt-5 md:grid-cols-[11rem_1fr]">
+              <h2 id="about-faq" className="label text-ink">
+                Common questions
+              </h2>
+              <dl className="divide-y divide-rule-soft">
+                {FAQ.map((f) => (
+                  <div key={f.q} className="py-5 first:pt-0">
+                    <dt className="font-display text-[1.2rem] font-bold leading-tight text-ink">{f.q}</dt>
+                    <dd className="prose-paper mt-2 text-[16px]">{f.a}</dd>
+                  </div>
+                ))}
+              </dl>
+            </div>
+          </section>
+        </article>
+
         <div className="mt-[var(--sp-section)]">
           <CtaBand source="about" />
         </div>

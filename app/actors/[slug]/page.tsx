@@ -3,10 +3,8 @@ import { notFound } from "next/navigation";
 import { SiteHeader } from "@/components/site/SiteHeader";
 import { SiteFooter } from "@/components/site/SiteFooter";
 import { CtaBand } from "@/components/site/CtaBand";
-import { Kicker } from "@/components/site/Kicker";
-import { Panel } from "@/components/site/Panel";
 import { KillChain } from "@/components/actors/KillChain";
-import { ActorHeader } from "@/components/actors/ActorHeader";
+import { ActorHeader, DOSSIER_SECTION, SectionHead } from "@/components/actors/ActorHeader";
 import { ActorTargets } from "@/components/actors/ActorTargets";
 import { ActorArsenal } from "@/components/actors/ActorArsenal";
 import { ActorVictims } from "@/components/actors/ActorVictims";
@@ -182,44 +180,47 @@ export default async function ActorPage({ params }: { params: Promise<{ slug: st
   const description = a.description_en?.trim() || null;
   const primaryText = intel ?? description;
   const showSourcesState = !!intel && !!description && intel !== description;
+  const sourceWord = (a.sources && a.sources.length ? a.sources : a.source ? [a.source] : []).join(" + ") || undefined;
 
   const jsonLdDescription = briefText(a, intel);
   const jsonLd = actorArticleLd(a, jsonLdDescription);
   const breadcrumb = breadcrumbLd(a.name, a._id);
 
   return (
-    <>
+    // overflow-x-clip (not hidden: sticky parts still stick) is a backstop so a
+    // strip that overruns a phone's width can never make the page scroll sideways.
+    <div className="overflow-x-clip">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLdSafe(jsonLd) }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLdSafe(breadcrumb) }} />
-      <SiteHeader />
+      <SiteHeader section="Section B · Adversaries · Dossier" />
       <main id="main">
         <ActorHeader actor={a} mentions={mentions} />
 
         <ActorPulse activity={a.activity_30d} changes={a.changes} renderedAt={RENDER_EPOCH} />
 
         {primaryText && (
-          <section className="mx-auto mt-[var(--sp-section)] w-full max-w-[80rem] px-[var(--sp-gutter)]">
-            <Panel limb className="p-6 sm:p-8">
-              <Kicker>Analyst brief</Kicker>
-              <div className="mt-4 max-w-[64ch] space-y-4 text-[15px] leading-relaxed text-ink-secondary">
-                {paragraphs(primaryText).map((p, i) => (
-                  <p key={i}>{p}</p>
-                ))}
-              </div>
-              {intel && (
-                <p className="mt-5 font-mono text-[11px] uppercase tracking-[0.14em] text-ink-muted">
-                  engine-written, grounded to the sources below
+          <section className={DOSSIER_SECTION} aria-labelledby="brief-head">
+            <SectionHead id="brief-head" aside={sourceWord}>
+              Analyst brief
+            </SectionHead>
+            <div className="prose-paper space-y-4 pt-5">
+              {paragraphs(primaryText).filter((p) => p.trim().length > 1).map((p, i) => (
+                <p key={i} className={i === 0 && /^\p{L}/u.test(p) ? "dropcap" : ""}>
+                  {p}
                 </p>
-              )}
-            </Panel>
+              ))}
+            </div>
+            {intel && <p className="label mt-5 text-ink-3">engine-written, grounded to the sources below</p>}
           </section>
         )}
 
         {showSourcesState && description && (
-          <section className="mx-auto mt-10 w-full max-w-[80rem] px-[var(--sp-gutter)]">
-            <Kicker>What the sources state</Kicker>
-            <div className="mt-4 max-w-[64ch] space-y-4 text-[15px] leading-relaxed text-ink-secondary">
-              {paragraphs(description).map((p, i) => (
+          <section className={DOSSIER_SECTION} aria-labelledby="sources-head">
+            <SectionHead id="sources-head" aside={sourceWord}>
+              What the sources state
+            </SectionHead>
+            <div className="prose-paper space-y-4 pt-5 text-[15px]">
+              {paragraphs(description).filter((p) => p.trim().length > 1).map((p, i) => (
                 <p key={i}>{p}</p>
               ))}
             </div>
@@ -229,9 +230,11 @@ export default async function ActorPage({ params }: { params: Promise<{ slug: st
         <ActorTargets origin={a.origin_country?.toUpperCase() ?? null} placed={placed} other={other} sectors={a.targets_sectors ?? []} />
 
         {techniques.length > 0 && (
-          <section className="mx-auto mt-[var(--sp-section)] w-full max-w-[80rem] px-[var(--sp-gutter)]">
-            <Kicker>Kill chain</Kicker>
-            <div className="mt-5">
+          <section className={DOSSIER_SECTION} aria-labelledby="killchain-head">
+            <SectionHead id="killchain-head" aside="MITRE ATT&CK Enterprise · tap a technique">
+              Kill chain
+            </SectionHead>
+            <div className="pt-4">
               <KillChain techniques={techniques} notes={pickNotes(techniques, techniqueRef)} profiles={ttpProfiles} />
             </div>
           </section>
@@ -246,7 +249,7 @@ export default async function ActorPage({ params }: { params: Promise<{ slug: st
         <ActorExports id={a._id} techniqueCount={techniques.length} />
         <ActorRefs refs={a.refs ?? []} />
 
-        <div className="mt-[var(--sp-section)]">
+        <div className="mt-14 sm:mt-16">
           <CtaBand
             source="actor:inline"
             heading={`Track ${a.name} on the wire.`}
@@ -255,6 +258,6 @@ export default async function ActorPage({ params }: { params: Promise<{ slug: st
         </div>
       </main>
       <SiteFooter />
-    </>
+    </div>
   );
 }

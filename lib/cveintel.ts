@@ -20,17 +20,18 @@ async function j<T>(url: string, ms: number): Promise<T | null> {
 
 // --- CISA KEV, fetched once/day, cached module-level (shared across warm calls).
 // kevMeta carries the ransomware flag too; kevSet derives from it (one download). ---
-export type KevRow = { ransomware: boolean; dateAdded: string | null };
+// dueDate (2026-10-16): CISA's remediation deadline, printed on the front page lead.
+export type KevRow = { ransomware: boolean; dateAdded: string | null; dueDate: string | null };
 let kevCache: { at: number; map: Map<string, KevRow>; released: string | null } | null = null;
 export async function kevMeta(): Promise<Map<string, KevRow>> {
   if (kevCache && Date.now() - kevCache.at < 24 * 3600_000) return kevCache.map;
-  const d = await j<{ dateReleased?: string; vulnerabilities?: { cveID: string; dateAdded?: string; knownRansomwareCampaignUse?: string }[] }>(
+  const d = await j<{ dateReleased?: string; vulnerabilities?: { cveID: string; dateAdded?: string; dueDate?: string; knownRansomwareCampaignUse?: string }[] }>(
     "https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json",
     9000
   );
   const map = new Map<string, KevRow>();
   for (const v of d?.vulnerabilities || [])
-    map.set(v.cveID.toUpperCase(), { ransomware: (v.knownRansomwareCampaignUse || "").toLowerCase() === "known", dateAdded: v.dateAdded || null });
+    map.set(v.cveID.toUpperCase(), { ransomware: (v.knownRansomwareCampaignUse || "").toLowerCase() === "known", dateAdded: v.dateAdded || null, dueDate: v.dueDate || null });
   if (map.size) kevCache = { at: Date.now(), map, released: d?.dateReleased?.slice(0, 10) || null };
   return kevCache?.map ?? new Map();
 }

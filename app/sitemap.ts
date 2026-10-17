@@ -39,6 +39,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${SITE_URL}/privacy`, lastModified: newest, changeFrequency: "yearly" as const, priority: 0.3 },
     { url: `${SITE_URL}/news`, lastModified: newest, changeFrequency: "daily" as const, priority: 0.8 },
     { url: `${SITE_URL}/actors`, lastModified: newest, changeFrequency: "weekly" as const, priority: 0.7 },
+    { url: `${SITE_URL}/claims`, lastModified: newest, changeFrequency: "hourly" as const, priority: 0.7 },
     { url: `${SITE_URL}/api-docs`, lastModified: newest, changeFrequency: "monthly" as const, priority: 0.5 },
     // One hub per CVE the wire has named recently — the pages analysts search for.
     ...[...cveLastmod.entries()].slice(0, 400).map(([cve, at]) => ({

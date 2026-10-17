@@ -5,31 +5,18 @@ import { getPowToken, primePowToken } from "@/lib/pow-client";
 import { PowBadge } from "@/components/PowBadge";
 import { Button } from "@/components/site/Button";
 
-// The email form. Headings belong to the caller (hero, CtaBand); this is the
-// input, the button, the shield badge and the two end states. Captcha-gated by
-// the same invisible proof-of-work as the API. That raises the cost of casual
-// scripting; it does not make the list unscriptable (see lib/pow.ts).
-// `source` tags where the signup came from (read back in /admin).
+// The email form, set like a classified: a ruled input and an ink button.
+// Headings belong to the caller; this is the input, the button, the shield
+// badge and the two end states. Captcha-gated by the same invisible
+// proof-of-work as the API. `source` tags where the signup came from.
 type State = "idle" | "loading" | "error";
 
-// "done" means converted; "seen" means shown. Both suppress any modal; only
-// "done" means we have them.
 const DONE_KEY = "skopnix.waitlist.done";
 const SEEN_KEY = "skopnix.waitlist.seen";
 
-// ---------------------------------------------------------------------------
-// The confirmation has to survive a refresh: without this, someone who already
-// signed up comes back to an empty form and can't tell whether it worked.
-//
-// Read through useSyncExternalStore rather than an effect, for two reasons:
-// these pages are statically rendered, so the server snapshot (`false`) keeps
-// first paint identical to the server's markup and hydration stays clean; and
-// subscribing to `storage` syncs the state across the visitor's other tabs.
-//
-// This is a per-browser courtesy, not authoritative state — the database is.
-// A new device or cleared storage just shows the form again, and re-submitting
-// is a harmless upsert (the API dedupes on email).
-// ---------------------------------------------------------------------------
+// The confirmation has to survive a refresh (see the previous version's notes):
+// read through useSyncExternalStore so first paint matches the server's markup
+// and other tabs stay in sync. A per-browser courtesy, not authoritative state.
 const listeners = new Set<() => void>();
 
 function subscribeDone(cb: () => void) {
@@ -41,7 +28,6 @@ function subscribeDone(cb: () => void) {
   };
 }
 
-// `storage` only fires in *other* tabs, so same-tab writes notify by hand.
 function emitDone() {
   for (const l of listeners) l();
 }
@@ -50,7 +36,7 @@ function readDone(): boolean {
   try {
     return localStorage.getItem(DONE_KEY) === "1";
   } catch {
-    return false; // private mode — just show the form
+    return false;
   }
 }
 
@@ -58,8 +44,6 @@ export function Waitlist({ source = "site" }: { source?: string }) {
   const [email, setEmail] = useState("");
   const [state, setState] = useState<State>("idle");
   const [msg, setMsg] = useState("");
-
-  // getSnapshot returns a primitive, so React can compare it by value.
   const done = useSyncExternalStore(subscribeDone, readDone, () => false);
 
   async function submit(e: React.FormEvent) {
@@ -87,16 +71,14 @@ export function Waitlist({ source = "site" }: { source?: string }) {
         emitDone();
       } else {
         setState("error");
-        setMsg(j.error || "Something went wrong — try again.");
+        setMsg(j.error || "Something went wrong. Try again.");
       }
     } catch {
       setState("error");
-      setMsg("Network error — try again.");
+      setMsg("Network error. Try again.");
     }
   }
 
-  // Escape hatch: someone who mistyped their address must not be locked out of
-  // the form forever by their own browser.
   function reset() {
     try {
       localStorage.removeItem(DONE_KEY);
@@ -111,19 +93,12 @@ export function Waitlist({ source = "site" }: { source?: string }) {
 
   if (done) {
     return (
-      <div
-        role="status"
-        className="rounded-[var(--radius-panel)] border border-accent-good/30 bg-accent-good/[0.06] px-5 py-4"
-      >
-        <p className="font-display text-lg font-semibold text-ink-primary">You&apos;re on the list.</p>
-        <p className="mt-1 text-[14px] leading-relaxed text-ink-secondary">
-          One email when alerts open. Nothing else, ever — no tracking pixels, no reselling.
+      <div role="status" className="border border-ink px-4 py-3">
+        <p className="font-display text-[17px] font-bold text-ink">You are on the list.</p>
+        <p className="mt-1 text-[13.5px] leading-relaxed text-ink-2">
+          One email when alerts open. Nothing else, ever: no tracking pixels, no reselling.
         </p>
-        <button
-          type="button"
-          onClick={reset}
-          className="mt-2 font-mono text-[11px] uppercase tracking-wider text-ink-muted underline-offset-4 hover:text-ink-secondary hover:underline"
-        >
+        <button type="button" onClick={reset} className="label mt-2 text-ink-3 underline-offset-4 hover:text-ink hover:underline">
           Use a different email
         </button>
       </div>
@@ -132,8 +107,8 @@ export function Waitlist({ source = "site" }: { source?: string }) {
 
   return (
     <div>
-      <form onSubmit={submit} className="flex flex-col gap-2 sm:flex-row">
-        <label className="relative flex flex-1 items-center">
+      <form onSubmit={submit} className="flex flex-col gap-3 sm:flex-row sm:items-end">
+        <label className="flex-1">
           <span className="sr-only">Your email address</span>
           <input
             type="email"
@@ -141,36 +116,27 @@ export function Waitlist({ source = "site" }: { source?: string }) {
             aria-label="Your email address"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            // Solve the proof-of-work on first focus, not on mount: almost nobody
-            // who loads the landing page types an email, and priming everyone
-            // spent a serverless invocation per visitor for nothing.
             onFocus={() => primePowToken()}
             placeholder="you@company.com"
             autoComplete="email"
             spellCheck={false}
-            // This is a one-field mailing-list signup, NOT a login. Bitwarden,
-            // 1Password and LastPass all heuristically treat "an input next to a
-            // submit button" as a credential field and pop their vault over it —
-            // Bitwarden was rendering "No items to show / New login" on top of
-            // the form, which reads as a broken sign-in and costs signups on the
-            // one interaction the whole page exists for. These four attributes
-            // are the opt-outs each vendor documents; they are inert everywhere
-            // else, so there is no cost to carrying all of them.
+            // A one-field mailing-list signup, not a login: these four
+            // attributes stop password managers popping a vault over it.
             data-bwignore=""
             data-1p-ignore=""
             data-lpignore="true"
             data-form-type="other"
-            className="h-12 w-full rounded-[var(--radius-btn)] border border-hairline bg-surface px-4 font-mono text-sm text-ink-primary placeholder:text-ink-muted focus:border-brand focus:outline-none"
+            className="ruled-input"
           />
         </label>
-        <Button type="submit" disabled={state === "loading"} glyph="→" className="shrink-0">
+        <Button type="submit" size="sm" disabled={state === "loading"} glyph="→" className="shrink-0">
           {state === "loading" ? "Sending" : "Notify me"}
         </Button>
       </form>
       <div className="mt-2.5 flex items-center gap-3">
         <PowBadge />
         {state === "error" && (
-          <span role="alert" className="font-mono text-[11px] text-accent-critical">
+          <span role="alert" className="font-mono text-[11px] text-stamp">
             {msg}
           </span>
         )}

@@ -32,6 +32,8 @@ const getPage = unstable_cache(
         kev: s.kev,
         cve: s.cveIds[0] ?? null,
         at: s.publishedAt,
+        category: s.category,
+        severity: s.severity,
       })),
     };
   },
@@ -40,12 +42,13 @@ const getPage = unstable_cache(
   // database shows up here until this key changes or the hour elapses. Bump the
   // version to flush it (v3 -> v4: permalinks moved from Azerbaijani to English;
   // v4 -> v5: four regional digests were retracted and had to leave the feed now,
-  // not in an hour).
+  // not in an hour; v5 -> v6: the v4 "Late Edition" rows carry category and
+  // severity so the ledger can print the tag and weight its rules).
   //
   // A retraction taking up to an hour to disappear is the wrong behaviour for a
   // threat-intel site — the fix is a revalidate endpoint the pipeline can call
   // (revalidateTag) rather than a version bump per incident.
-  ["news-archive-v5"],
+  ["news-archive-v6"],
   { revalidate: 3600 }
 );
 
@@ -55,24 +58,39 @@ export default async function NewsArchive({ searchParams }: { searchParams: Prom
   const { total, rows } = await getPage(page);
   const pages = Math.max(1, Math.ceil(total / PER));
 
+  // The running number of every dispatch in the paper: newest is № total, so a
+  // row's ordinal is the total less everything above it on earlier pages and on
+  // this one. The masthead's edition number is proven row by row.
+  const offset = (page - 1) * PER;
+  const ledger = rows.map((r, i) => ({ ...r, ordinal: total - offset - i }));
+  const first = ledger[0]?.ordinal ?? null;
+  const last = ledger[ledger.length - 1]?.ordinal ?? null;
+
   return (
     <>
-      <SiteHeader />
+      <SiteHeader section="Section C · The archive" />
       <main id="main">
         <PageHead
-          kicker="Every dispatch · newest first"
-          live
+          kicker="Every edition · newest first"
           title="The archive."
           meta={
             <>
-              {total.toLocaleString("en-US")} dispatches · page {page} of {pages}
+              <span>{total.toLocaleString("en-US")} dispatches</span>
+              <span>
+                page {page} / {pages}
+              </span>
+              {first !== null && last !== null && (
+                <span>
+                  № {first.toLocaleString("en-US")} – {last.toLocaleString("en-US")}
+                </span>
+              )}
             </>
           }
         />
-        <ArchiveList rows={rows} />
+        <ArchiveList rows={ledger} />
         <Pagination page={page} pages={pages} />
       </main>
-      <SiteFooter />
+      <SiteFooter total={total} />
     </>
   );
 }

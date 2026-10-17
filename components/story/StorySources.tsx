@@ -1,11 +1,13 @@
-import { Button } from "@/components/site/Button";
 import { outletCode, outletHost } from "@/lib/outlets";
 import type { Story } from "@/lib/types";
+import { RuledSection } from "./Ruled";
 
-// Ground-News-style attribution: every outlet that ran this story, so the reader
-// picks where to read it — never a fabricated "N sources" count. The "grounded"
-// line always renders (even for a self-generated story with no outlet), since it
-// is a claim about the site's own sourcing discipline, not about this one story.
+// Attribution as a ledger: every outlet that ran this story, one ruled row
+// each (code, host, primary or also), so the reader picks where to read it —
+// never a fabricated "N sources" count. Prints only when more than one outlet
+// carried the story: the primary source already stands in the dateline and in
+// the facts box, and the colophon carries the site's grounding line, so a
+// third "grounded" badge here would be decoration.
 export function StorySources({
   story,
   hasSource,
@@ -17,44 +19,30 @@ export function StorySources({
   host: string;
   code: string;
 }) {
+  const outlets: { url: string; code: string; host: string; primary: boolean }[] = [];
+  if (hasSource) outlets.push({ url: story.sourceUrl, code, host, primary: true });
+  for (const u of story.altSources) outlets.push({ url: u, code: outletCode(u), host: outletHost(u), primary: false });
+
+  if (outlets.length < 2) return null;
   return (
-    <>
-      {story.altSources.length > 0 && (
-        <div className="mt-8 border-t border-hairline pt-5">
-          <div className="font-mono text-[length:var(--t-micro)] uppercase tracking-[0.14em] text-ink-muted">
-            Sources · {story.altSources.length + (hasSource ? 1 : 0)}
-          </div>
-          <div className="mt-3 flex flex-wrap items-center gap-2">
-            {hasSource && (
-              <Button href={story.sourceUrl} variant="ghost" size="sm" glyph="↗" ariaLabel={`Primary source: ${host}`}>
-                {code} · primary
-              </Button>
-            )}
-            {story.altSources.map((u) => (
-              <Button key={u} href={u} variant="ghost" size="sm" glyph="↗" ariaLabel={`Also reported by ${outletHost(u)}`}>
-                {outletCode(u)}
-              </Button>
-            ))}
-          </div>
-          <p className="mt-2 font-mono text-[length:var(--t-micro)] text-ink-muted">
-            outlets reporting the same story — pick one to read
-          </p>
-        </div>
-      )}
-      <div className="mt-10 flex flex-wrap items-center justify-between gap-x-6 gap-y-2 border-t border-hairline pt-5 font-mono text-[length:var(--t-meta)] text-ink-muted">
-        <span className="text-accent-good">grounded ✓</span>
-        {hasSource && (
-          <a
-            href={story.sourceUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            title={host}
-            className="uppercase tracking-wider transition-colors hover:text-ink-primary"
-          >
-            primary source ↗
-          </a>
-        )}
-      </div>
-    </>
+    <RuledSection label={`Sources · ${outlets.length}`} meta="outlets reporting the same story">
+      <ol>
+        {outlets.map((o) => (
+          <li key={o.url} className="row">
+            <a
+              href={o.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label={`${o.primary ? "Primary source" : "Also reported by"}: ${o.host}`}
+              className="group grid min-h-[44px] grid-cols-[4.5rem_1fr_auto] items-center gap-x-3 py-2"
+            >
+              <span className="num font-mono text-[12px] text-ink">{o.code}</span>
+              <span className="min-w-0 truncate text-[14px] text-ink-2 group-hover:text-ink group-hover:underline">{o.host}</span>
+              <span className="label whitespace-nowrap text-ink-3">{o.primary ? "Primary ↗" : "Also ↗"}</span>
+            </a>
+          </li>
+        ))}
+      </ol>
+    </RuledSection>
   );
 }

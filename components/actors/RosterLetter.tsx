@@ -12,6 +12,11 @@ import type { IndexEntry } from "@/lib/threatactors";
 // time a visitor opens a letter. Discovery for crawlers is the sitemap's job.
 // Plain anchors, not <Link>: a <Link> per dossier would prefetch hundreds of
 // on-demand ISR renders as a visitor scrolls.
+//
+// Set as an index page: the letter head in the slab, the count in mono with
+// its word in the label voice on a fixed-width cell so the row aligns down
+// the list, one bottom rule per row (no leader), and the names flowing down
+// newspaper columns once the letter is open.
 let roster: Promise<IndexEntry[]> | null = null;
 function loadRoster(): Promise<IndexEntry[]> {
   roster ??= fetch("/actors/index.json")
@@ -38,17 +43,21 @@ export function RosterLetter({ letter, count }: { letter: string; count: number 
   }
 
   return (
-    <details id={`actor-${letter === "#" ? "num" : letter}`} className="group scroll-mt-24 border-b border-hairline" onToggle={onToggle}>
-      <summary className="flex cursor-pointer list-none items-baseline gap-3 py-3 font-mono text-[11px] font-semibold uppercase tracking-[0.14em] text-ink-secondary transition-colors hover:text-ink-primary [&::-webkit-details-marker]:hidden">
-        <span className="text-ink-primary">{letter}</span>
-        <span aria-hidden className="h-px flex-1 bg-hairline" />
-        <span className="font-normal normal-case tracking-normal text-ink-muted">{count}</span>
-        <span aria-hidden className="text-ink-muted transition-transform group-open:rotate-90">→</span>
+    <details id={`actor-${letter === "#" ? "num" : letter}`} className="group row scroll-mt-32" onToggle={onToggle}>
+      <summary className="flex cursor-pointer list-none items-baseline gap-4 py-2.5 [&::-webkit-details-marker]:hidden">
+        <span className="headline w-[2ch] text-[26px] text-ink">{letter}</span>
+        <span className="label w-[8.5rem] shrink-0 text-ink-3 transition-colors group-hover:text-ink">
+          <span className="num font-mono tracking-normal">{count.toLocaleString("en-US")}</span> {count === 1 ? "dossier" : "dossiers"}
+        </span>
+        <span aria-hidden className="label ml-auto text-ink-3">
+          <span className="group-open:hidden">Open ↓</span>
+          <span className="hidden group-open:inline">Close ↑</span>
+        </span>
       </summary>
       {rows === null ? (
-        <p className="pb-5 font-mono text-[11px] text-ink-muted">loading…</p>
+        <p className="label pb-5 text-ink-3">loading…</p>
       ) : (
-        <ul className="grid grid-cols-2 gap-x-4 gap-y-1.5 pb-5 sm:grid-cols-3 lg:grid-cols-4">
+        <ul className="col-rules grid grid-cols-2 gap-x-6 gap-y-1 pb-5 [--cols:2] sm:grid-cols-3 md:[--cols:3] lg:grid-cols-4 lg:[--cols:4]">
           {rows.map((a) => (
             <li key={a.id} className="min-w-0">
               <a href={`/actors/${encodeURIComponent(a.id)}`} className="roster-link" title={a.name}>

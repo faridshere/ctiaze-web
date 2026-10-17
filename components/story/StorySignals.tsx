@@ -1,11 +1,14 @@
 import { urgencyHeader, exposureLine, storyActions, signalExplainer } from "@/lib/storysignal";
 import type { Story } from "@/lib/types";
+import { RuledSection } from "./Ruled";
 
-// Web parity with the Telegram post: the same deterministic urgency, exposure and
-// "what to do" signals, computed purely from pipeline-stamped fields (lib/story
-// signal mirrors cti/publish.py — no LLM, no invented facts). The old 🔴/🟠/🛰️
-// emoji are swapped for mono instrument labels (KEV/HIGH/SHODAN) so the block
-// reads like a readout rather than a chat message.
+// Web parity with the Telegram post: the same deterministic urgency, exposure
+// and "what to do" signals, computed purely from pipeline-stamped fields
+// (lib/storysignal mirrors cti/publish.py — no LLM, no invented facts). Set
+// as a ruled ledger: a stamp (KEV, in stamp red, or HIGH in ink) beside the
+// readout in Archivo (prose is never set in mono), the Shodan line, the
+// plain-language gloss, and the actions as a list, numbered only when there
+// are two or more.
 export function StorySignals({ story }: { story: Story }) {
   const urgency = urgencyHeader(story, "en");
   const exposure = exposureLine(story, "en");
@@ -14,46 +17,47 @@ export function StorySignals({ story }: { story: Story }) {
   if (!urgency && !exposure && actions.length === 0) return null;
 
   return (
-    <div className="mt-5 flex flex-col gap-3">
-      {urgency && (
-        <div
-          role="status"
-          className={`flex items-center gap-2.5 rounded-[var(--radius-panel)] border px-3.5 py-2.5 ${
-            urgency.tone === "critical"
-              ? "border-accent-critical/40 bg-accent-critical/10 text-accent-critical"
-              : "border-accent-warning/40 bg-accent-warning/10 text-accent-warning"
-          }`}
-        >
-          <span className="shrink-0 rounded-[var(--radius-chip)] border border-current px-1 font-mono text-[length:var(--t-micro)] font-semibold uppercase tracking-wider">
-            {urgency.tone === "critical" ? "KEV" : "HIGH"}
-          </span>
-          <span className="font-mono text-[13px] font-semibold">{urgency.text}</span>
-        </div>
-      )}
-      {exposure && (
-        <div className="flex items-center gap-2.5 rounded-[var(--radius-panel)] border border-brand/30 bg-brand-wash px-3.5 py-2.5 text-brand">
-          <span className="shrink-0 rounded-[var(--radius-chip)] border border-current px-1 font-mono text-[length:var(--t-micro)] font-semibold uppercase tracking-wider">
-            SHODAN
-          </span>
-          <span className="font-mono text-[12.5px] leading-snug">{exposure}</span>
-        </div>
-      )}
-      {explainer && (
-        <p className="text-[12px] leading-relaxed text-ink-muted">{explainer}</p>
-      )}
-      {actions.length > 0 && (
-        <div className="rounded-[var(--radius-panel)] border border-hairline bg-surface-raised/40 px-4 py-3">
-          <div className="font-mono text-[10px] uppercase tracking-[0.14em] text-ink-muted">What to do</div>
-          <ul className="mt-2 space-y-1.5">
-            {actions.map((a, i) => (
-              <li key={i} className="flex gap-2 text-[13px] leading-relaxed text-ink-secondary">
-                <span className="mt-1.5 size-1.5 shrink-0 rounded-full bg-brand" aria-hidden="true" />
-                <span>{a}</span>
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
-    </div>
+    <RuledSection label="Signals" meta="as the pipeline stamped them">
+      <dl className="divide-y divide-rule-soft">
+        {urgency && (
+          <div role="status" className="grid grid-cols-[5.5rem_1fr] items-baseline gap-x-3 py-3">
+            <dt>
+              <span className={urgency.tone === "critical" ? "stamp" : "stamp stamp-ink"}>{urgency.tone === "critical" ? "KEV" : "High"}</span>
+            </dt>
+            <dd className="text-[14px] leading-snug text-ink">{urgency.text}</dd>
+          </div>
+        )}
+        {exposure && (
+          <div className="grid grid-cols-[5.5rem_1fr] items-baseline gap-x-3 py-3">
+            <dt>
+              <span className="stamp stamp-ink">Shodan</span>
+            </dt>
+            <dd className="text-[14px] leading-snug text-ink">{exposure}</dd>
+          </div>
+        )}
+        {actions.length > 0 && (
+          <div className="grid grid-cols-[5.5rem_1fr] items-baseline gap-x-3 py-3">
+            <dt className="label text-ink-3">What to do</dt>
+            <dd>
+              <ol className="space-y-1.5">
+                {actions.map((a, i) =>
+                  actions.length > 1 ? (
+                    <li key={i} className="grid grid-cols-[2ch_1fr] gap-x-2 text-[14px] leading-snug text-ink-2">
+                      <span className="num font-mono text-[11px] text-ink-3">{i + 1}.</span>
+                      <span>{a}</span>
+                    </li>
+                  ) : (
+                    <li key={i} className="text-[14px] leading-snug text-ink-2">
+                      {a}
+                    </li>
+                  )
+                )}
+              </ol>
+            </dd>
+          </div>
+        )}
+      </dl>
+      {explainer && <p className="mt-3 max-w-[64ch] text-[12.5px] leading-relaxed text-ink-3">{explainer}</p>}
+    </RuledSection>
   );
 }

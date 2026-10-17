@@ -1,49 +1,47 @@
 import { LocalTime } from "@/components/site/LocalTime";
 import Link from "next/link";
-import { Kicker } from "@/components/site/Kicker";
-import { Panel } from "@/components/site/Panel";
 import type { WireMention } from "@/lib/actor-wire";
+import { DOSSIER_SECTION, SectionHead } from "./ActorHeader";
 
 const MAX_ROWS = 10;
 
+// Some source feeds hand us a headline already cut at a fixed length ("…said
+// Tu"). We print the title as the source gave it, but when it ends inside a
+// word with no closing mark it gets an ellipsis, so the cut reads as an
+// elision, not as our typesetting error. Nothing is added or reworded.
+const CUT_LENGTH = 150;
+function tidyTitle(title: string): string {
+  const t = title.trim();
+  if (t.length < CUT_LENGTH) return t;
+  if (/[.!?…"”’')\]]$/.test(t)) return t;
+  return `${t}…`;
+}
+
 // This actor's own real mentions on skopnix's wire (lib/actor-wire's precise
-// name/alias matcher over the last few hundred dispatches) — newest first, so
-// a visitor sees whether the wire has actually talked about this actor, not a
-// vague "recent activity" claim.
+// name/alias matcher over the last few hundred dispatches) — newest first, as
+// ruled rows whose bottom rule carries the severity (the double stamp rule
+// for anything actively exploited), so a visitor sees whether the wire has
+// actually talked about this actor, not a vague "recent activity" claim.
 export function ActorWire({ mentions }: { mentions: WireMention[] }) {
   if (mentions.length === 0) return null;
   const rows = mentions.slice(0, MAX_ROWS);
 
   return (
-    <section className="mx-auto mt-[var(--sp-section)] w-full max-w-[80rem] px-[var(--sp-gutter)]">
-      <Kicker live>On the wire</Kicker>
-      <Panel className="mt-5">
-        <ol>
-          {rows.map((m, i) => (
-            <li key={`${m.slug}-${i}`} className="border-b border-hairline last:border-b-0">
-              <Link
-                href={`/news/${m.slug}`}
-                className="group flex items-center gap-3 px-5 py-3 transition-colors hover:bg-surface-hover sm:px-6"
-              >
-                <span className="min-w-0 flex-1 truncate text-[14px] leading-snug text-ink-primary/90 transition-colors group-hover:text-ink-primary">
-                  {m.title}
-                </span>
-                {m.kev && (
-                  <span className="shrink-0 rounded-[var(--radius-chip)] bg-accent-critical px-1 py-px font-mono text-[10px] font-semibold uppercase text-surface">
-                    KEV
-                  </span>
-                )}
-<LocalTime
-                  iso={m.at}
-                  shape="date"
-                  className="shrink-0 font-mono text-[11px] tabular-nums text-ink-muted"
-                  fallback={m.at.slice(0, 10)}
-                />
-              </Link>
-            </li>
-          ))}
-        </ol>
-      </Panel>
+    <section className={DOSSIER_SECTION} aria-labelledby="wire-head">
+      <SectionHead id="wire-head" aside={`${mentions.length} dispatch${mentions.length === 1 ? "" : "es"} · newest first`}>
+        On the wire
+      </SectionHead>
+      <ol>
+        {rows.map((m, i) => (
+          <li key={`${m.slug}-${i}`} className="row" data-sev={m.kev ? "kev" : undefined}>
+            <Link href={`/news/${m.slug}`} className="group grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-x-3 py-3">
+              <LocalTime iso={m.at} shape="date" className="num font-mono text-[11px] text-ink-3" fallback={m.at.slice(0, 10)} />
+              <span className="line-clamp-2 min-w-0 text-[14px] leading-[1.3] text-ink underline-offset-[3px] group-hover:underline">{tidyTitle(m.title)}</span>
+              <span className="flex items-center">{m.kev && <span className="stamp">KEV</span>}</span>
+            </Link>
+          </li>
+        ))}
+      </ol>
     </section>
   );
 }

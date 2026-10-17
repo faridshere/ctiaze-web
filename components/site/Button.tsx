@@ -1,29 +1,27 @@
 import Link from "next/link";
 
-// The one button. Mono uppercase chrome with a trailing glyph, three variants:
-//   primary — signal orange, the single orange element in a view
-//   ghost   — hairline, for the secondary action beside a primary
-//   pill    — rounded-full hairline, for outbound links (footer)
+// The one button, in the paper's vocabulary. Condensed uppercase label with a
+// trailing glyph, three variants:
+//   primary — ink block, paper text (the single filled control in a view)
+//   ghost   — 1px ink box
+//   pill    — bare underlined label, for outbound links in running chrome
 // Renders <Link> for internal hrefs, <a target=_blank> for external ones, and a
 // real <button> when there is no href (form submit).
 type Variant = "primary" | "ghost" | "pill";
 type Size = "sm" | "md";
 
 const BASE =
-  "inline-flex items-center justify-center gap-2 whitespace-nowrap font-mono uppercase tracking-[0.12em] transition-[transform,background-color,border-color,color] duration-200 ease-[var(--ease-out)] disabled:cursor-not-allowed disabled:opacity-50";
+  "label inline-flex items-center justify-center gap-2 whitespace-nowrap transition-[background-color,border-color,color] duration-200 ease-[var(--ease-out)] disabled:cursor-not-allowed disabled:opacity-50";
 
 const VARIANT: Record<Variant, string> = {
-  primary:
-    "rounded-[var(--radius-btn)] bg-brand text-[#170a03] hover:-translate-y-px hover:bg-[#ff6f3d]",
-  ghost:
-    "rounded-[var(--radius-btn)] border border-hairline text-ink-secondary hover:border-ink-muted hover:text-ink-primary",
-  pill:
-    "rounded-full border border-hairline text-ink-secondary hover:border-ink-muted hover:text-ink-primary",
+  primary: "bg-ink text-paper hover:bg-ink-2",
+  ghost: "border border-ink text-ink hover:bg-ink hover:text-paper",
+  pill: "text-ink-2 underline decoration-rule-soft underline-offset-4 hover:text-ink hover:decoration-ink",
 };
 
 const SIZE: Record<Size, string> = {
-  sm: "h-9 px-3.5 text-[11px]",
-  md: "h-12 px-5 text-[12px]",
+  sm: "h-9 px-3.5",
+  md: "h-12 px-5",
 };
 
 export function Button({
@@ -48,12 +46,13 @@ export function Button({
   className?: string;
   ariaLabel?: string;
 }) {
-  const cls = `${BASE} ${VARIANT[variant]} ${SIZE[size]} ${className}`;
+  const sizing = variant === "pill" ? "px-0 py-1" : SIZE[size];
+  const cls = `${BASE} ${VARIANT[variant]} ${sizing} ${className}`;
   const inner = (
     <>
       <span>{children}</span>
       {glyph && (
-        <span aria-hidden className="translate-y-px text-[1.1em] leading-none">
+        <span aria-hidden className="translate-y-px font-mono text-[1.1em] leading-none">
           {glyph}
         </span>
       )}

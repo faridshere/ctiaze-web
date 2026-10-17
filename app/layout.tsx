@@ -1,28 +1,53 @@
 import type { Metadata, Viewport } from "next";
-import { Schibsted_Grotesk, JetBrains_Mono } from "next/font/google";
+import { Archivo, Hepta_Slab, IBM_Plex_Mono, Schibsted_Grotesk } from "next/font/google";
 import { MotionRoot } from "@/components/MotionRoot";
 import { HitBeacon } from "@/components/HitBeacon";
 import { SITE_NAME, SITE_URL, LINKS, SOURCE_COUNT } from "@/lib/site";
 import "./globals.css";
 
-// Type system: ONE grotesque (Schibsted) for the wordmark, headlines and body —
-// exposed as --font-display / --font-headline / --font-body in globals.css so
-// every surface, live or shelved, resolves to the same face — and JetBrains
-// Mono for all chrome and telemetry. next/font self-hosts the woff2 from our
-// origin: no runtime CDN, no per-OS fallback drift. latin-ext keeps actor and
-// place names with diacritics clean.
-const schibsted = Schibsted_Grotesk({
-  variable: "--font-schibsted",
-  subsets: ["latin", "latin-ext"],
-  weight: ["400", "500", "600", "700"],
+// Type system (v4 "Late Edition", 2026-10-16). Four files, all self-hosted by
+// next/font so the CSP stays 'self' and no runtime CDN is involved:
+//   Hepta Slab      the headline voice: a variable Clarendon (wght 1–900), the
+//                   kind of slab a broadsheet sets its front page in. Its
+//                   weight axis is the only type on the site that moves.
+//   Archivo         body AND labels from one variable file: 100% width for
+//                   running text, 75% (condensed) for kickers, datelines, nav
+//                   and table heads: the newspaper secret.
+//   IBM Plex Mono   every number, time, count, CVE id and delta, tabular with
+//                   a slashed zero.
+//   Schibsted Grotesk 700, the wordmark's face, untouched: "skopnix" is one
+//                   word in one weight and is the same on every page.
+// Font bill (measured on the 2026-10-16 build): every subset of every face
+// is preloaded, so latin only, no italics, one mono weight. Diacritics in an
+// actor or place name fall back to the system face for that glyph.
+const hepta = Hepta_Slab({
+  variable: "--font-hepta",
+  subsets: ["latin"],
+  weight: "variable",
   display: "swap",
 });
 
-const mono = JetBrains_Mono({
-  variable: "--font-mono",
-  subsets: ["latin", "latin-ext"],
-  weight: ["400", "700"],
+const archivo = Archivo({
+  variable: "--font-archivo",
+  subsets: ["latin"],
+  weight: "variable",
+  axes: ["wdth"],
   display: "swap",
+});
+
+const plex = IBM_Plex_Mono({
+  variable: "--font-plex",
+  subsets: ["latin"],
+  weight: "400",
+  display: "swap",
+});
+
+const schibsted = Schibsted_Grotesk({
+  variable: "--font-schibsted",
+  subsets: ["latin"],
+  weight: "700",
+  display: "swap",
+  preload: false,
 });
 
 export const metadata: Metadata = {
@@ -43,20 +68,49 @@ export const metadata: Metadata = {
   },
 };
 
-// The screen identity is always the dark ink register (light is print-only),
-// so the browser chrome is dark on every device.
+// Two editions of one paper: the browser chrome follows whichever is printing.
 export const viewport: Viewport = {
-  themeColor: "#0a0b0d",
-  colorScheme: "dark",
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#f4f0e6" },
+    { media: "(prefers-color-scheme: dark)", color: "#0b0a08" },
+  ],
+  colorScheme: "light dark",
 };
+
+// Runs before first paint: a reader who picked an edition in the masthead keeps
+// it, from localStorage, with no cookie (every page stays ISR) and no flash.
+// Anything else leaves the attribute off and prefers-color-scheme decides.
+const EDITION_SCRIPT =
+  "try{var e=localStorage.getItem('skopnix.edition');if(e==='day'||e==='night'){document.documentElement.setAttribute('data-edition',e)}}catch(_){}";
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en" className={`${schibsted.variable} ${mono.variable}`}>
-      <body className="min-h-screen bg-surface font-body text-ink-primary antialiased">
+    <html lang="en" className={`${hepta.variable} ${archivo.variable} ${plex.variable} ${schibsted.variable}`} suppressHydrationWarning>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: EDITION_SCRIPT }} />
+      </head>
+      <body className="min-h-screen bg-paper font-body text-ink antialiased">
+        {/*
+          DIRECTION CONTRACT (v4 "Late Edition", seed: panel-2026-10-16/broadsheet)
+          THESIS: a threat wire set as a live broadsheet, refusing the dark
+          glowing dashboard every CTI site ships. OWN-WORLD: warm newsprint by
+          day, warm black stock by night; Hepta Slab headlines, condensed
+          Archivo labels, Plex Mono figures; hierarchy by 1px/2px/double rules
+          and column hairlines; stamp red for KEV; orange only in the logo and
+          the one live dot. STORY: a reader sees the newest exploited CVE as a
+          front-page lead, the wire ticking beside it with real archive
+          ordinals, and leaves with Telegram/RSS/JSON in hand. FIRST VIEWPORT:
+          40px black tape (clock, newest dispatch, edition number), a three-rule
+          nameplate with the untouched logo centred and the 24h dial right, the
+          lead in columns 1–7, THE WIRE in 9–12 behind a 1px rule, the index
+          strip under the lead. FORM: editorial broadsheet, first of five
+          directions by three judges. FINISH: unreviewed and undocumented is
+          unfinished; this build ends with the finish review, the verdict,
+          DESIGN.md, and every shipping raster carrying its provenance.
+        */}
         <a
           href="#main"
-          className="sr-only focus:not-sr-only focus:absolute focus:left-3 focus:top-3 focus:z-[100] focus:rounded-[var(--radius-btn)] focus:bg-brand focus:px-3 focus:py-2 focus:font-mono focus:text-xs focus:font-semibold focus:text-[#170a03]"
+          className="label sr-only focus:not-sr-only focus:absolute focus:left-3 focus:top-3 focus:z-[100] focus:bg-ink focus:px-3 focus:py-2 focus:text-paper"
         >
           Skip to content
         </a>

@@ -1,37 +1,34 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { zoneName } from "@/components/site/LocalTime";
 
-// The ticking clock in the wire panel's title bar. Renders a fixed-width
-// placeholder on the server and starts ticking after mount, so server and client
-// markup agree (no hydration mismatch) and nothing shifts.
-//
-// It used to tick in UTC while every dispatch row beneath it rendered in the
-// READER's zone (components/site/LocalTime). In Baku that put "19:52" in the
-// title bar above a column of rows stamped "23:04" — the wire appeared to be
-// four hours ahead of the site's own clock. Both now read the same zone, and
-// the zone is named rather than assumed.
-function stamp(d: Date): string {
+// The ticking clock in the tape and the strip. UTC, labelled, because the
+// paper's datelines are UTC: every reader anywhere can check it against the
+// instant a dispatch carries. Renders a fixed-width placeholder on the server
+// and starts ticking after mount, so server and client markup agree and
+// nothing shifts.
+function stamp(d: Date, seconds: boolean): string {
   const p = (n: number) => String(n).padStart(2, "0");
-  return `${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`;
+  return `${p(d.getUTCHours())}:${p(d.getUTCMinutes())}${seconds ? `:${p(d.getUTCSeconds())}` : ""}`;
 }
 
-export function UtcClock() {
+export function UtcClock({ className = "", seconds = false, fallbackIso }: { className?: string; seconds?: boolean; fallbackIso?: string }) {
   const [now, setNow] = useState<string | null>(null);
+  const fallback = fallbackIso ? stamp(new Date(fallbackIso), seconds) : seconds ? "--:--:--" : "--:--";
   useEffect(() => {
-    const tick = () => setNow(stamp(new Date()));
+    const tick = () => setNow(stamp(new Date(), seconds));
     tick();
-    const id = setInterval(tick, 1000);
+    const id = setInterval(tick, seconds ? 1000 : 15_000);
     return () => clearInterval(id);
-  }, []);
+  }, [seconds]);
   return (
     <span
-      className="inline-block w-[8ch] font-mono text-[11px] tabular-nums tracking-[0.06em] text-ink-muted"
+      className={`num inline-block whitespace-nowrap font-mono text-[11px] tracking-[0.06em] ${className}`}
       aria-live="off"
-      title={now ? zoneName() : undefined}
+      title="Coordinated Universal Time"
+      data-utc-clock
     >
-      {now ?? "--:--:--"}
+      {now ?? fallback} UTC
     </span>
   );
 }

@@ -1,6 +1,7 @@
-// `● LABEL` — the section label. Mono, small, tracked. The dot goes orange and
-// pulses only when the label describes something genuinely live (the wire).
-// One kicker per section; it introduces, it never decorates.
+// The dateline-style label above a section: condensed Archivo, uppercase,
+// tracked. Carries the one live dot only when the label describes something
+// genuinely live (the wire). In v4 it is a label, never a decoration: use it
+// where a newspaper would print a section head or a kicker, nowhere else.
 export function Kicker({
   children,
   live = false,
@@ -11,13 +12,8 @@ export function Kicker({
   className?: string;
 }) {
   return (
-    <span
-      className={`inline-flex items-center gap-2.5 font-mono text-[11px] uppercase tracking-[0.18em] text-ink-muted ${className}`}
-    >
-      <span
-        aria-hidden
-        className={`inline-block size-1.5 shrink-0 rounded-full ${live ? "signal-dot bg-brand" : "bg-ink-muted/70"}`}
-      />
+    <span className={`label inline-flex items-center gap-2 text-ink-3 ${className}`}>
+      {live && <span aria-hidden className="live-dot" />}
       <span>{children}</span>
     </span>
   );
