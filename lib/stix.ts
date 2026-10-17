@@ -23,7 +23,7 @@ import type { ThreatActor } from "./threatactors";
 // re-import, or referenced from anywhere. Same actor in, same ids out.
 const STIX_NAMESPACE = "00abedb4-aa42-466c-9c01-fed23315a9b7";
 
-function uuid5(name: string): string {
+export function uuid5(name: string): string {
   const ns = Buffer.from(STIX_NAMESPACE.replace(/-/g, ""), "hex");
   const digest = createHash("sha1").update(ns).update(Buffer.from(name, "utf8")).digest();
   const b = Buffer.from(digest.subarray(0, 16));
@@ -37,7 +37,7 @@ function uuid5(name: string): string {
 // identifies the thing upstream — the ATT&CK id where there is one, the name
 // otherwise. Keeping the type in the string stops a tool and a malware family
 // that share a name from colliding into one id.
-function stixId(type: string, key: string): string {
+export function stixId(type: string, key: string): string {
   return `${type}--${uuid5(`${type}:${key}`)}`;
 }
 
@@ -72,6 +72,20 @@ export type StixObject = {
   target_ref?: string;
   definition_type?: string;
   definition?: { tlp: string };
+  // Used by the cited-intel objects (lib/cited.ts), never by the dossier bundle.
+  confidence?: number;
+  labels?: string[];
+  pattern?: string;
+  pattern_type?: string;
+  valid_from?: string;
+  indicator_types?: string[];
+  report_types?: string[];
+  published?: string;
+  object_refs?: string[];
+  threat_actor_types?: string[];
+  country?: string;
+  // Custom properties: STIX 2.1 §11.1 asks for an `x_` prefix.
+  [custom: `x_${string}`]: unknown;
 };
 
 export type StixBundle = {
@@ -85,9 +99,9 @@ export type StixBundle = {
 // every id-stable object's timestamp on every request — the exact thing this
 // bundle exists to avoid. `modified` carries the real signal: the engine's
 // last refresh of that actor.
-const CREATED = "2026-09-07T00:00:00.000Z";
+export const CREATED = "2026-09-07T00:00:00.000Z";
 
-const IDENTITY_ID = stixId("identity", SITE_NAME);
+export const IDENTITY_ID = stixId("identity", SITE_NAME);
 
 // The unlimited-distribution marking, byte-for-byte as STIX 2.1 §7.2.1.4
 // defines it: fixed id, fixed created, and no `modified` property (marking
@@ -101,7 +115,7 @@ const IDENTITY_ID = stixId("identity", SITE_NAME);
 // stix2-validator flags "TLP marking definitions must match one of those
 // defined in the STIX specification"). Same id, same meaning, and the name
 // the consumers' schemas actually accept.
-const TLP_WHITE: StixObject = {
+export const TLP_WHITE: StixObject = {
   type: "marking-definition",
   spec_version: "2.1",
   id: "marking-definition--613f2e26-407d-48c7-9eca-b8e91df99dc9",
@@ -111,9 +125,9 @@ const TLP_WHITE: StixObject = {
   definition: { tlp: "white" },
 };
 
-const MARKINGS = [TLP_WHITE.id];
+export const MARKINGS = [TLP_WHITE.id];
 
-const iso = (d: Date | string | null | undefined): string | null => {
+export const iso = (d: Date | string | null | undefined): string | null => {
   if (!d) return null;
   const t = new Date(d);
   return Number.isNaN(t.getTime()) ? null : t.toISOString();
@@ -131,7 +145,7 @@ export function attackTechniqueUrl(id: string): string {
 // 404 and look like our mistake.
 const ATTACK_SOFTWARE = /^S\d{4}$/;
 
-function refSourceName(url: string): string {
+export function refSourceName(url: string): string {
   try {
     return new URL(url).hostname.replace(/^www\./, "");
   } catch {
@@ -176,20 +190,9 @@ function actorAliases(a: ThreatActor): string[] {
   return out;
 }
 
-/** The bundle for one dossier. Deterministic: same actor in, same bytes out. */
-export function stixBundle(a: ThreatActor): StixBundle {
-  const dossier = absoluteUrl(`/actors/${a._id}`);
-  // Our record's own age, not the moment of the request.
-  const modified = iso(a.last_refreshed) ?? CREATED;
-  const common = {
-    spec_version: "2.1" as const,
-    created: CREATED,
-    modified,
-    created_by_ref: IDENTITY_ID,
-    object_marking_refs: MARKINGS,
-  };
-
-  const identity: StixObject = {
+/** skopnix as the STIX identity every object it publishes is created_by. */
+export function skopnixIdentity(): StixObject {
+  return {
     type: "identity",
     spec_version: "2.1",
     id: IDENTITY_ID,
@@ -202,12 +205,32 @@ export function stixBundle(a: ThreatActor): StixBundle {
     description: `${SITE_NAME} — open threat intelligence. Aggregated and published, not authored: cite the external_references, not us.`,
     contact_information: SITE_URL,
   };
+}
 
+/** The properties every object of one actor's export shares. */
+export function actorCommon(a: Pick<ThreatActor, "last_refreshed">) {
+  return {
+    spec_version: "2.1" as const,
+    created: CREATED,
+    // Our record's own age, not the moment of the request.
+    modified: iso(a.last_refreshed) ?? CREATED,
+    created_by_ref: IDENTITY_ID,
+    object_marking_refs: MARKINGS,
+  };
+}
+
+/**
+ * The actor as an intrusion-set. Exported so the cited-intel exports
+ * (lib/cited.ts) emit the very same object — same id, same modified — and a
+ * TIP that holds both merges them instead of keeping two copies of the group.
+ */
+export function intrusionSetFor(a: ThreatActor): StixObject {
+  const dossier = absoluteUrl(`/actors/${a._id}`);
   const firstSeen = iso(a.first_seen);
   const lastSeen = iso(a.last_active);
-  const intrusionSet: StixObject = {
+  return {
     type: "intrusion-set",
-    ...common,
+    ...actorCommon(a),
     id: stixId("intrusion-set", a.mitre || a._id),
     name: a.name,
     aliases: actorAliases(a),
@@ -221,6 +244,13 @@ export function stixBundle(a: ThreatActor): StixBundle {
     ...(a.state_sponsor ? { resource_level: "government" } : {}),
     external_references: actorExternalRefs(a, dossier),
   };
+}
+
+/** The bundle for one dossier. Deterministic: same actor in, same bytes out. */
+export function stixBundle(a: ThreatActor): StixBundle {
+  const common = actorCommon(a);
+  const identity = skopnixIdentity();
+  const intrusionSet = intrusionSetFor(a);
 
   const objects: StixObject[] = [TLP_WHITE, identity, intrusionSet];
   const relationships: StixObject[] = [];
