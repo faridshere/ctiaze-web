@@ -135,6 +135,89 @@ export function stripBoilerplate(text: string): string {
   return out.replace(/\s+/g, " ").trim();
 }
 
+// ---------------------------------------------------------------------------
+// Fields the engine cuts at a fixed length, so they can end mid-word: wire row
+// no. 1100 printed "… 4 sources verifie" (2026-10-17). ctiaze-engine slices
+//   a title-less post's title to its body's first 180 characters
+//     (cti/adapters.py: Mastodon, Bluesky, Telegram),
+//   a GitHub advisory's title to "GHSA-xxxx-xxxx-xxxx: " + 110,
+//   an NVD title to "CVE-YYYY-NNNN: " + 90,
+//   every cited quote to 400 (cti/citemap.py, reportmine.py, az_adversaries.py).
+// A field at exactly that length was cut there. endWhole() ends such a text
+// where its words end: at the last complete sentence with an ellipsis when
+// there is one worth keeping, otherwise at the last whole word with no
+// ellipsis at all. An ellipsis only ever follows a full stop, and nothing is
+// added that the source did not say. Lengths are counted in code points, as
+// Python counts them.
+// ---------------------------------------------------------------------------
+const cpLength = (s: string) => [...s].length;
+const GHSA_TITLE = /^GHSA(?:-[0-9a-z]{4}){3}: /i;
+const CVE_TITLE = /^CVE-\d{4}-\d{4,}: /i;
+/** The engine's quote slice (see above). */
+export const ENGINE_QUOTE_CUT = 400;
+// Words a cut phrase must not end on: "… exploited by the" reads as broken.
+const DANGLING = /[\s,;:—–\-/&+(\[]+$|\s+(?:a|an|the|and|or|but|nor|of|to|in|on|at|by|for|from|with|via|as|into|than|that|which|who|is|are|was|were|be|its|their|this|these)$/i;
+
+/** True when a stored title sits at one of the engine's cut lengths. */
+export function titleWasCut(title: string): boolean {
+  const t = title || "";
+  const g = t.match(GHSA_TITLE);
+  if (g) return cpLength(t.slice(g[0].length)) === 110;
+  const c = t.match(CVE_TITLE);
+  if (c) return cpLength(t.slice(c[0].length)) === 90;
+  return cpLength(t) === 180;
+}
+
+/** End a text that is known to have been cut. `next` is the character that
+ *  followed the cut, when the full text is at hand: whitespace there means the
+ *  last word was whole. Without it the last word is taken as partial. */
+export function endWhole(text: string, opts: { next?: string; min?: number } = {}): string {
+  let s = (text || "").replace(/\s+/g, " ").trim();
+  if (!s) return "";
+  const min = opts.min ?? 40;
+  const lastWordWhole = opts.next !== undefined ? opts.next === "" || /^[\s.,;:!?)\]"'”’]/.test(opts.next) : /[.!?]["'”’)\]]*$/.test(s);
+  if (!lastWordWhole) {
+    const sp = s.lastIndexOf(" ");
+    if (sp <= 0) return s; // one unbroken token: nothing whole to fall back to
+    s = s.slice(0, sp);
+  }
+  let cut = -1;
+  for (const m of s.matchAll(SENTENCE_END)) cut = m.index + 1;
+  // A closing quote or bracket after the stop belongs to the sentence.
+  if (cut >= min) return `${s.slice(0, cut + (s.slice(cut).match(/^["'”’)\]]*/)?.[0].length ?? 0))} …`;
+  // No sentence worth keeping: stop on the last whole word. An opening bracket
+  // that the cut left unclosed goes, with what followed it.
+  const open = s.lastIndexOf("(");
+  if (open > s.lastIndexOf(")") && open >= 20) s = s.slice(0, open);
+  for (let prev = ""; prev !== s; ) {
+    prev = s;
+    s = s.replace(DANGLING, "");
+  }
+  return s;
+}
+
+/** A display title: whole words only when the engine cut it. `body` is the
+ *  story's own summary; a title-less post's title is its first 180 characters,
+ *  so the body shows whether the cut fell inside a word. */
+export function wholeTitle(title: string, body = ""): string {
+  const t = (title || "").trim();
+  if (!titleWasCut(t)) return t;
+  const flat = (body || "").replace(/\s+/g, " ").trim();
+  return endWhole(t, { next: flat.startsWith(t) ? flat.slice(t.length, t.length + 1) : undefined });
+}
+
+/** A quote for the page: whole words always. Cut where it runs past `max`, and
+ *  ended cleanly where the engine already cut it at ENGINE_QUOTE_CUT. */
+export function wholeQuote(quote: string, max = Infinity): string {
+  // The engine slices the stored string, so its length is measured before any tidying.
+  const engineCut = cpLength(quote || "") === ENGINE_QUOTE_CUT;
+  const q = (quote || "").replace(/\s+/g, " ").trim();
+  const chars = [...q];
+  if (chars.length > max) return endWhole(chars.slice(0, max).join(""), { next: chars[max], min: 60 });
+  if (engineCut) return endWhole(q, { min: 60 });
+  return q;
+}
+
 export function completeSentences(text: string, opts: { min?: number } = {}): string {
   const s = stripBoilerplate(text);
   if (!s) return "";

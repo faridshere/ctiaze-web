@@ -1,10 +1,11 @@
 import type { CitedActor, TrendingCard } from "./exploit-shape";
+import { wholeQuote } from "./format";
 
 // ---------------------------------------------------------------------------
 // The Azerbaijan threat dashboard: the pure half. Everything here shapes rows
 // the engine wrote (hacktivist_posts, az_adversaries, az_exposure, the
 // exploit_trending board) into what /az and /api/v1/az print. No database, no
-// Next, no "@/" imports (type imports only), so tests/az-shape.test.ts runs it
+// Next, no "@/" imports (relative ones only), so tests/az-shape.test.ts runs it
 // on fixtures.
 //
 // What is public and what is not, enforced here a second time even though the
@@ -201,7 +202,8 @@ export function credibilityWord(v: unknown): string | null {
 function firstCitation(d: AdversaryDoc): Citation | null {
   const all: CitationIn[] = [...(d.citations ?? []), { quote: d.quote, url: d.source_url }];
   for (const c of all) {
-    const quote = str(c?.quote, 300);
+    // Whole words: the engine stores these cut at 400, and 300 used to slice again mid-word.
+    const quote = str(typeof c?.quote === "string" ? wholeQuote(c.quote, 300) : null, Infinity);
     const url = safeHttps(c?.url);
     if (quote && url) return { quote, url, source: str(c?.source, 60) ?? hostOf(url) };
   }
