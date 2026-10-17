@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Archivo, Hepta_Slab, IBM_Plex_Mono, Schibsted_Grotesk } from "next/font/google";
 import { MotionRoot } from "@/components/MotionRoot";
 import { HitBeacon } from "@/components/HitBeacon";
+import { EditionReplay } from "@/components/site/EditionReplay";
 import { SITE_NAME, SITE_URL, LINKS, SOURCE_COUNT } from "@/lib/site";
 import "./globals.css";
 
@@ -80,6 +81,7 @@ export const viewport: Viewport = {
 // Runs before first paint: a reader who picked an edition in the masthead keeps
 // it, from localStorage, with no cookie (every page stays ISR) and no flash.
 // Anything else leaves the attribute off and prefers-color-scheme decides.
+// EditionReplay covers the one path where this never runs (see that file).
 const EDITION_SCRIPT =
   "try{var e=localStorage.getItem('skopnix.edition');if(e==='day'||e==='night'){document.documentElement.setAttribute('data-edition',e)}}catch(_){}";
 
@@ -114,6 +116,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
         >
           Skip to content
         </a>
+        <EditionReplay />
         <MotionRoot />
         <HitBeacon />
         {children}

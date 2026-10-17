@@ -49,3 +49,7 @@ thaicert.html
 # the committed template is the one env file that is NOT secret
 !.env.example
 .snapshots
+
+# playwright
+/test-results/
+/playwright-report/
