@@ -41,7 +41,7 @@ export function Yesterday({ rows, dayKey }: { rows: WireRow[]; dayKey: string | 
               <span className="num font-mono text-[11px] text-ink-3">{hhmm(r.at)}</span>
               <span className="text-[14px] leading-[1.3] text-ink group-hover:underline">{r.title}</span>
               <span className="flex items-center gap-1.5">
-                {r.cve && <span className="tag hidden text-ink-3 sm:inline-block">{r.cve}</span>}
+                {r.cve && <span className="tag hidden text-ink-2 sm:inline-block">{r.cve}</span>}
                 {r.kev ? <span className="stamp">KEV</span> : <GlyphChip category={r.category} />}
               </span>
             </Link>

@@ -28,15 +28,15 @@
   --worse: #b42318;
   --better: #1e7a4a;
   --caution: #8f6a00;
-  --cat-vuln: #3e6285;
-  --cat-exploit: #8a4f37;
+  --cat-vuln: #3c5e80;
+  --cat-exploit: #864c35;
   --cat-malware: #64518a;
-  --cat-ransomware: #8a4a68;
-  --cat-apt: #2f6e5f;
-  --cat-breach: #7d5a2d;
-  --cat-research: #4c7049;
-  --cat-supply-chain: #6b655c;
-  --cat-policy: #565e68;
+  --cat-ransomware: #854764;
+  --cat-apt: #2b6558;
+  --cat-breach: #76552b;
+  --cat-research: #436341;
+  --cat-supply-chain: #605b53;
+  --cat-policy: #555c66;
   --cat-other: #5d584f;
   color-scheme: light;
 
@@ -116,7 +116,7 @@
     --cat-research: #8db98a;
     --cat-supply-chain: #a5a7ae;
     --cat-policy: #94a0b4;
-    --cat-other: #82858f;
+    --cat-other: #858891;
     color-scheme: dark;
   }
 }
@@ -141,7 +141,7 @@
   --cat-research: #8db98a;
   --cat-supply-chain: #a5a7ae;
   --cat-policy: #94a0b4;
-  --cat-other: #82858f;
+  --cat-other: #858891;
   color-scheme: dark;
 }
 
@@ -498,7 +498,14 @@ th {
   border-color: var(--ink);
 }
 
-/* Category tag: two to four mono letters in the category's own ink. */
+/* Category tag: two to four mono letters in the category's own ink.
+   Audited 2026-10-17 (WCAG 2.1, 10.5px is small text, so 4.5:1): every
+   --cat-* ink, in both editions, measured against its own 11% wash laid over
+   --paper AND --paper-deep, clears 4.6:1. Eight day inks and the night
+   "other" grey were nudged in lightness, hue and saturation kept, to get
+   there. A tag never takes --ink-3 (3.97:1 on its wash); the two semantic
+   inks a tag can wear are pulled toward --ink for tags only, so the tokens
+   themselves (and the census deltas) are untouched. */
 .tag {
   display: inline-block;
   font-family: var(--font-mono);
@@ -511,6 +518,8 @@ th {
   background: color-mix(in srgb, currentColor 11%, transparent);
   white-space: nowrap;
 }
+.tag.text-caution { color: color-mix(in srgb, var(--caution) 78%, var(--ink)); }
+.tag.text-worse { color: color-mix(in srgb, var(--worse) 95%, var(--ink)); }
 
 /* The one live dot. */
 .live-dot {

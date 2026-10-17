@@ -125,7 +125,7 @@ export function ActorPulse({
                 <li key={`${c.at}-${c.kind}-${i}`} className="row grid grid-cols-[auto_1fr] items-baseline gap-x-3 gap-y-1 py-2.5 sm:grid-cols-[9ch_8ch_auto_1fr]">
                   <span className="num font-mono text-[11.5px] text-ink">{day ?? "—"}</span>
                   <span className="num font-mono text-[11px] text-ink-3 sm:order-2">{ago(c.at, renderedAt) ?? ""}</span>
-                  <span className="tag col-span-2 w-fit text-ink-3 sm:col-span-1 sm:order-3">{KIND_LABEL[c.kind] ?? c.kind}</span>
+                  <span className="tag col-span-2 w-fit text-ink-2 sm:col-span-1 sm:order-3">{KIND_LABEL[c.kind] ?? c.kind}</span>
                   <span className="col-span-2 min-w-0 text-[14px] leading-snug text-ink-2 sm:col-span-1 sm:order-4">{c.detail}</span>
                 </li>
               );
