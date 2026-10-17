@@ -261,7 +261,7 @@ export default async function ActorPage({ params }: { params: Promise<{ slug: st
           <CtaBand
             source="actor:inline"
             heading={`Track ${a.name} on the wire.`}
-            blurb="This dossier is already data: the keyless actor API and a STIX 2.1 bundle. Mentions on the wire reach Telegram and RSS as they land; per-actor email alerts are next."
+            blurb="This dossier is already data: the keyless actor API and a STIX 2.1 bundle. Mentions on the wire reach Telegram and RSS as they land."
           />
         </div>
       </main>

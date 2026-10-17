@@ -73,8 +73,8 @@ invented.
 
 ## Status
 Live: the wire, the archive, adversary dossiers, a page per CVE at /cve/{id}
-(KEV, EPSS, CVSS and every dispatch that named it), the feeds and the JSON API.
-Still to come: email alerts and an MCP server.
+(KEV, EPSS, CVSS and every dispatch that named it), the stack check at /stack
+(POST /api/v1/stack, no key), the feeds and the JSON API.
 `;
   return new Response(body, {
     headers: {
