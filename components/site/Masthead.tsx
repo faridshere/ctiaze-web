@@ -17,6 +17,7 @@ import { SiteNavLink } from "./SiteNavLink";
 // sections beneath. Every other page gets the compact strip with a section
 // line. Once the nameplate scrolls off, the strip slides in (StickyStrip).
 const NAV: { href: string; label: string; phone: boolean }[] = [
+  { href: "/stack", label: "Stack check", phone: false },
   { href: "/actors", label: "Adversaries", phone: true },
   { href: "/news", label: "Archive", phone: true },
   { href: "/claims", label: "Claims", phone: false },
