@@ -9,6 +9,9 @@ import { getStories, getStoriesForCve } from "@/lib/stories";
 import { kevMeta, epssDetailed, nvdLookup } from "@/lib/cveintel";
 import { getWireMentions } from "@/lib/actor-wire";
 import { getActorNamesFor } from "@/lib/threatactors";
+import { getCitationsForCve } from "@/lib/citations-db";
+import { groupCitationsByActor, type CveActorCitationDoc } from "@/lib/citations";
+import { EvidenceList } from "@/components/citations/EvidenceList";
 import { epssPct } from "@/lib/storysignal";
 import { formatStoryDate, jsonLdSafe } from "@/lib/format";
 import { absoluteUrl } from "@/lib/site";
@@ -81,12 +84,16 @@ async function loadUncached(id: string) {
   // 30 s per IP, so a trickle of junk would have 403'd our real lookups).
   // KEV and our own archive are both already in memory/indexed and cheap, so
   // an id nothing has ever heard of is rejected before the expensive fan-out.
-  const [kev, stories] = await Promise.all([
+  // The citations read (2026-10-17) is one equality match on `cve`, as cheap as
+  // the stories read beside it, and a CVE only a report has tied to an actor is
+  // a CVE we know.
+  const [kev, stories, citations] = await Promise.all([
     kevMeta().catch(() => new Map()),
     getStoriesForCve(id, 40).catch(() => []),
+    getCitationsForCve(id).catch((): CveActorCitationDoc[] => []),
   ]);
   const kevRow = kev.get(id) ?? null;
-  if (!kevRow && stories.length === 0) return null;
+  if (!kevRow && stories.length === 0 && citations.length === 0) return null;
 
   const [nvd, epss, wire] = await Promise.all([
     nvdLookup(id).catch(() => null),
@@ -106,11 +113,17 @@ async function loadUncached(id: string) {
       if (hits > 0) hitsById.push({ id: actorId, hits });
     }
   }
-  const names = await getActorNamesFor(hitsById.map((a) => a.id)).catch(() => new Map<string, string>());
+  // One names lookup covers both lists: the wire's matches and the cited actors.
+  const citedIds = [...new Set(citations.map((c) => c.actor_id).filter(Boolean))];
+  const names = await getActorNamesFor([...new Set([...hitsById.map((a) => a.id), ...citedIds])]).catch(
+    () => new Map<string, string>(),
+  );
   const actors = hitsById.map((a) => ({ id: a.id, name: names.get(a.id) ?? a.id, hits: a.hits }));
   actors.sort((a, b) => b.hits - a.hits || a.name.localeCompare(b.name));
+  // Shaped here, inside the 12 h cache, so a render does no work on it.
+  const citedBy = groupCitationsByActor(citations, names);
   const exposure = stories.map((s) => s.azExposure).find((e) => e && e.globalCount != null) ?? null;
-  return { nvd, kevRow, epssRow, stories, actors, exposure };
+  return { nvd, kevRow, epssRow, stories, actors, citedBy, exposure };
 }
 
 export async function generateMetadata({ params }: { params: Promise<Params> }): Promise<Metadata> {
@@ -186,6 +199,10 @@ export default async function CvePage({ params }: { params: Promise<Params> }) {
   const epss = d.epssRow;
   const cvss = d.nvd?.cvss ?? null;
   const refs = (d.nvd?.refs ?? []).slice(0, 8);
+  // `?? []`: an entry cached before 2026-10-17 has no citedBy and stays valid
+  // until its 12 h window ends, rather than bumping the key and re-fanning-out
+  // every CVE page at once.
+  const citedBy = d.citedBy ?? [];
 
   return (
     <>
@@ -334,8 +351,33 @@ export default async function CvePage({ params }: { params: Promise<Params> }) {
               )}
             </section>
 
-            {/* The margin: adversaries as pressed names, then the references. */}
+            {/* The margin: cited actors with their quotes, adversaries as
+                pressed names, then the references. */}
             <aside className="md:col-span-4 md:border-l md:border-rule-soft md:pl-6">
+              {citedBy.length > 0 && (
+                <section className="mb-10" aria-labelledby="cve-cited">
+                  <div className="rule-b pb-2">
+                    <h2 id="cve-cited" className="label text-ink">
+                      Cited as exploited by
+                    </h2>
+                  </div>
+                  <ol>
+                    {citedBy.map((g) => (
+                      <li key={g.actorId} className="row py-3">
+                        <Link href={`/actors/${g.actorId}`} className="pressed text-[20px] leading-tight text-ink">
+                          {g.name}
+                        </Link>
+                        <EvidenceList evidence={g.evidence} more={g.moreEvidence} />
+                      </li>
+                    ))}
+                  </ol>
+                  <p className="mt-3 text-[12.5px] leading-snug text-ink-3">
+                    Each actor is cited by the quoted source, linked under the quote. A citation is that source&apos;s
+                    claim, not our confirmation.
+                  </p>
+                </section>
+              )}
+
               {d.actors.length > 0 && (
                 <section aria-labelledby="cve-actors">
                   <div className="rule-b pb-2">
