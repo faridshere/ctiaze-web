@@ -54,17 +54,12 @@ function dayLabel(iso: string, local: boolean): string {
   return `${WEEKDAYS[wd]} ${String(day).padStart(2, "0")} ${MONTHS[mon]} ${year}`;
 }
 
-// The pipeline caps a title at 131 characters and cuts mid-word ("on DB r",
-// "rate limi"). Until the cap is raised upstream, a title at the cap that does
-// not end on a sentence is closed with an ellipsis so the cut reads as
-// deliberate, not as the layout clipping it. Backtick spans (`href`) are set
-// in mono the way the story deck sets them; the backticks themselves never
-// print.
-const TITLE_CAP = 131;
-
-function titleParts(raw: string): React.ReactNode[] {
-  const capped = raw.length >= TITLE_CAP && !/[.!?)\]"'”’]$/.test(raw);
-  const text = capped ? `${raw.replace(/[\s,;:—–-]+$/, "")}…` : raw;
+// Titles arrive whole: lib/types.ts ends any title the engine cut on its last
+// whole word or sentence (wholeTitle), so nothing is clipped or closed here.
+// This used to append "…" to every long title, after a partial word too.
+// Backtick spans (`href`) are set in mono the way the story deck sets them;
+// the backticks themselves never print.
+function titleParts(text: string): React.ReactNode[] {
   const parts = text.split(/(`[^`]+`)/g);
   return parts.map((p, i) =>
     p.length > 2 && p.startsWith("`") && p.endsWith("`") ? (

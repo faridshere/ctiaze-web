@@ -87,7 +87,7 @@ function buildRow(it: FeedItem, ordinal: number, reduce: boolean): HTMLLIElement
   const slug = slugOf(it.url);
   li.setAttribute("data-slug", slug);
   const cat = (it._skopnix?.category || "other").toUpperCase().slice(0, 4);
-  const tag = it._skopnix?.kev ? `<span class="stamp">KEV</span>` : `<span class="tag text-ink-3">${cat}</span>`;
+  const tag = it._skopnix?.kev ? `<span class="stamp">KEV</span>` : `<span class="tag text-ink-2">${cat}</span>`;
   li.innerHTML =
     `<a href="/news/${slug}" class="group grid grid-cols-[1fr_auto] items-center gap-x-3 gap-y-1 py-3 sm:grid-cols-[auto_auto_1fr_auto]">` +
     `<span class="num hidden w-[7.5ch] whitespace-nowrap font-mono text-[11px] text-ink-3 sm:inline">№ ${ordinal.toLocaleString("en-US")}</span>` +

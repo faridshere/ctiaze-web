@@ -95,7 +95,7 @@ Every inner page: `SiteHeader({ section })`, a `PageHead` or its own head in the
 
 ## Motion
 
-Load: masthead rules draw from the centre, the mark ignites, the lead rises, wire rows fade in top to bottom (≈1.1s total, CSS only). Scroll: nothing fades in; `data-sc` only gates the authored draws (column rules draw downward, census and fourteen-day bars draw once) when a block enters view, with a fail-safe reveal after six seconds. Hover: underlines, row rules, pressed names. Live: the clocks, the live dot, the dial hand, WireLive. Everything respects `prefers-reduced-motion`; content is always visible without JS.
+Load: masthead rules draw from the centre, the mark ignites, the lead rises, wire rows fade in top to bottom from first paint (the stagger capped at 0.5s, CSS only). Scroll: nothing fades in; `data-sc` only gates the authored draws (column rules draw downward, census and fourteen-day bars draw once) when a block enters view, with a fail-safe reveal after six seconds. Hover: underlines, row rules, pressed names. Live: the clocks, the live dot, the dial hand, WireLive. Everything respects `prefers-reduced-motion`; content is always visible without JS.
 
 ## Rules
 

@@ -5,6 +5,7 @@ import { getDb } from "./db";
 import { countryName, resolveCountry } from "./geo";
 import { isAliasActorId } from "./actor-aliases";
 import { getWireMentions, type WireMention } from "./actor-wire";
+import { clipWords } from "./format";
 
 export { flagEmoji } from "./geo";
 
@@ -223,7 +224,7 @@ function firstSentence(s: string | null | undefined, max = 180): string {
   if (!t) return "";
   const m = t.match(/^.{20,}?[.!?](?=\s|$)/);
   const out = m ? m[0] : t;
-  return out.length > max ? out.slice(0, max - 1).trimEnd() + "…" : out;
+  return clipWords(out, max);
 }
 
 function toIso(d: Date | string | null | undefined): string | null {

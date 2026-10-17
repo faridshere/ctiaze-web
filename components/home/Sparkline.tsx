@@ -1,7 +1,10 @@
+import { outageOn } from "@/lib/outages";
+
 // Fourteen days of dispatches as ink bars, a pure SVG from real counts. A zero
 // day renders as a hairline stub, never hidden, so the chart is honest about
 // the days the wire was silent. Bars grow from the baseline when the section
-// reveals (CSS, keyed by --i; see globals.css).
+// reveals (CSS, keyed by --i; see globals.css). A day inside a known outage of
+// our own (lib/outages.ts) keeps its real count and says so in its title.
 export function Sparkline({ data, className = "" }: { data: { day: string; n: number }[]; className?: string }) {
   const W = 140, H = 36, GAP = 3;
   const max = Math.max(1, ...data.map((d) => d.n));
@@ -23,7 +26,7 @@ export function Sparkline({ data, className = "" }: { data: { day: string; n: nu
             fill="var(--ink)"
             opacity={d.n === 0 ? 0.25 : 0.55 + 0.45 * (d.n / max)}
           >
-            <title>{`${d.day}: ${d.n}`}</title>
+            <title>{`${d.day}: ${d.n}${outageOn(d.day) ? ` · ${outageOn(d.day)!.what}` : ""}`}</title>
           </rect>
         );
       })}

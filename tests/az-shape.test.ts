@@ -1,6 +1,12 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import {
+import type { AzBoard, CampaignInput } from "../lib/az-shape.ts";
+import type { TrendingCard } from "../lib/exploit-shape.ts";
+import { register } from "node:module";
+
+// The module imports ./format without an extension; the loader resolves it.
+register("./ts-ext-loader.mjs", import.meta.url);
+const {
   apiBody,
   azCounts,
   checkVerdict,
@@ -12,10 +18,7 @@ import {
   selectAzExploits,
   shapeAdversaries,
   shapeExposure,
-  type AzBoard,
-  type CampaignInput,
-} from "../lib/az-shape.ts";
-import type { TrendingCard } from "../lib/exploit-shape.ts";
+} = await import("../lib/az-shape.ts");
 
 // Neutral placeholders only: example.az hosts, GroupX / GroupY, CVE-2099-*.
 const NOW = new Date("2099-01-08T12:00:00Z");

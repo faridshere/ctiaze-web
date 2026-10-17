@@ -1,4 +1,5 @@
 import { canonicalActorId } from "./actor-aliases";
+import { wholeQuote } from "./format";
 
 // ---------------------------------------------------------------------------
 // Cited actor-to-CVE links (2026-10-17). Pure shaping only, no database, so
@@ -187,11 +188,14 @@ export function cveCitedHeading(relations: CitationRelation[]): string {
   return "Tied by cited sources to";
 }
 
+// On a page a quote ends where its words end (lib/format.ts wholeQuote): the
+// engine stores quotes cut at 400 characters, and this cap used to slice again
+// mid-word. The API passes max = Infinity and gets the quote exactly as stored.
 export function cleanQuote(q: unknown, max = MAX_QUOTE): string | null {
   if (typeof q !== "string") return null;
   const t = q.replace(/\s+/g, " ").trim();
   if (t.length < 8) return null;
-  return t.length > max ? t.slice(0, max - 1).trimEnd() + "…" : t;
+  return Number.isFinite(max) ? wholeQuote(q, max) : t;
 }
 
 /** An http(s) url, or null. A javascript:/data: or relative value is dropped. */

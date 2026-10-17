@@ -1,4 +1,5 @@
 import { ImageResponse } from "next/og";
+import { clipWords } from "./format";
 
 // Shared OpenGraph/Twitter card generator (1200×630), set like a clipping of
 // the paper (v4 "Late Edition", 2026-10-16): the day edition's newsprint, the
@@ -46,7 +47,9 @@ type Meta = {
 };
 
 export async function ogCard(title: string, tagline: string, meta: Meta = {}) {
-  const shown = title.length > 140 ? title.slice(0, 137) + "…" : title;
+  // Whole words only, like every other surface: a long title stops at its last
+  // full sentence (with the ellipsis) or its last whole word (without).
+  const shown = clipWords(title, 140, 40);
   const label = [meta.kev ? "Actively exploited" : meta.critical ? "Critical" : null, meta.cve ?? null, meta.category ?? null]
     .filter(Boolean)
     .join("  ·  ");
