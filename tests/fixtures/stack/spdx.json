@@ -1,0 +1,19 @@
+{
+  "spdxVersion": "SPDX-2.3",
+  "SPDXID": "SPDXRef-DOCUMENT",
+  "name": "edge-box",
+  "packages": [
+    {
+      "SPDXID": "SPDXRef-Package-openssl",
+      "name": "openssl",
+      "versionInfo": "3.0.7",
+      "supplier": "Organization: OpenSSL Software Foundation",
+      "externalRefs": [
+        { "referenceCategory": "SECURITY", "referenceType": "cpe23Type", "referenceLocator": "cpe:2.3:a:openssl:openssl:3.0.7:*:*:*:*:*:*:*" },
+        { "referenceCategory": "PACKAGE-MANAGER", "referenceType": "purl", "referenceLocator": "pkg:deb/debian/openssl@3.0.7?arch=amd64" }
+      ]
+    },
+    { "SPDXID": "SPDXRef-Package-activemq", "name": "activemq", "versionInfo": "5.17.5", "supplier": "NOASSERTION" },
+    { "SPDXID": "SPDXRef-Package-mystery", "name": "mystery-lib", "versionInfo": "NOASSERTION" }
+  ]
+}
