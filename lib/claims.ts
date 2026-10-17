@@ -34,7 +34,9 @@ export type ClaimStats = {
   byKind: Record<string, number>;
 };
 
-const PUBLIC_FILTER = {
+// Exported for the TAXII az-claims collection (lib/cited-data.ts), so the
+// two public surfaces cannot drift apart on what counts as public.
+export const PUBLIC_FILTER = {
   az: true,
   $or: [
     { kind: { $in: ["telegram", "bluesky"] }, claim_like: true },
@@ -42,7 +44,7 @@ const PUBLIC_FILTER = {
   ],
 };
 
-type Doc = {
+export type ClaimDoc = {
   _id: string;
   kind: ClaimRow["kind"];
   group?: string;
@@ -56,7 +58,7 @@ type Doc = {
   ext?: { urls?: string[]; az_domains?: string[]; checkhost_reports?: string[] };
 };
 
-function safeUrl(d: Doc): string {
+function safeUrl(d: ClaimDoc): string {
   const u = d.url ?? "";
   if (d.kind === "ransomware" && (u.includes(".onion") || !u.startsWith("http"))) {
     return `https://www.ransomware.live/`;
@@ -66,7 +68,7 @@ function safeUrl(d: Doc): string {
     : "";
 }
 
-function toRow(d: Doc): ClaimRow {
+export function toRow(d: ClaimDoc): ClaimRow {
   const at = (d.published ?? d.first_seen) as Date;
   const targets = d.summary?.targets?.length
     ? d.summary.targets
@@ -91,8 +93,8 @@ function toRow(d: Doc): ClaimRow {
 export async function getClaims(limit = 120): Promise<ClaimRow[]> {
   const db = await getDb();
   const docs = await db
-    .collection<Doc>("hacktivist_posts")
-    .aggregate<Doc>([
+    .collection<ClaimDoc>("hacktivist_posts")
+    .aggregate<ClaimDoc>([
       { $match: PUBLIC_FILTER },
       { $addFields: { _at: { $ifNull: ["$published", "$first_seen"] } } },
       { $sort: { _at: -1 } },

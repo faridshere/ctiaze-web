@@ -44,6 +44,10 @@ export async function GET() {
   ?q=, ?type=nation-state|crime|unknown, ?origin=<ISO-2>. One actor at
   /api/v1/actors/{id}; a STIX 2.1 bundle at /actors/{id}/stix.json and an ATT&CK
   Navigator layer at /actors/{id}/navigator.json.
+- Cited intelligence in standard formats, every link with its source URL and
+  quoted sentence: STIX 2.1 bundles at /api/v1/stix/actors/{id} and
+  /api/v1/stix/cves/{cve}; a read-only TAXII 2.1 server at ${SITE_URL}/taxii2/
+  (collections cited-intel, az-claims); a MISP feed at ${SITE_URL}/api/v1/misp.
 
 ## Item fields (the feed.json _skopnix object)
 category, severity, cvss, epss, kev, cve_ids, source_url. /api/v1/items carries
