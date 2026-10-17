@@ -15,6 +15,9 @@ const eslintConfig = defineConfig([
     // Vendored third-party design skill (.agents/skills/impeccable) — not our
     // code, and it drowned the lint output in ~140 warnings.
     ".agents/**",
+    // Shelved code kept on disk by the _disabled convention — not part of the
+    // live tree, and its warnings must not gate deploys.
+    "**/_disabled/**",
   ]),
 ]);
 
