@@ -8,10 +8,10 @@ import { register } from "node:module";
 register("./ts-ext-loader.mjs", import.meta.url);
 
 const { cmpVersion, evalRanges } = await import("../lib/stack/version.ts");
-const { parsePurl, parseCpe23 } = await import("../lib/stack/ids.ts");
+const { parsePurl, parseCpe23, cpeName } = await import("../lib/stack/ids.ts");
 const { parseLine, parsePaste, parseSbom, parseApiBody, MAX_COMPONENTS } = await import("../lib/stack/parse.ts");
 const { resolveComponent } = await import("../lib/stack/resolve.ts");
-const { assessComponent, actorClaims, mergeClaims, kevByName, cpeMatchesOf, confidenceOf } = await import("../lib/stack/match.ts");
+const { assessComponent, actorClaims, mergeClaims, kevByName, cpeMatchesOf, confidenceOf, matchesFor } = await import("../lib/stack/match.ts");
 
 type KevEntry = import("../lib/stack/match.ts").KevEntry;
 type CveFacts = import("../lib/stack/match.ts").CveFacts;
@@ -351,4 +351,21 @@ test("#4 exact-version rows compare version and CPE update together", () => {
   assert.equal(evalRanges("7.2p2", [{ criteria: "cpe:2.3:a:openbsd:openssh:7.2:*:*:*:*:*:*:*", vulnerable: true }]).verdict, "in-range");
   // the real Log4Shell rows: 2.0 (the release row) in range, a beta listed by its own row
   assert.equal(evalRanges("2.0-beta9", log4shell).verdict, "in-range");
+});
+
+test("#3 escaped CPE characters: a product matches its own NVD rows, and the NVD query is escaped", () => {
+  // Veeam Backup & Replication, as NVD files it (CVE-2024-40711; the unescaped name is a 404 at NVD)
+  const row = { criteria: "cpe:2.3:a:veeam:veeam_backup_\\&_replication:*:*:*:*:*:*:*:*", vulnerable: true, versionEndExcluding: "12.2.0.334" };
+  const c = { name: "x", version: "12.1.1.56", cpe: "cpe:2.3:a:veeam:veeam_backup_\\&_replication:12.1.1.56:*:*:*:*:*:*:*" };
+  const r = resolveComponent(c)!;
+  assert.equal(r.product, "veeam_backup_&_replication");
+  assert.equal(matchesFor([row], r.vendor, r.product).length, 1);
+  const res = assessComponent(c, r, { status: "ok", cves: [{ id: "CVE-2024-40711", matches: [row] }] }, [], facts());
+  assert.equal(res.findings.length, 1);
+  assert.equal(res.findings[0].version, "in-range");
+  assert.equal(cpeName("a", r.vendor, r.product), "cpe:2.3:a:veeam:veeam_backup_\\&_replication");
+  assert.equal(cpeName("o", "paloaltonetworks", "pan-os"), "cpe:2.3:o:paloaltonetworks:pan-os");
+  assert.equal(cpeName("a", "nodejs", "node.js"), "cpe:2.3:a:nodejs:node.js");
+  // an escaped colon inside a product name does not shift the vendor/product fields
+  assert.equal(matchesFor([{ criteria: "cpe:2.3:a:acme:a\\:b:*:*:*:*:*:*:*:*" }], "acme", "a:b").length, 1);
 });

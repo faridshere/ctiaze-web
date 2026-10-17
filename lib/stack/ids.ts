@@ -59,3 +59,13 @@ export function parseCpe23(raw: string): Cpe23 | null {
   if (!/^[aoh]$/.test(part) || !vendor || !product || vendor === "*" || product === "*") return null;
   return { part, vendor, product, version: version && version !== "*" && version !== "-" ? version : null };
 }
+
+/** Quote one CPE 2.3 formatted-string field: anything but [a-z0-9._-] gets a backslash ("backup_\\&_replication"). */
+export function cpeEscape(field: string): string {
+  return field.replace(/[^a-z0-9._\-]/gi, (ch) => `\\${ch}`);
+}
+
+/** The "cpe:2.3:part:vendor:product" prefix NVD's virtualMatchString expects, from unescaped fields. */
+export function cpeName(part: string, vendor: string, product: string): string {
+  return `cpe:2.3:${part}:${cpeEscape(vendor)}:${cpeEscape(product)}`;
+}

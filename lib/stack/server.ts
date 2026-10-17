@@ -3,6 +3,7 @@ import { epssMap } from "../cveintel";
 import { ttlMemo } from "../memo";
 import type { ActorClaim, ActorCveRow, Component, ComponentResult, CpeMatch, CpePart, ProductCve, Resolved } from "./types";
 import { resolveComponent, type KevName } from "./resolve";
+import { cpeName } from "./ids";
 import { actorClaims, assessComponent, cpeMatchesOf, kevByName, matchesFor, mergeClaims, type CveFacts, type KevEntry, type NvdPull } from "./match";
 
 // Server-only I/O for the stack check: the CISA KEV catalog, NVD CVE records
@@ -61,7 +62,7 @@ type ProductPull = { cves: ProductCve[]; truncated: boolean };
 async function pullOne(part: CpePart, vendor: string, product: string): Promise<{ total: number; cves: ProductCve[] }> {
   const key = process.env.NVD_API_KEY;
   const headers: Record<string, string> = key ? { apiKey: key } : {};
-  const base = `${NVD}?virtualMatchString=${encodeURIComponent(`cpe:2.3:${part}:${vendor}:${product}`)}&resultsPerPage=${NVD_PAGE}`;
+  const base = `${NVD}?virtualMatchString=${encodeURIComponent(cpeName(part, vendor, product))}&resultsPerPage=${NVD_PAGE}`;
   const out: ProductCve[] = [];
   let total = 0;
   for (let start = 0; start < NVD_CAP; start += NVD_PAGE) {

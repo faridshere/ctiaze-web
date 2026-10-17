@@ -13,6 +13,7 @@ import type {
   VersionVerdict,
 } from "./types";
 import { evalRanges } from "./version";
+import { splitCpe } from "./ids";
 import { key, productKeyEq, vendorKeyEq } from "./resolve";
 
 // The pure core of the stack check: given a resolved component, the CVEs NVD
@@ -39,12 +40,16 @@ export type CveFacts = {
   actors: Map<string, ActorClaim[]>;
 };
 
-/** Keep only the cpeMatch rows that name this product (vendor:product), any part. */
+/**
+ * Keep only the cpeMatch rows that name this product (vendor:product), any
+ * part. vendor/product are unescaped (as parseCpe23 returns them) and so is
+ * each criteria string before comparing: NVD writes "backup_\\&_replication".
+ */
 export function matchesFor(configs: CpeMatch[], vendor: string, product: string): CpeMatch[] {
   const v = vendor.toLowerCase();
   const p = product.toLowerCase();
   return configs.filter((m) => {
-    const f = m.criteria.toLowerCase().split(":");
+    const f = splitCpe(m.criteria.toLowerCase());
     return f[3] === v && f[4] === p;
   });
 }
