@@ -1,4 +1,5 @@
-import { getClaims, getClaimStats } from "@/lib/claims";
+import { getClaims, getClaimStats, type RegionParam } from "@/lib/claims";
+import { parseRegion } from "@/lib/claims-shape";
 import { limitCaller } from "@/lib/ratelimit";
 import { jsonError } from "@/lib/api";
 import { etagFor, notModified } from "@/lib/etag";
@@ -7,17 +8,20 @@ import { ttlMemo } from "@/lib/memo";
 export const revalidate = 300;
 
 // ---------------------------------------------------------------------------
-// GET /api/v1/claims — hacktivist and leak-site claims against Azerbaijan, with
-// the reality check the watch ran when it saw them. No key, no signup.
+// GET /api/v1/claims — hacktivist and leak-site claims, with the reality check
+// the watch ran when it saw them. No key, no signup.
 // Every row is a CLAIM by a third party, never a confirmed incident.
+//   ?region=az | global | all (default all): Azerbaijan, worldwide, or both.
+//   Each row carries its region; stats_30d is computed for the chosen scope.
 // ---------------------------------------------------------------------------
 const MAX_LIMIT = 500;
 
-const buildBody = ttlMemo(async (limit: number): Promise<string> => {
-  const [claims, stats] = await Promise.all([getClaims(limit), getClaimStats()]);
+const buildBody = ttlMemo(async (limit: number, region: RegionParam): Promise<string> => {
+  const [claims, stats] = await Promise.all([getClaims(limit, region), getClaimStats(region)]);
   return JSON.stringify(
     {
       generated_at: new Date().toISOString(),
+      region,
       note: "Each row is a claim made by a third party (hacktivist channel, tracker or leak site). checks = our own reachability probe and check-host.net, run when the claim was seen.",
       stats_30d: stats,
       count: claims.length,
@@ -26,7 +30,7 @@ const buildBody = ttlMemo(async (limit: number): Promise<string> => {
     null,
     2
   );
-}, 120_000, 8);
+}, 120_000, 16);
 
 export async function GET(req: Request) {
   if (!limitCaller(req, "apiv1claims", 60, 60_000)) {
@@ -34,9 +38,10 @@ export async function GET(req: Request) {
   }
   const q = new URL(req.url).searchParams;
   const limit = Math.min(MAX_LIMIT, Math.max(1, parseInt(q.get("limit") ?? "100", 10) || 100));
+  const region = parseRegion(q.get("region"));
   let body: string;
   try {
-    body = await buildBody(limit);
+    body = await buildBody(limit, region);
   } catch {
     return jsonError(503, "Upstream store unavailable — this is an error, not an empty list.");
   }
