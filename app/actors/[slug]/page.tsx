@@ -28,6 +28,8 @@ import {
 } from "@/lib/actor-intel";
 import { getWireMentions, type WireMentions } from "@/lib/actor-wire";
 import { getActorReports, type AptReport } from "@/lib/aptnotes";
+import { getCitationsForActor } from "@/lib/citations-db";
+import type { CveActorCitationDoc } from "@/lib/citations";
 import { paragraphs, jsonLdSafe } from "@/lib/format";
 import { absoluteUrl, SITE_NAME, SITE_URL } from "@/lib/site";
 
@@ -143,13 +145,14 @@ export default async function ActorPage({ params }: { params: Promise<{ slug: st
   // Every source is fetched in parallel and degrades to an empty fallback on
   // its own — one slow/failed collection (e.g. a cold APTnotes fetch) can
   // never take the rest of the dossier down.
-  const [pack, techniqueRef, ttpProfiles, softwareUsage, wire, reports] = await Promise.all([
+  const [pack, techniqueRef, ttpProfiles, softwareUsage, wire, reports, citations] = await Promise.all([
     getActorPack(a._id).catch(() => null),
     getTechniqueRef().catch((): TechniqueRef => ({})),
     getTtpProfiles().catch((): TtpProfile[] => []),
     getSoftwareUsage().catch((): SoftwareUsage => ({})),
     getWireMentions().catch((): WireMentions => EMPTY_WIRE),
     getActorReports([a.name, ...(a.aliases || [])]).catch((): AptReport[] => []),
+    getCitationsForActor(a._id).catch((): CveActorCitationDoc[] => []),
   ]);
 
   const similarRaw = (pack?.similar ?? []).slice(0, 5);
@@ -241,7 +244,7 @@ export default async function ActorPage({ params }: { params: Promise<{ slug: st
         )}
 
         <ActorArsenal malware={a.malware ?? []} tools={a.tools ?? []} usage={softwareUsage} />
-        <ActorCves cves={a.cves ?? []} actorName={a.name} />
+        <ActorCves cves={a.cves ?? []} citations={citations} actorName={a.name} />
         <ActorVictims actor={a} />
         <ActorWire mentions={mentions} />
         <ActorReports reports={reports} />
